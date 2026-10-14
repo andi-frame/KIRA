@@ -91,7 +91,7 @@ def _anchors() -> list[tuple[float, float]]:
 def p10(score: int) -> float:
     """Perkiraan insidensi 10 tahun untuk sebuah skor.
 
-    Nilai kategori (TODO-VERIFY, constants.py) dipasang di skor tengah tiap kategori, lalu diinterpolasi
+    Nilai kategori (sumber: constants.py) dipasang di skor tengah tiap kategori, lalu diinterpolasi
     linear di antaranya, agar setiap poin skor menggeser proyeksi (tidak berupa tangga per kategori).
     Di luar jangkar pertama/terakhir nilainya dikunci.
     """

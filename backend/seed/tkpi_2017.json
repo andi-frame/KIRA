@@ -1,0 +1,310 @@
+{
+ "_source": "Tabel Komposisi Pangan Indonesia (TKPI) 2017, Kemenkes RI, https://www.panganku.org (nilai per 100 g bdd; diambil 2026-10-15)",
+ "_note": "TKPI tidak memuat gula; sodium null = tidak tersedia di TKPI. Nilai tidak diubah oleh KIRA.",
+ "foods": {
+  "nasi_putih": {
+   "code": "AP001",
+   "name": "Nasi",
+   "kcal": 180,
+   "fat_g": 0.3,
+   "carb_g": 39.8,
+   "sodium_mg": 1
+  },
+  "mie_ayam": {
+   "code": "AP085",
+   "name": "Mie ayam",
+   "kcal": 102,
+   "fat_g": 3.9,
+   "carb_g": 10.5,
+   "sodium_mg": 279
+  },
+  "bihun_goreng": {
+   "code": "AP007",
+   "name": "Bihun goreng instan",
+   "kcal": 381,
+   "fat_g": 3.9,
+   "carb_g": 80.3,
+   "sodium_mg": 928
+  },
+  "roti_tawar": {
+   "code": "AP024",
+   "name": "Roti putih",
+   "kcal": 248,
+   "fat_g": 1.2,
+   "carb_g": 50,
+   "sodium_mg": 530
+  },
+  "singkong_rebus": {
+   "code": "BP008",
+   "name": "Ketela pohon/singkong kukus",
+   "kcal": 153,
+   "fat_g": 0.3,
+   "carb_g": 36.4,
+   "sodium_mg": 2
+  },
+  "ubi_rebus": {
+   "code": "BP011",
+   "name": "Ubi jalar, kuning, kukus",
+   "kcal": 100,
+   "fat_g": 0.3,
+   "carb_g": 23.8,
+   "sodium_mg": 3
+  },
+  "jagung_rebus": {
+   "code": "AP010",
+   "name": "Jagung muda, rebus",
+   "kcal": 142,
+   "fat_g": 0.7,
+   "carb_g": 30.3,
+   "sodium_mg": 5
+  },
+  "rendang": {
+   "code": "FP062",
+   "name": "Rendang sapi, masakan",
+   "kcal": 193,
+   "fat_g": 7.9,
+   "carb_g": 7.8,
+   "sodium_mg": null
+  },
+  "telur_dadar": {
+   "code": "HP001",
+   "name": "Telur ayam, dadar, masakan",
+   "kcal": 251,
+   "fat_g": 19.4,
+   "carb_g": 1.4,
+   "sodium_mg": null
+  },
+  "tempe_goreng": {
+   "code": "CP076",
+   "name": "Tempe kedelai murni, goreng",
+   "kcal": 350,
+   "fat_g": 26.6,
+   "carb_g": 10.4,
+   "sodium_mg": 22
+  },
+  "tahu_goreng": {
+   "code": "CP062",
+   "name": "Tahu goreng",
+   "kcal": 115,
+   "fat_g": 8.5,
+   "carb_g": 2.5,
+   "sodium_mg": 7
+  },
+  "soto_betawi": {
+   "code": "FP076",
+   "name": "Soto betawi, masakan",
+   "kcal": 135,
+   "fat_g": 8.8,
+   "carb_g": 11.5,
+   "sodium_mg": null
+  },
+  "rawon": {
+   "code": "FP061",
+   "name": "Rawon, masakan",
+   "kcal": 60,
+   "fat_g": 2.5,
+   "carb_g": 4,
+   "sodium_mg": null
+  },
+  "gulai": {
+   "code": "FP047",
+   "name": "Gulai kambing",
+   "kcal": 126,
+   "fat_g": 9.4,
+   "carb_g": 6.2,
+   "sodium_mg": 302
+  },
+  "empal": {
+   "code": "FP046",
+   "name": "Empal (daging) Goreng, masakan",
+   "kcal": 248,
+   "fat_g": 6.9,
+   "carb_g": 10.1,
+   "sodium_mg": 848
+  },
+  "gudeg": {
+   "code": "DP032",
+   "name": "Gudeg, sayur",
+   "kcal": 160,
+   "fat_g": 9.2,
+   "carb_g": 16,
+   "sodium_mg": null
+  },
+  "pempek": {
+   "code": "GP079",
+   "name": "Pempek kapal selam, masakan",
+   "kcal": 152,
+   "fat_g": 2.3,
+   "carb_g": 28.2,
+   "sodium_mg": 628
+  },
+  "sayur_asem": {
+   "code": "DP047",
+   "name": "Sayur asem",
+   "kcal": 29,
+   "fat_g": 0.6,
+   "carb_g": 5,
+   "sodium_mg": null
+  },
+  "sayur_sop": {
+   "code": "DP053",
+   "name": "Sayur sop",
+   "kcal": 27,
+   "fat_g": 2,
+   "carb_g": 1,
+   "sodium_mg": null
+  },
+  "gado_gado": {
+   "code": "DP031",
+   "name": "Gado-gado",
+   "kcal": 137,
+   "fat_g": 3.2,
+   "carb_g": 21,
+   "sodium_mg": null
+  },
+  "karedok": {
+   "code": "DP037",
+   "name": "Karedok, sayur",
+   "kcal": 92,
+   "fat_g": 3.3,
+   "carb_g": 14.1,
+   "sodium_mg": null
+  },
+  "bakwan": {
+   "code": "AP031",
+   "name": "Bakwan",
+   "kcal": 280,
+   "fat_g": 10.2,
+   "carb_g": 39,
+   "sodium_mg": null
+  },
+  "keripik_singkong": {
+   "code": "BP037",
+   "name": "Keripik singkong",
+   "kcal": 478,
+   "fat_g": 20.7,
+   "carb_g": 72,
+   "sodium_mg": null
+  },
+  "keripik_kentang": {
+   "code": "BP036",
+   "name": "Keripik kentang",
+   "kcal": 448,
+   "fat_g": 18.8,
+   "carb_g": 67.1,
+   "sodium_mg": 712
+  },
+  "es_krim": {
+   "code": "JP001",
+   "name": "Es krim",
+   "kcal": 210,
+   "fat_g": 12.5,
+   "carb_g": 20.6,
+   "sodium_mg": 78
+  },
+  "onde_onde": {
+   "code": "AP094",
+   "name": "Onde-onde",
+   "kcal": 336,
+   "fat_g": 9.8,
+   "carb_g": 57.9,
+   "sodium_mg": null
+  },
+  "susu_putih": {
+   "code": "JR006",
+   "name": "Susu sapi, segar",
+   "kcal": 61,
+   "fat_g": 3.5,
+   "carb_g": 4.3,
+   "sodium_mg": 36
+  },
+  "air_kelapa": {
+   "code": "QR001",
+   "name": "Kelapa muda, air, segar (Coconut, young,  water, fresh)",
+   "kcal": 17,
+   "fat_g": 0.1,
+   "carb_g": 3.8,
+   "sodium_mg": 1
+  },
+  "pisang": {
+   "code": "ER074",
+   "name": "Pisang ambon, segar (Banana, fresh)",
+   "kcal": 108,
+   "fat_g": 0.8,
+   "carb_g": 24.3,
+   "sodium_mg": 10
+  },
+  "apel": {
+   "code": "ER004",
+   "name": "Apel, segar",
+   "kcal": 58,
+   "fat_g": 0.4,
+   "carb_g": 14.9,
+   "sodium_mg": 2
+  },
+  "jeruk": {
+   "code": "ER039",
+   "name": "Jeruk manis, segar (orange, fresh)",
+   "kcal": 45,
+   "fat_g": 0.2,
+   "carb_g": 11.2,
+   "sodium_mg": 4
+  },
+  "semangka": {
+   "code": "ER105",
+   "name": "Semangka, segar (Water melon, fresh)",
+   "kcal": 28,
+   "fat_g": 0.2,
+   "carb_g": 6.9,
+   "sodium_mg": 7
+  },
+  "pepaya": {
+   "code": "ER073",
+   "name": "Pepaya, segar (Papaya, fresh)",
+   "kcal": 46,
+   "fat_g": 0.1,
+   "carb_g": 12.2,
+   "sodium_mg": 4
+  },
+  "mangga": {
+   "code": "ER054",
+   "name": "Mangga, segar (Mango, fresh)",
+   "kcal": 52,
+   "fat_g": 0,
+   "carb_g": 12.3,
+   "sodium_mg": 3
+  },
+  "salak": {
+   "code": "ER101",
+   "name": "Salak, segar (snake fruit, fresh)",
+   "kcal": 77,
+   "fat_g": null,
+   "carb_g": 20.9,
+   "sodium_mg": null
+  },
+  "melon": {
+   "code": "ER067",
+   "name": "Melon, segar",
+   "kcal": 37,
+   "fat_g": 0.4,
+   "carb_g": 7.8,
+   "sodium_mg": 27
+  },
+  "alpukat": {
+   "code": "ER001",
+   "name": "Alpukat, segar (Avocado, fresh)",
+   "kcal": 85,
+   "fat_g": 6.5,
+   "carb_g": 7.7,
+   "sodium_mg": 2
+  },
+  "ikan_asin": {
+   "code": "GP004",
+   "name": "Ikan asin, kering",
+   "kcal": 193,
+   "fat_g": 1.5,
+   "carb_g": 0,
+   "sodium_mg": null
+  }
+ }
+}

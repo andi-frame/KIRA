@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from app.core_calc.constants import DAILY_LIMITS, MANAGEMENT_STRICTNESS
+from app.core_calc.constants import DAILY_LIMITS, DAILY_LIMITS_MANAGEMENT
 
 
 @dataclass(frozen=True)
@@ -12,9 +12,9 @@ class Totals:
 
 
 def remaining_targets(consumed: Totals, mode: Literal["prevention", "management"]) -> Totals:
-    factor = MANAGEMENT_STRICTNESS if mode == "management" else 1.0
+    limits = DAILY_LIMITS_MANAGEMENT if mode == "management" else DAILY_LIMITS
     return Totals(
-        sugar_g=max(0.0, DAILY_LIMITS["sugar_g"] * factor - consumed.sugar_g),
-        sodium_mg=max(0.0, DAILY_LIMITS["sodium_mg"] * factor - consumed.sodium_mg),
-        fat_g=max(0.0, DAILY_LIMITS["fat_g"] * factor - consumed.fat_g),
+        sugar_g=max(0.0, limits["sugar_g"] - consumed.sugar_g),
+        sodium_mg=max(0.0, limits["sodium_mg"] - consumed.sodium_mg),
+        fat_g=max(0.0, limits["fat_g"] - consumed.fat_g),
     )

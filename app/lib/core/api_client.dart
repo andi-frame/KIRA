@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
+import '../shared/family_models.dart';
 import '../shared/models.dart';
 
 const String kApiUrl = String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8000');
@@ -32,6 +33,15 @@ abstract class KiraApi {
   Future<ResultOutcome> postResult(String kind, Map<String, num> value, {String source = 'self'});
   Future<void> postDiagnosis(String condition);
   Future<List<Faskes>> nearbyFaskes(double lat, double lng);
+  Future<FamilyOverview> getFamily();
+  Future<void> inviteFamily(String phone, FamilyPermissions permissions);
+  Future<void> acceptFamily(String linkId);
+  Future<void> endFamily(String linkId);
+  Future<void> setFamilyPermissions(String linkId, FamilyPermissions permissions);
+  Future<FamilyStatus> getFamilyStatus(String linkId);
+  Future<DoctorSummary> getDoctorSummary(int days);
+  Future<FoodGlucose> getFoodGlucose();
+  Future<String> whatsappLinkCode();
 }
 
 class DioKiraApi implements KiraApi {
@@ -144,4 +154,41 @@ class DioKiraApi implements KiraApi {
         () => _dio.get('/faskes/nearby', queryParameters: {'lat': lat, 'lng': lng}),
         (d) => (d['faskes'] as List).map((e) => Faskes.fromJson(e as Map<String, dynamic>)).toList(),
       );
+
+  @override
+  Future<FamilyOverview> getFamily() =>
+      _run(() => _dio.get('/family'), (d) => FamilyOverview.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<void> inviteFamily(String phone, FamilyPermissions permissions) => _run(
+        () => _dio.post('/family/invite', data: {'phone': phone, 'permissions': permissions.toJson()}),
+        (_) {},
+      );
+
+  @override
+  Future<void> acceptFamily(String linkId) => _run(() => _dio.post('/family/$linkId/accept'), (_) {});
+
+  @override
+  Future<void> endFamily(String linkId) => _run(() => _dio.delete('/family/$linkId'), (_) {});
+
+  @override
+  Future<void> setFamilyPermissions(String linkId, FamilyPermissions permissions) =>
+      _run(() => _dio.patch('/family/$linkId/permissions', data: permissions.toJson()), (_) {});
+
+  @override
+  Future<FamilyStatus> getFamilyStatus(String linkId) =>
+      _run(() => _dio.get('/family/$linkId/status'), (d) => FamilyStatus.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<DoctorSummary> getDoctorSummary(int days) => _run(
+        () => _dio.get('/summary/doctor', queryParameters: {'days': days}),
+        (d) => DoctorSummary.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<FoodGlucose> getFoodGlucose() =>
+      _run(() => _dio.get('/insights/food-glucose'), (d) => FoodGlucose.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<String> whatsappLinkCode() => _run(() => _dio.post('/whatsapp/link-code'), (d) => d['code'] as String);
 }

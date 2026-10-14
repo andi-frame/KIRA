@@ -1,5 +1,5 @@
 {
-  "_note": "DUMMY/PERKIRAAN untuk development. TODO-VERIFY: cocokkan dengan Tabel Komposisi Pangan Indonesia sebelum dipakai di materi submission.",
+  "_note": "Nilai ESTIMASI KIRA. Untuk makanan yang punya padanan, energi/lemak/karbohidrat/natrium ditimpa dari TKPI 2017 saat seed (lihat tkpi_2017.json). Gula dan porsi selalu estimasi. Lihat docs/sumber-angka-klinis.md.",
   "_columns": ["id", "name", "aliases", "sugar_g", "sodium_mg", "fat_g", "kcal", "carb_g", "default_portion_g"],
   "rows": [
     ["nasi_putih", "Nasi putih", ["nasi"], 0.1, 1, 0.3, 130, 28, 200],

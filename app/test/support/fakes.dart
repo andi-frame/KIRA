@@ -9,6 +9,7 @@ import 'package:kira/core/theme.dart';
 import 'package:kira/features/chat/media.dart';
 import 'package:kira/features/check/location.dart';
 import 'package:image_picker/image_picker.dart' show ImageSource;
+import 'package:kira/shared/family_models.dart';
 import 'package:kira/shared/models.dart';
 
 List<double> _curve(double p10) => [for (var t = 0; t <= 10; t++) 1 - _pow(1 - p10, t / 10)];
@@ -49,6 +50,7 @@ Projection sampleProjection({
   String? mostImpactful = 'activity',
   double p10Low = 0.04,
   double p10High = 0.33,
+  HypertensionRisk hypertension = const HypertensionRisk(status: 'needs_bp'),
 }) =>
     Projection(
       scoreLow: low,
@@ -62,6 +64,7 @@ Projection sampleProjection({
       needsProfile: needsProfile,
       mode: 'prevention',
       mostImpactful: mostImpactful,
+      hypertension: hypertension,
     );
 
 WhatIfResult sampleWhatIf({int afterLow = 9, int afterHigh = 16}) => WhatIfResult(
@@ -180,14 +183,65 @@ class FakeApi implements KiraApi {
 
   @override
   Future<List<Faskes>> nearbyFaskes(double lat, double lng) async => faskes;
+
+  FamilyOverview family = const FamilyOverview();
+  final List<({String phone, FamilyPermissions permissions})> invites = [];
+  final List<String> accepted = [];
+  final List<String> ended = [];
+  final List<({String id, FamilyPermissions permissions})> permissionChanges = [];
+  Map<String, FamilyStatus> statuses = {};
+  Object? familyError;
+
+  @override
+  Future<FamilyOverview> getFamily() async {
+    if (familyError != null) throw familyError!;
+    return family;
+  }
+
+  @override
+  Future<void> inviteFamily(String phone, FamilyPermissions permissions) async {
+    if (familyError != null) throw familyError!;
+    invites.add((phone: phone, permissions: permissions));
+  }
+
+  @override
+  Future<void> acceptFamily(String linkId) async => accepted.add(linkId);
+
+  @override
+  Future<void> endFamily(String linkId) async => ended.add(linkId);
+
+  @override
+  Future<void> setFamilyPermissions(String linkId, FamilyPermissions permissions) async =>
+      permissionChanges.add((id: linkId, permissions: permissions));
+
+  @override
+  Future<FamilyStatus> getFamilyStatus(String linkId) async => statuses[linkId]!;
+
+  DoctorSummary Function(int days)? onDoctorSummary;
+  final List<int> doctorSummaryDays = [];
+  FoodGlucose foodGlucose = const FoodGlucose();
+  String linkCode = 'KIRA 4821';
+
+  @override
+  Future<DoctorSummary> getDoctorSummary(int days) async {
+    doctorSummaryDays.add(days);
+    return (onDoctorSummary ??
+        (d) => DoctorSummary(text: 'Ringkasan KIRA $d hari untuk Raka. Bukan diagnosis.', periodDays: d, daysLogged: 12))(days);
+  }
+
+  @override
+  Future<FoodGlucose> getFoodGlucose() async => foodGlucose;
+
+  @override
+  Future<String> whatsappLinkCode() async => linkCode;
 }
 
 /// Membungkus widget dengan tema, lokal, dan provider palsu.
-Widget testApp(Widget child, {FakeApi? api, bool dark = false, List<Override> overrides = const []}) {
+Widget testApp(Widget child, {FakeApi? api, bool dark = false, List<Override> overrides = const [], String? token}) {
   return ProviderScope(
     overrides: [
       apiProvider.overrideWithValue(api ?? FakeApi()),
-      tokenStoreProvider.overrideWithValue(MemoryTokenStore()),
+      tokenStoreProvider.overrideWithValue(MemoryTokenStore(token)),
       ...overrides,
     ],
     child: MaterialApp(

@@ -16,6 +16,8 @@ class Food(Base):
     aliases: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, server_default=text("'{}'"))
     per100g: Mapped[dict] = mapped_column(JSONB, nullable=False)
     default_portion_g: Mapped[float | None] = mapped_column(FLOAT)
+    tkpi_code: Mapped[str | None] = mapped_column(Text)  # padanan di TKPI Kemenkes 2017, bila ada
+    source_note: Mapped[str | None] = mapped_column(Text)  # asal tiap nilai (TKPI atau estimasi)
 
 
 class Log(Base):

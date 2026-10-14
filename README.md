@@ -41,20 +41,20 @@ dideteksi oleh aturan sebelum LLM bekerja.
 
 ## Menjalankan
 
-Prasyarat: Docker, Python 3.12, Flutter 3.47+.
+Prasyarat: Docker, [uv](https://docs.astral.sh/uv/) (mengelola Python dan dependensi), Flutter 3.47+.
 
 ```bash
 # 1. Database
 docker compose up -d db                       # Postgres di localhost:5455
 
-# 2. Backend
+# 2. Backend (uv: https://docs.astral.sh/uv/)
 cd backend
-python -m venv .venv && .venv/Scripts/pip install -r requirements.txt   # Linux/macOS: .venv/bin/pip
 cp ../.env.example ../.env                    # isi ANTHROPIC_API_KEY dan STT_API_KEY
-.venv/Scripts/python -m alembic upgrade head
-.venv/Scripts/python -m seed.load             # ~100 makanan lokal + faskes dummy
-.venv/Scripts/python -m seed.raka [--reset]     # persona demo Raka (081234567890 / PIN 123456); --reset = ulang dari awal
-.venv/Scripts/python -m uvicorn app.main:app --port 8000
+uv sync                                       # membuat .venv dari pyproject.toml + uv.lock
+uv run alembic upgrade head
+uv run python -m seed.load                    # ~100 makanan lokal + faskes dummy
+uv run python -m seed.raka --reset            # persona demo Raka (081234567890 / PIN 123456), ulang dari awal
+uv run uvicorn app.main:app --port 8000
 
 # 3. Aplikasi
 cd ../app
@@ -83,38 +83,50 @@ Bangun ulang dengan `python -m seed.build_demo_cache` bila skrip demo berubah.
 | `STT_BASE_URL`, `STT_API_KEY`, `STT_MODEL` | Speech-to-text |
 | `DEMO_CACHE` | `true` untuk mode demo |
 | `CORS_ORIGINS` | Origin yang boleh memanggil API dari browser (pisahkan dengan koma) |
+| `ENVIRONMENT` | `production` membuat API menolak jalan dengan `JWT_SECRET` bawaan atau pendek |
+| `BOT_SECRET` | Rahasia bersama dengan bot WhatsApp; kosong berarti kanal WhatsApp nonaktif |
+| `SCHEDULER_ENABLED` | `true` menjalankan penjadwal (ringkasan mingguan, pemeriksaan malam, pengingat) di dalam API |
 
 ## Pengujian
 
 ```bash
-cd backend && .venv/Scripts/python -m pytest      # 150+ tes: angka klinis, graf, API (butuh Postgres)
-cd app && flutter test                            # tes widget: chat, onboarding, proyeksi, cek, tema (kontras WCAG)
+cd backend && uv run pytest                       # 260+ tes: angka klinis, graf, API, penjadwal, keluarga, WhatsApp (butuh Postgres)
+cd app && flutter test                            # tes widget: chat, onboarding, proyeksi, cek, keluarga, ringkasan dokter, tema
+cd wa-bot && npm test                             # logika jembatan WhatsApp (tanpa nomor sungguhan)
+cd backend && uv run python -m seed.eval_extraction   # akurasi ekstraksi pada 22 kalimat campur; memanggil model SUNGGUHAN (butuh API key, berbayar)
 ```
 
 Yang dites otomatis difokuskan pada bagian yang menghasilkan angka dan pada jalur keselamatan: tanda bahaya tidak pernah
 sampai ke LLM, `user_id` tidak bisa dipalsukan lewat tool, guardrail menolak saran obat/diagnosis, dan nilai klinis
 mustahil ditolak sebelum disimpan.
 
-## Batasan yang disengaja (Fase 1)
+## Fase 2
 
-- Proyeksi 10 tahun hanya untuk **diabetes** (FINDRISC). Hipertensi hanya sampai kategori tekanan darah dari hasil ukur;
-  skor Framingham masuk Fase 2.
-- WhatsApp (Baileys), fitur keluarga, scheduler, dan SATUSEHAT belum ada.
+- **Hipertensi:** risiko 4 tahun dengan skor Framingham (Parikh 2008), tampil sebagai rentang di layar 10 Tahun bila profil dan tensi tersedia.
+- **Keluarga:** undangan, izin per jenis data (status check-in, pengingat cek), bisa dicabut; anggota hanya melihat yang diizinkan.
+- **Ringkasan dokter:** `GET /summary/doctor?days=7..90` (teks siap salin) dan `GET /insights/food-glucose` (butuh minimal 3 pasangan data).
+- **Penjadwal** (`backend/app/scheduler.py`, jam WIB): ringkasan mingguan Senin 00:10, pemeriksaan "Saatnya cek" 02:00, pengingat check-in 19:00
+  (maksimal 1 per hari, hanya bila belum ada catatan), dorongan dukungan ke keluarga 19:30.
+- **WhatsApp (prototype):** endpoint tautan dan webhook di backend, jembatan Baileys di [`wa-bot/`](wa-bot/README.md). Tidak resmi; lihat peringatannya.
+- **Dokumen submission:** [`docs/submission/`](docs/submission/) (naskah video, pitch deck, proposal, checklist).
+
+## Batasan yang disengaja
+
+- Proyeksi 10 tahun untuk diabetes memakai FINDRISC; hipertensi memakai Framingham 4 tahun dan hanya untuk usia dan kondisi yang memenuhi syarat kelayakannya.
+- Koneksi WhatsApp sungguhan belum diuji (butuh nomor khusus dan pemindaian QR); logikanya dites otomatis.
+- Integrasi SATUSEHAT belum diimplementasikan (roadmap).
 - Pengguna sungguhan di produksi memerlukan WhatsApp Business Platform resmi, OTP asli, dan persetujuan data sesuai UU PDP.
 
-## Angka klinis yang WAJIB diverifikasi sebelum submission
+## Sumber angka klinis
 
-Semua konstanta klinis ada di [`backend/app/core_calc/constants.py`](backend/app/core_calc/constants.py) dan bertanda `TODO-VERIFY`.
-Nilainya **sementara** dan belum dicocokkan dengan sumber aslinya:
+Semua konstanta klinis ada di [`backend/app/core_calc/constants.py`](backend/app/core_calc/constants.py), masing-masing dengan sumber dan
+status verifikasinya. Rincian, tautan, dan **daftar yang belum bersumber** (gula makanan, porsi khas, dan sebagian natrium
+adalah estimasi KIRA karena TKPI tidak memuatnya) ada di [`docs/sumber-angka-klinis.md`](docs/sumber-angka-klinis.md).
 
-1. Tabel poin FINDRISC dan varian cut-off Asia (IMT, lingkar perut).
-2. Peta skor FINDRISC → insidensi diabetes 10 tahun (nilai kategori; di antara kategori diinterpolasi linear antar-skor tengah kategori).
-3. Ambang kategori tekanan darah (Kemenkes/CKG).
-4. Ambang tanda bahaya (tensi dan gula darah sangat tinggi/rendah, gejala).
-5. Batas harian gula, garam, dan lemak (Kemenkes) serta pengali mode pengelolaan.
-6. Nilai gizi per 100 g pada `backend/seed/foods.json` (Tabel Komposisi Pangan Indonesia).
-
-Jangan menampilkan angka sementara di materi submission (deck, video, proposal) sebelum diverifikasi.
+Ringkasnya: poin dan kategori FINDRISC, ambang tekanan darah (KMK 303/2026), kriteria glukosa (PERKENI 2021), dan batas
+harian gula/garam/lemak (Permenkes 30/2013) dibaca dari sumber resmi. Persentase insidensi 10 tahun per kategori berasal dari
+estimasi resmi formulir FINDRISC (kohort Finlandia); studi modern menemukan angka lebih rendah sehingga aplikasi
+mengungkapkannya, dan interpolasi antar kategori adalah asumsi KIRA.
 
 ## Arah visual
 

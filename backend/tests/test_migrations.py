@@ -60,3 +60,24 @@ async def test_seed_is_idempotent_and_has_local_foods(engine):
         aliases = (await conn.execute(text("select unnest(aliases) from foods"))).scalars().all()
     assert "es teh" in aliases
     assert "kopi susu gula aren" in aliases
+
+
+async def test_seed_uses_tkpi_values_where_a_tkpi_entry_exists(engine):
+    async with engine.connect() as conn:
+        rows = {
+            r.id: r
+            for r in (await conn.execute(text("select id, per100g, tkpi_code, source_note from foods"))).all()
+        }
+    nasi, rendang, boba = rows["nasi_putih"], rows["rendang"], rows["boba_milk_tea"]
+    assert nasi.tkpi_code == "AP001"
+    assert nasi.per100g["kcal"] == 180 and nasi.per100g["fat_g"] == 0.3 and nasi.per100g["sodium_mg"] == 1
+    assert rendang.tkpi_code == "FP062"
+    assert rendang.per100g["fat_g"] == 7.9 and rendang.per100g["kcal"] == 193
+    assert "natrium: estimasi" in rendang.source_note  # TKPI tidak memuat natrium rendang
+    assert boba.tkpi_code is None and "estimasi" in boba.source_note.lower()
+
+
+async def test_sugar_is_always_flagged_as_estimate_because_tkpi_has_no_sugar(engine):
+    async with engine.connect() as conn:
+        notes = (await conn.execute(text("select source_note from foods"))).scalars().all()
+    assert notes and all("gula: estimasi" in n for n in notes)

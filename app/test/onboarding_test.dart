@@ -29,6 +29,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Orang tua atau saudara kandung'));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('onb_parent_ht_yes')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('onb_active_no')));
     await tester.tap(find.byKey(const Key('onb_veg_yes')));
     await tester.tap(find.byKey(const Key('onb_next')));
@@ -47,6 +49,7 @@ void main() {
     expect(saved['usual_active_30min'], false);
     expect(saved['usual_veg_fruit'], true);
     expect(saved['smoker'], false);
+    expect(saved['parent_hypertension'], true);
   });
 
   testWidgets('tahun lahir dan tinggi yang tidak masuk akal ditolak di tempat', (tester) async {

@@ -74,7 +74,7 @@ async def test_checkin_saves_logs_with_nutrition_from_food_table(session_maker, 
             text("select fat_g from log_items where name = 'rendang'"))).scalar_one()
         tea_sugar = (await session.execute(
             text("select sugar_g from log_items where name = 'es teh manis'"))).scalar_one()
-    assert rendang_fat == pytest.approx(14.0)
+    assert rendang_fat == pytest.approx(7.9 * 0.7)  # TKPI FP062, 70 g
     assert tea_sugar == pytest.approx(20.0)
 
 

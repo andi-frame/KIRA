@@ -1,3 +1,4 @@
+import pytest
 from sqlalchemy import text
 
 from tests.api.helpers import complete_profile, install_models, reset_models
@@ -66,12 +67,12 @@ async def test_patch_log_recomputes_items_and_marks_corrected(client, auth_heade
         reset_models()
     logs = (await client.get("/logs", headers=auth_headers)).json()["logs"]
     meal = next(lg for lg in logs if lg["kind"] == "meal")
-    assert meal["items"][0]["fat_g"] == 14.0 and meal["corrected"] is False
+    assert meal["items"][0]["fat_g"] == pytest.approx(7.9 * 0.7) and meal["corrected"] is False
 
     r = await client.patch(f"/logs/{meal['id']}", json={"items": [{"name": "rendang", "portion_g": 35}]},
                            headers=auth_headers)
     assert r.status_code == 200
-    assert r.json()["corrected"] is True and r.json()["items"][0]["fat_g"] == 7.0
+    assert r.json()["corrected"] is True and r.json()["items"][0]["fat_g"] == pytest.approx(7.9 * 0.35)
     assert chat["log_ids"]
 
 

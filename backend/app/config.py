@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     demo_cache: bool = False
     # Origin yang boleh memanggil API dari browser (Flutter web). Pisahkan dengan koma; '*' untuk demo.
     cors_origins: str = "*"
+    # Rahasia bersama dengan bot WhatsApp (Baileys, prototype). Kosong = kanal WhatsApp nonaktif.
+    bot_secret: str = ""
+    scheduler_enabled: bool = True
 
 
 def validate_settings(s: Settings) -> None:

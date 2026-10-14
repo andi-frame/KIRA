@@ -115,14 +115,67 @@ void main() {
     expect(const WhatIfChange(sweetDrinksDeltaPerDay: -2).toJson()['sweet_drinks_delta_per_day'], -2);
   });
 
-  testWidgets('penjelasan jujur bahwa persentase masih memakai asumsi sementara', (tester) async {
+  testWidgets('penjelasan menyebut sumber angka dan batasannya dengan jujur', (tester) async {
     await pumpProjection(tester, FakeApi());
     final link = find.byKey(const Key('how_calculated'));
     await tester.scrollUntilVisible(link, 300, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     await tester.tap(link);
     await tester.pumpAndSettle();
-    expect(find.textContaining('sementara'), findsOneWidget);
+    expect(find.textContaining('Norwegia'), findsOneWidget);
     expect(find.textContaining('interpolasi'), findsOneWidget);
+    expect(find.textContaining('TKPI'), findsOneWidget);
+    expect(find.textContaining('Permenkes 30/2013'), findsOneWidget);
+  });
+
+  group('kartu tekanan darah (Framingham, 4 tahun)', () {
+    testWidgets('dengan tensi terukur menampilkan kategori, persentase, dan catatan populasi', (tester) async {
+      await pumpProjection(
+        tester,
+        FakeApi()
+          ..projection = sampleProjection(
+            hypertension: const HypertensionRisk(
+                status: 'ok', riskLow: 0.086, riskHigh: 0.107, categoryLow: 'medium', categoryHigh: 'high', sys: 128, dia: 82),
+          ),
+      );
+      final card = find.byKey(const Key('hypertension_card'));
+      await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).first);
+      expect(card, findsOneWidget);
+      expect(find.textContaining('9-11%'), findsOneWidget);
+      expect(find.textContaining('128/82'), findsOneWidget);
+      expect(find.textContaining('belum divalidasi'), findsOneWidget);
+    });
+
+    testWidgets('tanpa tensi: ajakan mengukur', (tester) async {
+      await pumpProjection(tester, FakeApi());
+      final card = find.byKey(const Key('hypertension_card'));
+      await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).first);
+      expect(find.textContaining('Ukur tekananmu'), findsOneWidget);
+    });
+
+    testWidgets('tensi sudah di rentang hipertensi: arahkan ke tenaga kesehatan, tanpa persentase', (tester) async {
+      await pumpProjection(
+        tester,
+        FakeApi()
+          ..projection = sampleProjection(
+            hypertension: const HypertensionRisk(status: 'already_hypertensive', sys: 150, dia: 95),
+          ),
+      );
+      final card = find.byKey(const Key('hypertension_card'));
+      await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).first);
+      expect(find.textContaining('150/95'), findsOneWidget);
+      expect(find.textContaining('Puskesmas'), findsWidgets);
+      expect(find.textContaining('kira-kira'), findsOneWidget); // hanya kalimat peluang diabetes di kartu utama
+    });
+
+    testWidgets('di luar populasi model: dijelaskan, bukan angka palsu', (tester) async {
+      await pumpProjection(
+        tester,
+        FakeApi()..projection = sampleProjection(hypertension: const HypertensionRisk(status: 'has_diabetes')),
+      );
+      final card = find.byKey(const Key('hypertension_card'));
+      await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).first);
+      expect(find.textContaining('tidak berlaku'), findsOneWidget);
+    });
   });
 }

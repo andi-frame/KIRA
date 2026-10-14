@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>KIRA - Proposal JOINTS 2026</title>
+<style>
+@font-face { font-family: "Figtree"; src: url("../../app/assets/fonts/Figtree.ttf"); font-weight: 300 900; }
+@page { size: A4; margin: 20mm 20mm 22mm 20mm; }
+:root { --ink: #14201F; --muted: #4A5C5A; --line: #D5DEDD; --primary: #0B6E6A; --coral: #B8492A; --soft: #EAF4F3; }
+* { box-sizing: border-box; }
+body { font-family: "Figtree", sans-serif; color: var(--ink); font-size: 11pt; line-height: 1.5; }
+h1 { font-size: 30pt; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+h2 { font-size: 15pt; font-weight: 800; margin: 20pt 0 6pt; color: var(--primary); break-after: avoid; }
+h3 { font-size: 11.5pt; font-weight: 700; margin: 12pt 0 3pt; break-after: avoid; }
+p { margin-bottom: 7pt; }
+ul { margin: 0 0 8pt 16pt; } li { margin-bottom: 3pt; }
+.kicker { font-size: 9.5pt; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--primary); margin-bottom: 8pt; }
+.lead { font-size: 13pt; color: var(--muted); margin-top: 8pt; }
+table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt; font-size: 9.5pt; break-inside: avoid; }
+th, td { text-align: left; padding: 5pt 7pt; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 8.5pt; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: var(--soft); }
+.note { background: var(--soft); border-left: 3px solid var(--primary); padding: 7pt 10pt; margin: 8pt 0; font-size: 10pt; break-inside: avoid; }
+.warn { background: #FFF0EA; border-left-color: var(--coral); }
+.todo { color: var(--coral); font-weight: 700; }
+.small { font-size: 9pt; color: var(--muted); }
+.cover { min-height: 235mm; display: flex; flex-direction: column; justify-content: center; page-break-after: always; }
+img.shot { height: 78mm; border: 1px solid var(--line); border-radius: 8px; margin-right: 8pt; }
+.shots { margin: 8pt 0; }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <div class="kicker">Proposal · JOINTS 2026 · Healthcare · Subtema 5</div>
+  <h1>KIRA</h1>
+  <p class="lead">Kira-kira kesehatanmu 10 tahun lagi seperti apa? Tanya KIRA.</p>
+  <p style="margin-top:20pt">Teman ngobrol 1 menit sehari yang memproyeksikan risiko diabetes pengguna 10 tahun ke depan, menunjukkan kebiasaan yang paling berdampak, tahu kapan pengguna harus memeriksakan diri, lalu belajar dari hasil pemeriksaannya.</p>
+  <p class="small" style="margin-top:30pt">Tim <span class="todo">[isi nama tim dan anggota]</span> · Oktober 2026<br>Repositori: <span class="todo">[isi URL GitHub]</span> · Prototype: <span class="todo">[isi URL aplikasi]</span> · Video: <span class="todo">[isi URL YouTube]</span></p>
+  <p class="small">KIRA bukan alat diagnosis dan tidak memberi saran obat atau dosis. Seluruh data demo adalah data dummy.</p>
+</section>
+
+<h2>1. Ringkasan</h2>
+<p>Diabetes dan hipertensi berkembang tanpa gejala. Orang usia produktif yang merasa sehat tidak punya alasan untuk memeriksakan diri, sehingga penyakitnya baru ketahuan setelah ada komplikasi. KIRA mengisi celah antara "merasa sehat" dan "diperiksa": pengguna bercerita 1 menit sehari lewat teks, suara, foto, atau WhatsApp; KIRA mengubahnya menjadi catatan terstruktur, memproyeksikan peluang diabetes 10 tahun sebagai <b>rentang</b>, menunjukkan kebiasaan yang paling berdampak, dan menyarankan kapan serta cek apa yang paling berguna. Hasil cek yang masuk mengkalibrasi ulang proyeksi; setelah diagnosis, KIRA berpindah ke mode pendampingan.</p>
+<p>Prinsip rancangan yang paling penting: <b>angka tidak pernah datang dari LLM</b>. Risiko, gizi, dan sisa target harian dihitung fungsi deterministik yang bisa diaudit dan diuji; LLM hanya menafsirkan bahasa pengguna, memutuskan kapan memanggil tool, dan merangkai jawaban.</p>
+
+<h2>2. Permasalahan</h2>
+<table>
+  <tr><th>Fakta</th><th>Angka</th><th>Sumber</th></tr>
+  <tr><td>Prevalensi diabetes usia ≥15 tahun menurut pemeriksaan gula darah</td><td>11,7%</td><td>Kemenkes, Hasil Utama SKI 2023</td></tr>
+  <tr><td>Prevalensi diabetes yang didiagnosis dokter, usia ≥15 tahun</td><td>2,2%</td><td>Kemenkes, Hasil Utama SKI 2023</td></tr>
+  <tr><td>Bagian kasus yang belum terdiagnosis</td><td>sekitar 81% (hitungan tim: (11,7 − 2,2) / 11,7)</td><td>Turunan dari dua angka di atas</td></tr>
+  <tr><td>Tingkat diagnosis hipertensi</td><td>26,9% pada 2023 (33,0% pada 2013; 24,1% pada 2018)</td><td>Muharram, Widyahening, Danaei. <i>BMJ Open</i> 2025;15(12):e109588</td></tr>
+  <tr><td>Hipertensi baru terdeteksi pada peserta CKG yang diperiksa ulang</td><td>sekitar 1 juta dari 9,2 juta peserta</td><td>Kemenkes, Hasil CKG 2026 (4 Agustus 2026)</td></tr>
+</table>
+<p class="small">Satu angka lain sering dikutip, yaitu 98,4% diabetes usia 15-29 tahun tidak terdiagnosis. Angka itu berasal dari data Riskesdas 2018 lewat ulasan sekunder (Ferdina dkk., <i>J ASEAN Fed Endocr Soc</i> 2025), sehingga tidak dijadikan angka utama. Rincian verifikasi dan angka yang kami buang ada di <code>docs/sumber-angka-klinis.md</code>.</p>
+<h3>Kenapa solusi yang ada belum cukup</h3>
+<ul>
+  <li>Aplikasi diet mencatat kalori, tetapi tidak memproyeksikan risiko dan tidak tahu kapan pengguna harus cek.</li>
+  <li>Chatbot umum tidak menyimpan state kesehatan terstruktur dan tidak menghitung risiko dengan skor tervalidasi.</li>
+  <li>Cek Kesehatan Gratis memotret kondisi sekali setahun, tanpa pendamping di hari-hari di antaranya.</li>
+</ul>
+
+<h2>3. Solusi dan fitur</h2>
+<p><b>Persona:</b> Raka, 28 tahun, software engineer, kerja sekitar 50 jam seminggu, tidur 5 jam, kopi susu gula aren hampir tiap hari, ayahnya diabetes, belum pernah cek gula darah.</p>
+<div class="shots">
+  <img class="shot" src="../screenshots/02-chat-checkin.png" alt="Chat check-in">
+  <img class="shot" src="../screenshots/03-projection-whatif.png" alt="Kira-kira 10 Tahun" style="object-fit:cover; object-position:top; width:36mm">
+</div>
+<table>
+  <tr><th>Fitur</th><th>Cara kerja</th></tr>
+  <tr><td>Ngobrol (teks, suara, foto, WhatsApp)</td><td>Claude mengekstrak makanan, minuman, tidur, dan aktivitas ke kartu "Yang kucatat" yang bisa dikoreksi pengguna. Foto struk, makanan, dan hasil cek dibaca model visi. Voice note diubah ke teks dengan Whisper.</td></tr>
+  <tr><td>Kira-kira 10 Tahun</td><td>Pita rentang peluang diabetes 10 tahun dengan dua kurva (kebiasaan sekarang dan diperbaiki). Slider (minuman manis, berat badan, aktivitas, sayur/buah) menggeser kurva dan menyorot satu kebiasaan paling berdampak.</td></tr>
+  <tr><td>Risiko hipertensi</td><td>Framingham 4 tahun (Parikh 2008) bila ada profil dan tensi; ditampilkan sebagai rentang dengan batas kelayakan usia.</td></tr>
+  <tr><td>Saatnya cek</td><td>Pemicu dari lebar rentang dan perubahan risiko; menyarankan cek yang paling berguna dan menampilkan faskes terdekat.</td></tr>
+  <tr><td>Kalibrasi dan mode pengelolaan</td><td>Hasil cek (gula darah, HbA1c, tensi) mengganti tebakan self-report. Setelah diagnosis, target harian lebih ketat dan KIRA mendampingi.</td></tr>
+  <tr><td>Keluarga</td><td>Atas undangan; pengguna memilih apa yang dibagikan (status check-in, pengingat cek); bisa dicabut kapan saja. Pesan ke keluarga bernada mengajak mendukung.</td></tr>
+  <tr><td>Ringkasan untuk dokter</td><td>Ringkasan teks 7-90 hari dan korelasi makanan dengan gula darah dari catatan pengguna sendiri (minimal 3 pasangan data), dengan penegasan bahwa ini pola, bukan sebab pasti.</td></tr>
+  <tr><td>Penjadwal</td><td>Ringkasan mingguan, pemeriksaan malam untuk pemicu "Saatnya cek", pengingat check-in, dan dorongan ke keluarga (maksimal satu pengingat per hari).</td></tr>
+</table>
+
+<h2>4. Dasar angka dan metodologi</h2>
+<table>
+  <tr><th>Komponen</th><th>Dasar</th><th>Status</th></tr>
+  <tr><td>Risiko diabetes 10 tahun</td><td>FINDRISC (Lindström &amp; Tuomilehto, <i>Diabetes Care</i> 2003) dengan tabel poin yang dikonfirmasi di Jølle dkk., <i>BMJ Open Diabetes Res Care</i> 2019 (PMC6887494). Kategori skor 0-6, 7-11, 12-14, 15-20, 21-26 dengan insidensi 10 tahun 1%, 4%, 17%, 33%, 50%.</td><td>Insidensi per kategori dikutip dari formulir resmi lewat sumber sekunder</td></tr>
+  <tr><td>Kurva proyeksi</td><td>R(t) = 1 − (1 − p10)^(t/10); p10 diinterpolasi linear di antara titik tengah kategori agar perubahan kebiasaan terlihat.</td><td><b>Asumsi tim</b>, diungkapkan di aplikasi</td></tr>
+  <tr><td>Risiko hipertensi</td><td>Framingham 4 tahun, Parikh dkk. 2008. Nilai acuan diuji (pria 45 tahun, 120/80, IMT 25 menghasilkan 8,6%).</td><td>Dari publikasi</td></tr>
+  <tr><td>Ambang tekanan darah</td><td>Hipertensi ≥140/90; normal tinggi 130-139 / 85-89; tanda bahaya ≥180 dan/atau ≥110 (KMK HK.01.07/MENKES/303/2026, PNPK Hipertensi Dewasa).</td><td>Primer</td></tr>
+  <tr><td>Ambang gula darah</td><td>Prediabetes GDP 100-125, HbA1c 5,7-6,4; diabetes GDP ≥126, HbA1c ≥6,5; hipoglikemia &lt;70; peringatan hiperglikemia berat ≥300 mg/dL (PERKENI 2021).</td><td>Primer</td></tr>
+  <tr><td>Batas harian gula, natrium, lemak</td><td>50 g, 2000 mg, 67 g (Permenkes 30/2013 Pasal 4 ayat 2). Mode pengelolaan memakai gula 25 g (WHO 2015, rekomendasi bersyarat).</td><td>Primer; angka mode pengelolaan adalah asumsi tim</td></tr>
+  <tr><td>Gizi makanan</td><td>38 makanan dari Tabel Komposisi Pangan Indonesia 2017 (energi, lemak, karbohidrat, natrium); kode pangan disimpan per baris.</td><td>Primer</td></tr>
+</table>
+<div class="note warn"><b>Yang belum bersumber:</b> TKPI tidak memuat gula, jadi semua nilai gula adalah estimasi tim dan ditandai demikian; sekitar 60 makanan (nasi goreng, es teh manis, boba, dan sebagainya) tidak punya padanan langsung di TKPI; porsi khas adalah estimasi; kosakata gejala tanda bahaya adalah keputusan tim, meski tanda bahayanya sejalan dengan pedoman. FINDRISC dikembangkan di Eropa; versi Indonesia dengan cut-off IMT dan lingkar perut yang dimodifikasi tidak lebih akurat (AUC 0,73 standar vs 0,72, <i>PLoS ONE</i> 2022), jadi KIRA memakai cut-off asli. Kohort modern (HUNT3 Norwegia) menunjukkan insidensi lebih rendah untuk skor tinggi (13,5% untuk skor ≥15) dengan definisi outcome berbeda; aplikasi menampilkan catatan ini kepada pengguna.</div>
+<p><b>Ketidakpastian ditampilkan, bukan disembunyikan.</b> Self-report tidak akurat, sehingga skor dihitung sebagai rentang (skor bawah dan atas) dan rentang menyempit setelah ada hasil pemeriksaan nyata.</p>
+
+<h2>5. Arsitektur dan penggunaan AI</h2>
+<p>Alur setiap pesan (LangGraph): <b>deteksi tanda bahaya</b> berbasis aturan (sebelum LLM) → <b>ekstraksi</b> keluaran terstruktur → <b>simpan log</b> → <b>konteks</b> (profil, ringkasan, log terbaru) → <b>agen ⇄ tools</b> → <b>pagar keluaran</b>. Tools: <code>cari_gizi</code>, <code>sisa_target_harian</code>, <code>hitung_risiko</code>, <code>simulasi_whatif</code>, <code>cari_faskes</code>. Identitas pengguna disuntikkan sistem, tidak pernah menjadi argumen yang dipilih LLM. Jika agen gagal setelah log tersimpan, pengguna tetap mendapat pesan bahwa catatannya tersimpan.</p>
+<p><b>Stack:</b> Flutter (Android), Riverpod, go_router, fl_chart; FastAPI, SQLAlchemy 2 async, Alembic, PostgreSQL 16; LangGraph; APScheduler. Python dikelola dengan uv.</p>
+<table>
+  <tr><th>Tool AI</th><th>Dipakai untuk</th><th>Bagian</th></tr>
+  <tr><td>Claude Haiku 5.5</td><td>Ekstraksi terstruktur dari teks dan foto</td><td>Di produk</td></tr>
+  <tr><td>Claude Sonnet 5.5</td><td>Percakapan, pemanggilan tool, perangkaian jawaban</td><td>Di produk</td></tr>
+  <tr><td>Whisper large-v3-turbo (via Groq)</td><td>Voice note menjadi teks</td><td>Di produk</td></tr>
+  <tr><td>Claude Code</td><td>Menulis, menguji, dan men-debug kode; menyusun dokumen</td><td>Pengembangan</td></tr>
+  <tr><td>Claude</td><td>Riset ide, konsep, struktur pitch</td><td>Pengembangan</td></tr>
+</table>
+<p class="small">Tidak ada OCR terpisah. Foto dibaca model visi, dan nilai gula atau tensi dari foto dicek ulang oleh aturan tanda bahaya.</p>
+
+<h2>6. Keamanan, privasi, dan batas klinis</h2>
+<ul>
+  <li><b>Batas klinis:</b> bukan alat diagnosis; tanpa saran obat atau dosis; tanpa kata "kamu menderita" atau "kamu aman"; risiko selalu berupa rentang dan datang bersama langkah yang bisa dilakukan.</li>
+  <li><b>Tanda bahaya:</b> nyeri dada, sesak, tanda stroke, pingsan, kejang, tensi ≥180/110, dan gula ≥300 atau &lt;70 dicegat aturan sebelum LLM dan diarahkan ke IGD atau Puskesmas. Bacaan ekstrem tidak disimpan sebagai data rutin.</li>
+  <li><b>Akun dan layanan:</b> PIN diolah dengan argon2; token JWT; penguncian login 15 menit setelah 5 kali gagal; layanan menolak berjalan di mode produksi dengan rahasia JWT bawaan atau pendek; CORS dibatasi.</li>
+  <li><b>Keluarga:</b> hanya atas undangan, izin per jenis data, bisa dicabut kapan saja; anggota hanya melihat bagian yang diizinkan.</li>
+  <li><b>WhatsApp:</b> jembatan berbasis Baileys tidak resmi, hanya untuk prototype dengan nomor khusus dan data dummy (berisiko pemblokiran nomor dan melanggar ketentuan layanan). Produksi harus memakai WhatsApp Business Platform resmi.</li>
+  <li><b>Kepatuhan:</b> pemenuhan UU Pelindungan Data Pribadi (persetujuan, penyimpanan, hak subjek data) belum diimplementasikan penuh dan masuk roadmap.</li>
+</ul>
+
+<h2>7. Validasi</h2>
+<p>Backend memiliki 263 tes otomatis yang lulus pada 15 Oktober 2026 (fungsi perhitungan, API, alur grafik AI dengan model palsu, penjadwal, keluarga, WhatsApp, konfigurasi). Aplikasi Flutter dan jembatan WhatsApp memiliki rangkaian tes sendiri. Alur utama Fase 1 diperiksa end-to-end pada build web dengan Playwright, dan APK rilis berhasil dibangun.</p>
+<div class="note"><b>Yang belum dilakukan:</b> uji akurasi ekstraksi dengan model sungguhan pada kalimat berbahasa campur (skrip evaluasi disiapkan, perlu API key); koneksi WhatsApp sungguhan (perlu nomor dan pemindaian QR); uji pengguna; validasi klinis proyeksi pada populasi Indonesia.</div>
+
+<h2>8. Dampak, kelayakan, dan model keberlanjutan</h2>
+<p><b>Pengguna:</b> usia 20-40 tahun yang merasa sehat dan belum rutin cek; pengguna terdiagnosis yang butuh pendampingan harian; Puskesmas dan Posyandu yang menerima peserta yang memang perlu cek. KIRA tidak menggantikan Cek Kesehatan Gratis, melainkan mengisi hari-hari di antaranya dan mengarahkan orang kembali ke CKG atau Posyandu saat diperlukan.</p>
+<p><b>Model keberlanjutan (rencana, belum diuji pasar):</b> freemium untuk individu; program wellness kantor (B2B); kemitraan Dinkes/Puskesmas untuk menindaklanjuti peserta CKG (B2G).</p>
+<p><b>Metrik sukses yang akan diukur:</b> persentase pengguna dengan check-in 7 hari berturut-turut; rasio saran cek yang benar-benar dilakukan; penyempitan rentang risiko setelah hasil cek masuk. Belum ada hasil pengukuran, karena belum ada uji pengguna.</p>
+
+<h2>9. Risiko dan mitigasi</h2>
+<table>
+  <tr><th>Risiko</th><th>Mitigasi</th></tr>
+  <tr><td>LLM salah menghitung porsi atau risiko</td><td>LLM tidak menghitung; angka dari tool deterministik berbasis TKPI dan skor tervalidasi</td></tr>
+  <tr><td>AI memberi saran klinis yang salah</td><td>Saran dibatasi gaya hidup; tanda bahaya oleh aturan; pagar keluaran</td></tr>
+  <tr><td>Data self-report tidak akurat</td><td>Rentang, bukan angka tunggal; hasil cek nyata menjadi jangkar</td></tr>
+  <tr><td>Nomor WhatsApp prototype diblokir</td><td>Alur yang sama tersedia di aplikasi; data dummy</td></tr>
+  <tr><td>LLM lambat atau gagal saat demo</td><td>Mode cache untuk kalimat skrip demo (tidak pernah untuk tanda bahaya) dan rekaman layar</td></tr>
+</table>
+
+<h2>10. Roadmap</h2>
+<ul>
+  <li><b>Sudah ada (prototype):</b> chat teks, suara, foto; proyeksi what-if; Saatnya cek; kalibrasi; mode pengelolaan; keluarga; ringkasan dokter; penjadwal; tautan WhatsApp.</li>
+  <li><b>Berikutnya:</b> WhatsApp Business Platform resmi; integrasi SATUSEHAT (belum diimplementasikan); kepatuhan UU PDP; uji pengguna dan evaluasi akurasi ekstraksi; perluasan basis data pangan dengan padanan TKPI.</li>
+</ul>
+
+<h2>Referensi</h2>
+<ul class="small">
+  <li>Kemenkes. Hasil Utama Survei Kesehatan Indonesia (SKI) 2023. badankebijakan.kemkes.go.id.</li>
+  <li>Muharram FR, Widyahening IS, Danaei G. <i>BMJ Open</i> 2025;15(12):e109588.</li>
+  <li>Kemenkes. Hasil CKG 2026: 1 juta warga yang semula sehat kini terdeteksi hipertensi. 4 Agustus 2026.</li>
+  <li>Lindström J, Tuomilehto J. The Diabetes Risk Score. <i>Diabetes Care</i> 2003;26:725-731.</li>
+  <li>Jølle A dkk. <i>BMJ Open Diabetes Res Care</i> 2019 (PMC6887494); studi FINDRISC Indonesia, <i>PLoS ONE</i> 2022 (PMC9302803).</li>
+  <li>Parikh NI dkk. A risk score for predicting near-term incidence of hypertension: the Framingham Heart Study. <i>Ann Intern Med</i> 2008.</li>
+  <li>Keputusan Menkes HK.01.07/MENKES/303/2026, PNPK Hipertensi Dewasa. PERKENI. Pedoman Pengelolaan dan Pencegahan DMT2 Dewasa di Indonesia, 2021.</li>
+  <li>Permenkes 30/2013 (diubah Permenkes 63/2015). WHO. Guideline: Sugars intake for adults and children, 2015.</li>
+  <li>Kemenkes. Tabel Komposisi Pangan Indonesia 2017.</li>
+</ul>
+
+</body>
+</html>
