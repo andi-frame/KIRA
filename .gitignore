@@ -1,1 +1,10 @@
 .superpowers/
+.env
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+backend/.venv/
+app/build/
+app/.dart_tool/
+graphify-out/cache/
