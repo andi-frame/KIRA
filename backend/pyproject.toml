@@ -17,6 +17,7 @@ dependencies = [
     "langgraph==1.2.15",
     "langchain-core==1.6.10",
     "langchain-anthropic==1.7.6",
+    "apscheduler>=3.11.3",
 ]
 
 [dependency-groups]

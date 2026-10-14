@@ -9,8 +9,10 @@ from app.models.health import (
 )
 from app.models.logs import Food, Log, LogItem
 from app.models.user import Diagnosis, HealthProfile, User
+from app.models.whatsapp import WaLink, WaLinkCode, WaOutbox
 
 __all__ = [
     "Base", "User", "HealthProfile", "Diagnosis", "Food", "Log", "LogItem",
     "ClinicalResult", "RiskSnapshot", "CheckRecommendation", "WeeklySummary", "Message", "Faskes",
+    "WaLink", "WaLinkCode", "WaOutbox",
 ]
