@@ -31,3 +31,24 @@ Status: **Primer** = dibaca langsung dari dokumen resmi; **Sekunder** = dikutip 
 - **Interpolasi p10**: lihat tabel.
 
 Aplikasi menampilkan sumber ini kepada pengguna di "Bagaimana angka ini dihitung?", dan tool `cari_gizi` mengembalikan field `sumber` per makanan.
+
+## Statistik masalah (untuk deck, video, dan proposal)
+
+Diperiksa 2026-10-15. Hanya angka berstatus **Primer** atau **Sekunder (konsisten)** yang dipakai di materi submission; sisanya dibuang.
+
+| Klaim | Angka | Sumber | Status |
+|---|---|---|---|
+| Prevalensi diabetes usia ≥15 tahun | 11,7% menurut pemeriksaan gula darah, 2,2% menurut diagnosis dokter; selisih 9,5 poin. Hitungan KIRA dari dua angka itu: sekitar 4 dari 5 kasus belum terdiagnosis ((11,7 - 2,2) / 11,7 = 81%) | Kemenkes, [Hasil Utama SKI 2023](https://www.badankebijakan.kemkes.go.id/daftar-frequently-asked-question-seputar-hasil-utama-ski-2023/hasil-utama-ski-2023/) | Primer |
+| Diabetes tidak terdiagnosis pada usia muda | 98,4% pada usia 15-29 tahun (data **Riskesdas 2018**, bukan SKI 2023) | Ferdina dkk., *J ASEAN Fed Endocr Soc* 2025;40(1):53-60, dikutip [Alomedika](https://alomedika.com/diabetes-yang-luput-dari-diagnosis-di-indonesia-telaah-jurnal-alomedika) | Sekunder (makalah asli tidak dibaca; sebut tahun datanya) |
+| Tingkat diagnosis hipertensi 2023 | 26,9% (33,0% pada 2013, 24,1% pada 2018) | Muharram, Widyahening, Danaei, [*BMJ Open* 2025;15(12):e109588](https://bmjopen.bmj.com/content/15/12/e109588) | Primer (abstrak) |
+| Hipertensi baru terdeteksi di CKG 2026 | Sekitar 1 juta kasus baru dari 9,2 juta peserta yang tahun sebelumnya tidak hipertensi (pemeriksaan ulang) | Kemenkes, [Hasil CKG 2026](https://www.kemkes.go.id/id/hasil-ckg-2026-1-juta-warga-yang-semula-sehat-kini-terdeteksi-hipertensi), 4 Agustus 2026 | Primer |
+| Hipertensi dan prehipertensi di CKG 2026 | 4,9 juta hipertensi dan 5,5 juta prehipertensi dari sekitar 52 juta dewasa | Dilaporkan media yang mengutip Kemenkes (RRI, Okezone, CNA); tidak ada di rilis Kemenkes yang dibaca | Sekunder |
+| Obesitas sentral usia ≥15 tahun | 36,8% (2023) | Dikutip jurnal analisis SKI 2023 dan media; laporan resmi tidak dibuka langsung | Sekunder |
+| Beban BPJS gagal ginjal 2025 | Rp13,3 triliun (peringkat 2 penyakit katastropik; jantung Rp17,3 triliun) | [detikHealth](https://health.detik.com/infografis/d-8632282/infografis-daftar-penyakit-katastropik-yang-jadi-beban-anggaran-terbesar-bpjs-di-2025), konsisten di beberapa media | Sekunder |
+
+**Dibuang dari materi karena tidak terverifikasi atau bertentangan:**
+
+- Angka diabetes CKG 2026 (992 ribu dan 1,9 juta prediabetes versus 1,19 juta dan 2,49 juta di sumber lain; penyebutnya berbeda).
+- "Baru 10-15 juta terdiagnosis" (tidak ditemukan sumber; gunakan 2,2% vs 11,7% dari SKI 2023).
+- 64,9% berhenti minum obat hipertensi karena merasa sehat (hanya ditemukan di bab skripsi).
+- Obesitas sentral 30,8% pada 2018 (tidak diverifikasi).
