@@ -6,7 +6,8 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://kira:kira@localhost:5455/kira"
     test_database_url: str = "postgresql+asyncpg://kira:kira@localhost:5455/kira_test"
-    jwt_secret: str = "dev-only-change-me"
+    jwt_secret: str = "dev-only-change-me-please-use-a-long-random-secret"
+    jwt_expire_minutes: int = 720
     anthropic_api_key: str = ""
     llm_model_chat: str = "claude-sonnet-5-5"
     llm_model_extract: str = "claude-haiku-5-5"
