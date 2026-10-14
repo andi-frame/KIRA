@@ -140,4 +140,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('check_empty')), findsOneWidget);
   });
+
+  testWidgets('gula darah setelah makan disimpan sebagai gula sewaktu, bukan gula puasa', (tester) async {
+    final api = FakeApi();
+    await pumpCheck(tester, api);
+    await openForm(tester);
+
+    await tester.tap(find.byKey(const Key('glucose_random_chip')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('glucose_input')), '160');
+    await tester.tap(find.byKey(const Key('result_save')));
+    await tester.pumpAndSettle();
+
+    expect(api.results.single.kind, 'random_glucose');
+    expect(api.results.single.value, {'mg_dl': 160});
+  });
 }

@@ -231,6 +231,7 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
   final _sys = TextEditingController();
   final _dia = TextEditingController();
   bool _bp = false;
+  bool _fasting = true; // gula puasa vs sewaktu/setelah makan (ambang risikonya berbeda)
   bool _busy = false;
   String? _error;
   ResultOutcome? _outcome;
@@ -266,7 +267,8 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
           ? await ref.read(apiProvider).postResult(
               'blood_pressure', {'sys': int.parse(_sys.text.trim()), 'dia': int.parse(_dia.text.trim())})
           : await ref.read(apiProvider).postResult(
-              'fasting_glucose', {'mg_dl': double.parse(_glucose.text.trim().replaceAll(',', '.'))});
+              _fasting ? 'fasting_glucose' : 'random_glucose',
+              {'mg_dl': double.parse(_glucose.text.trim().replaceAll(',', '.'))});
       ref
         ..invalidate(projectionProvider)
         ..invalidate(checkProvider);
@@ -362,14 +364,29 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
           ),
         ]),
         const SizedBox(height: KiraSpace.lg),
-        if (!_bp)
+        if (!_bp) ...[
+          Wrap(spacing: KiraSpace.sm, children: [
+            ChoiceChip(
+              key: const Key('glucose_fasting_chip'),
+              label: const Text('Puasa'),
+              selected: _fasting,
+              onSelected: (_) => setState(() => _fasting = true),
+            ),
+            ChoiceChip(
+              key: const Key('glucose_random_chip'),
+              label: const Text('Setelah makan / sewaktu'),
+              selected: !_fasting,
+              onSelected: (_) => setState(() => _fasting = false),
+            ),
+          ]),
+          const SizedBox(height: KiraSpace.md),
           TextField(
             key: const Key('glucose_input'),
             controller: _glucose,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'Gula darah puasa', suffixText: 'mg/dL'),
-          )
-        else
+            decoration: InputDecoration(labelText: _fasting ? 'Gula darah puasa' : 'Gula darah sewaktu', suffixText: 'mg/dL'),
+          ),
+        ] else
           Row(children: [
             Expanded(
               child: TextField(

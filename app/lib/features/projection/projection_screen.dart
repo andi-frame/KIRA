@@ -363,6 +363,12 @@ class _HowCalculated extends StatelessWidget {
             ),
             const SizedBox(height: KiraSpace.md),
             Text(
+              'Catatan prototype: persentase masih memakai asumsi sementara yang belum diverifikasi tim, dan KIRA '
+              'melakukan interpolasi antar kategori skor supaya setiap perubahan kebiasaan terlihat.',
+              style: context.text.bodyLarge,
+            ),
+            const SizedBox(height: KiraSpace.md),
+            Text(
               'KIRA perkiraan untuk membantu keputusanmu, bukan diagnosis. Pemeriksaan di fasilitas kesehatan selalu lebih tepat.',
               style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurfaceVariant),
             ),

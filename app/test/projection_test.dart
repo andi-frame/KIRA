@@ -114,4 +114,15 @@ void main() {
     expect(const WhatIfChange(active30min: true).toJson()['active_30min'], true);
     expect(const WhatIfChange(sweetDrinksDeltaPerDay: -2).toJson()['sweet_drinks_delta_per_day'], -2);
   });
+
+  testWidgets('penjelasan jujur bahwa persentase masih memakai asumsi sementara', (tester) async {
+    await pumpProjection(tester, FakeApi());
+    final link = find.byKey(const Key('how_calculated'));
+    await tester.scrollUntilVisible(link, 300, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    await tester.tap(link);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('sementara'), findsOneWidget);
+    expect(find.textContaining('interpolasi'), findsOneWidget);
+  });
 }
