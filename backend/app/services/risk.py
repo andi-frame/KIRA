@@ -13,10 +13,11 @@ from app.core_calc.bp import bp_category, validate_glucose
 from app.core_calc.check_trigger import CheckRecommendation as CheckRec
 from app.core_calc.check_trigger import evaluate_check
 from app.core_calc.constants import GLUCOSE_HIGH_FASTING, GLUCOSE_HIGH_HBA1C, GLUCOSE_HIGH_RANDOM
+from app.core_calc import framingham
 from app.core_calc.findrisc import FindriscInputs, ScoreRange, category, p10, score_range
 from app.core_calc.projection import projection_band
 from app.core_calc.red_flags import RedFlag, detect_red_flags
-from app.models import CheckRecommendation, ClinicalResult, HealthProfile, RiskSnapshot, User
+from app.models import CheckRecommendation, ClinicalResult, Diagnosis, HealthProfile, RiskSnapshot, User
 from app.repos import logs as logs_repo
 from app.repos.profiles import age_from
 from app.timeutil import local_date, utcnow
@@ -33,6 +34,19 @@ SWEET_DRINK_MIN_SUGAR_G = 8.0
 DEFAULT_SUGAR_PER_DRINK = 20.0
 WINDOW_DAYS = 14
 GLUCOSE_KINDS = {"fasting_glucose", "random_glucose", "hba1c"}
+
+
+@dataclass
+class HypertensionRisk:
+    """Risiko hipertensi 4 tahun (Framingham). status: ok, needs_bp, needs_profile, already_hypertensive,
+    out_of_age_range, has_diabetes."""
+
+    status: str
+    risk_low: float | None = None
+    risk_high: float | None = None
+    category_low: str | None = None
+    category_high: str | None = None
+    last_bp: tuple[int, int] | None = None
 
 
 @dataclass
@@ -55,6 +69,7 @@ class RiskState:
     weight_kg: float | None
     mode: str
     last_bp_category: str | None
+    hypertension: HypertensionRisk
 
 
 @dataclass
@@ -139,6 +154,25 @@ def _habits_worsening(recent: list) -> bool:
     return sugar["prev"] > 0 and sugar["this"] > sugar["prev"] * 1.25
 
 
+def _hypertension_risk(profile: HealthProfile | None, bp_results: list, bmi: float | None, has_diabetes: bool) -> HypertensionRisk:
+    if not bp_results:
+        return HypertensionRisk("needs_bp")
+    v = bp_results[0].value
+    bp = (int(v["sys"]), int(v["dia"]))
+    age = age_from(profile.birth_date) if profile else None
+    if profile is None or age is None or profile.sex is None or bmi is None:
+        return HypertensionRisk("needs_profile", last_bp=bp)
+    reason = framingham.eligibility(age=age, sbp=bp[0], dbp=bp[1], has_diabetes=has_diabetes)
+    if reason is not None:
+        return HypertensionRisk(reason, last_bp=bp)
+    parental = {True: (1, 2), False: (0,), None: (0, 1, 2)}[profile.parent_hypertension]
+    low, high = framingham.risk_range(
+        age=age, female=profile.sex == "female", sbp=bp[0], dbp=bp[1], bmi=bmi,
+        smoker=profile.smoker, parental_options=parental,
+    )
+    return HypertensionRisk("ok", low, high, framingham.category(low), framingham.category(high), bp)
+
+
 async def compute_risk_state(session: AsyncSession, user_id: uuid.UUID) -> RiskState:
     user = await session.get(User, user_id)
     profile = await session.get(HealthProfile, user_id)
@@ -156,6 +190,11 @@ async def compute_risk_state(session: AsyncSession, user_id: uuid.UUID) -> RiskS
     if waist is None:
         waist = next((r.value.get("cm") for r in results if r.kind == "waist"), None)
     bp_results = [r for r in results if r.kind == "blood_pressure"]
+    has_diabetes = (
+        await session.execute(
+            select(Diagnosis.id).where(Diagnosis.user_id == user_id, Diagnosis.condition == "diabetes").limit(1)
+        )
+    ).first() is not None
 
     inputs = FindriscInputs(
         age=age_from(profile.birth_date) if profile else None,
@@ -195,6 +234,7 @@ async def compute_risk_state(session: AsyncSession, user_id: uuid.UUID) -> RiskS
         weight_kg=weight,
         mode=user.mode if user else "prevention",
         last_bp_category=last_bp,
+        hypertension=_hypertension_risk(profile, bp_results, bmi, has_diabetes),
     )
 
 

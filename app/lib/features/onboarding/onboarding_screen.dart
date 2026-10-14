@@ -7,7 +7,7 @@ import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../shared/widgets.dart';
 
-enum _Step { name, birth, sex, body, waist, family, habits, smoker, saving }
+enum _Step { name, birth, sex, body, waist, family, parentHt, habits, smoker, saving }
 
 class _Msg {
   const _Msg(this.text, {this.mine = false});
@@ -29,7 +29,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _weight = TextEditingController();
   final _answers = <String, dynamic>{};
   final _messages = <_Msg>[
-    const _Msg('Hai, aku KIRA. Yuk kenalan dulu, cuma 8 pertanyaan singkat. Datamu hanya dipakai untuk menghitung proyeksimu.'),
+    const _Msg('Hai, aku KIRA. Yuk kenalan dulu, cuma 9 pertanyaan singkat. Datamu hanya dipakai untuk menghitung proyeksimu.'),
     const _Msg('Biasanya kamu dipanggil siapa?'),
   ];
   _Step _step = _Step.name;
@@ -102,6 +102,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   void _pickFamily(String? value, String label) {
     if (value != null) _answers['family_history_diabetes'] = value;
+    _advance(_Step.parentHt, label, 'Ada orang tuamu yang punya tekanan darah tinggi (hipertensi)?');
+  }
+
+  void _pickParentHt(bool? value, String label) {
+    if (value != null) _answers['parent_hypertension'] = value;
     _advance(_Step.habits, label, 'Soal kebiasaan sehari-hari, jawab seadanya saja ya.');
   }
 
@@ -279,6 +284,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ('Kakek-nenek, paman, atau bibi', () => _pickFamily('second_degree', 'Kakek-nenek, paman, atau bibi')),
           ('Tidak ada', () => _pickFamily('none', 'Tidak ada')),
           ('Belum tahu', () => _pickFamily(null, 'Belum tahu')),
+        ]);
+      case _Step.parentHt:
+        return Wrap(spacing: KiraSpace.sm, runSpacing: KiraSpace.sm, children: [
+          ActionChip(key: const Key('onb_parent_ht_yes'), label: const Text('Ya'), onPressed: () => _pickParentHt(true, 'Ya')),
+          ActionChip(key: const Key('onb_parent_ht_no'), label: const Text('Tidak'), onPressed: () => _pickParentHt(false, 'Tidak')),
+          ActionChip(key: const Key('onb_parent_ht_unknown'), label: const Text('Belum tahu'), onPressed: () => _pickParentHt(null, 'Belum tahu')),
         ]);
       case _Step.habits:
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

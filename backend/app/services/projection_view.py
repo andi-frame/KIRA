@@ -24,8 +24,22 @@ def most_impactful_habit(state: RiskState) -> str:
     return whatif_payload(state, suggested_change(state))["most_impactful"]
 
 
+def hypertension_payload(state: RiskState) -> dict:
+    h = state.hypertension
+    return {
+        "status": h.status,
+        "horizon_years": 4,
+        "risk_low": h.risk_low,
+        "risk_high": h.risk_high,
+        "category_low": h.category_low,
+        "category_high": h.category_high,
+        "last_bp": {"sys": h.last_bp[0], "dia": h.last_bp[1]} if h.last_bp else None,
+    }
+
+
 def projection_payload(state: RiskState) -> dict:
     return {
+        "hypertension": hypertension_payload(state),
         "score_low": state.rng.low,
         "score_high": state.rng.high,
         "category_low": state.category_low,

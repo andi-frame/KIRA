@@ -113,6 +113,39 @@ class ChatReply {
       );
 }
 
+/// Risiko hipertensi 4 tahun (skor Framingham). status: ok, needs_bp, needs_profile, already_hypertensive,
+/// out_of_age_range, has_diabetes.
+class HypertensionRisk {
+  const HypertensionRisk({
+    required this.status,
+    this.riskLow,
+    this.riskHigh,
+    this.categoryLow,
+    this.categoryHigh,
+    this.sys,
+    this.dia,
+  });
+
+  final String status;
+  final double? riskLow, riskHigh;
+  final String? categoryLow, categoryHigh;
+  final int? sys, dia;
+
+  factory HypertensionRisk.fromJson(Map<String, dynamic>? j) {
+    if (j == null) return const HypertensionRisk(status: 'needs_bp');
+    final bp = j['last_bp'] as Map<String, dynamic>?;
+    return HypertensionRisk(
+      status: j['status'] as String,
+      riskLow: _d(j['risk_low']),
+      riskHigh: _d(j['risk_high']),
+      categoryLow: j['category_low'] as String?,
+      categoryHigh: j['category_high'] as String?,
+      sys: (bp?['sys'] as num?)?.toInt(),
+      dia: (bp?['dia'] as num?)?.toInt(),
+    );
+  }
+}
+
 class Projection {
   const Projection({
     required this.scoreLow,
@@ -127,8 +160,10 @@ class Projection {
     required this.mode,
     this.bpCategory,
     this.mostImpactful,
+    this.hypertension = const HypertensionRisk(status: 'needs_bp'),
   });
 
+  final HypertensionRisk hypertension;
   final int scoreLow, scoreHigh;
   final String categoryLow, categoryHigh;
   final double p10Low, p10High;
@@ -153,6 +188,7 @@ class Projection {
         mode: (j['mode'] as String?) ?? 'prevention',
         bpCategory: j['bp_category'] as String?,
         mostImpactful: j['most_impactful'] as String?,
+        hypertension: HypertensionRisk.fromJson(j['hypertension'] as Map<String, dynamic>?),
       );
 }
 

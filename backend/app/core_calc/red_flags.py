@@ -8,7 +8,7 @@ _URGENT = (
     "atau minta seseorang menemanimu sekarang. KIRA tidak bisa menilai kondisi ini dari chat."
 )
 
-# TODO-VERIFY: kosakata gejala (aturan, bukan LLM). Pencocokan berdasarkan kemunculan bersama kata,
+# ASUMSI KIRA: kosakata gejala (aturan, bukan LLM). Pencocokan berdasarkan kemunculan bersama kata,
 # bukan frasa tetap, karena orang menulis "sakit dada", "dadaku nyeri", "nyeri di dada kiri", dst.
 _PAIN = {"nyeri", "sakit", "sesak", "nyut", "perih", "ditekan", "menekan", "tertindih", "berat", "panas"}
 _BREATH_WORDS = {"napas", "nafas"}

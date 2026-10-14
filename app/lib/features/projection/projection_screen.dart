@@ -111,6 +111,8 @@ class _Content extends ConsumerWidget {
           _CheckHint(),
         ],
         const SizedBox(height: KiraSpace.lg),
+        _HypertensionCard(risk: p.hypertension),
+        const SizedBox(height: KiraSpace.lg),
         _ImpactCard(projection: p, whatIf: whatIf),
         const SizedBox(height: KiraSpace.lg),
         _Controls(whatIf: whatIf),
@@ -181,6 +183,76 @@ class _SwatchPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_SwatchPainter old) => old.color != color || old.dashed != dashed;
+}
+
+class _HypertensionCard extends StatelessWidget {
+  const _HypertensionCard({required this.risk});
+  final HypertensionRisk risk;
+
+  static String _label(String? c) => switch (c) {
+        'low' => 'rendah',
+        'medium' => 'sedang',
+        'high' => 'tinggi',
+        _ => '',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final bp = risk.sys != null ? '${risk.sys}/${risk.dia}' : null;
+    final (String headline, String body) = switch (risk.status) {
+      'ok' => (
+          risk.categoryLow == risk.categoryHigh
+              ? 'Risiko ${_label(risk.categoryLow)}'
+              : 'Antara ${_label(risk.categoryLow)} dan ${_label(risk.categoryHigh)}',
+          'Peluang tekanan darah tinggi dalam 4 tahun: kira-kira ${percentRange(risk.riskLow!, risk.riskHigh!)}. '
+              'Tekananmu terakhir $bp.',
+        ),
+      'already_hypertensive' => (
+          'Tekananmu $bp sudah di rentang hipertensi',
+          'Temui dokter atau Puskesmas untuk pemeriksaan ulang dan arahan. KIRA tidak memberi saran obat.',
+        ),
+      'needs_profile' => (
+          'Lengkapi profilmu dulu',
+          'Usia, jenis kelamin, tinggi, dan berat badan dibutuhkan untuk menghitung risiko tekanan darah.',
+        ),
+      'has_diabetes' || 'out_of_age_range' => (
+          'Perkiraan ini tidak berlaku untukmu',
+          'Perhitungannya dikembangkan untuk usia 20-69 tahun tanpa diabetes. Ikuti arahan dokter untuk tekananmu.',
+        ),
+      _ => (
+          'Ukur tekananmu dulu',
+          'Risiko tekanan darah tinggi baru bisa dihitung setelah tekananmu diukur. Cek tensi cepat dan gratis di Posyandu atau Puskesmas.',
+        ),
+    };
+    return Card(
+      key: const Key('hypertension_card'),
+      child: Padding(
+        padding: const EdgeInsets.all(KiraSpace.xl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Tekanan darah', style: context.text.labelLarge?.copyWith(color: context.scheme.primary)),
+            const SizedBox(height: KiraSpace.sm),
+            Text(headline, style: context.text.titleLarge),
+            const SizedBox(height: KiraSpace.xs),
+            Text(body, style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurfaceVariant)),
+            if (risk.status == 'ok') ...[
+              const SizedBox(height: KiraSpace.sm),
+              Text(
+                'Memakai skor Framingham yang dikembangkan di Amerika Serikat dan belum divalidasi pada populasi Indonesia.',
+                style: context.text.bodySmall,
+              ),
+            ],
+            if (risk.status == 'needs_bp')
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(onPressed: () => context.go('/check'), child: const Text('Lihat saran cek')),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _CheckHint extends StatelessWidget {

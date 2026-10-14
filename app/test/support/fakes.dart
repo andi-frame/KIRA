@@ -49,6 +49,7 @@ Projection sampleProjection({
   String? mostImpactful = 'activity',
   double p10Low = 0.04,
   double p10High = 0.33,
+  HypertensionRisk hypertension = const HypertensionRisk(status: 'needs_bp'),
 }) =>
     Projection(
       scoreLow: low,
@@ -62,6 +63,7 @@ Projection sampleProjection({
       needsProfile: needsProfile,
       mode: 'prevention',
       mostImpactful: mostImpactful,
+      hypertension: hypertension,
     );
 
 WhatIfResult sampleWhatIf({int afterLow = 9, int afterHigh = 16}) => WhatIfResult(
