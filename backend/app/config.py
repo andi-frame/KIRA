@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     stt_api_key: str = ""
     stt_model: str = "whisper-large-v3-turbo"
     demo_cache: bool = False
+    # Origin yang boleh memanggil API dari browser (Flutter web). Pisahkan dengan koma; '*' untuk demo.
+    cors_origins: str = "*"
 
 
 settings = Settings()
