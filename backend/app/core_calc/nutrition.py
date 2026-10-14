@@ -23,6 +23,14 @@ def match_food(query: str, foods: list[FoodRecord]) -> FoodRecord | None:
             index.setdefault(label.lower(), food)
     if needle in index:
         return index[needle]
+    # Semua kata kueri ada di sebuah label ("rendang" -> "rendang sapi"). Ambil label terpendek;
+    # bila beberapa makanan berbeda seri, ambigu -> None (jangan menebak).
+    words = set(needle.split())
+    containing = [(label, food) for label, food in index.items() if words <= set(label.split())]
+    if containing:
+        fewest = min(len(label.split()) for label, _ in containing)
+        tied = {food.id: food for label, food in containing if len(label.split()) == fewest}
+        return next(iter(tied.values())) if len(tied) == 1 else None
     close = difflib.get_close_matches(needle, list(index), n=1, cutoff=_FUZZY_CUTOFF)
     return index[close[0]] if close else None
 

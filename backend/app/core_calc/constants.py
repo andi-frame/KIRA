@@ -64,6 +64,10 @@ RED_FLAG_KEYWORDS = [
     "kejang",
 ]
 
+# TODO-VERIFY: ambang gula darah yang dianggap "pernah tinggi" untuk faktor FINDRISC (mg/dL).
+GLUCOSE_HIGH_FASTING = 100
+GLUCOSE_HIGH_RANDOM = 140
+
 # TODO-VERIFY: batas konsumsi harian Kemenkes.
 DAILY_LIMITS = {"sugar_g": 50.0, "sodium_mg": 2000.0, "fat_g": 67.0}
 

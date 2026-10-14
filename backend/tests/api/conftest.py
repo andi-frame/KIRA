@@ -1,35 +1,9 @@
-import os
-import subprocess
-import sys
-from pathlib import Path
-
 import httpx
 import pytest
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from app.config import settings
 from app.db import get_session
 from app.main import app
-from seed.load import load_seed
-
-BACKEND = Path(__file__).resolve().parents[2]
-
-
-@pytest.fixture(scope="session", autouse=True)
-def _schema():
-    env = {**os.environ, "DATABASE_URL": settings.test_database_url}
-    subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], cwd=BACKEND, env=env, check=True)
-
-
-@pytest.fixture
-async def engine(_schema):
-    eng = create_async_engine(settings.test_database_url)
-    await load_seed(eng)
-    yield eng
-    async with eng.begin() as conn:
-        await conn.execute(text("truncate users cascade"))
-    await eng.dispose()
 
 
 @pytest.fixture

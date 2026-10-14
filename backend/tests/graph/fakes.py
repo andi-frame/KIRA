@@ -25,7 +25,9 @@ class FakeChatModel(BaseChatModel):
         index = min(self.call_count, len(self.responses) - 1)
         self.call_count += 1
         self.seen.append(list(messages))
-        return ChatResult(generations=[ChatGeneration(message=self.responses[index])])
+        # id unik per panggilan, seperti model sungguhan (add_messages menimpa pesan ber-id sama)
+        message = self.responses[index].model_copy(update={"id": f"fake-{self.call_count}"})
+        return ChatResult(generations=[ChatGeneration(message=message)])
 
 
 def ai(text: str = "", tool_calls: list[dict] | None = None) -> AIMessage:
