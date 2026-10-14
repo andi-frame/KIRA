@@ -94,7 +94,7 @@ def detect_red_flags(
     if bp is not None and (bp[0] >= RED_FLAG_BP[0] or bp[1] >= RED_FLAG_BP[1]):
         return RedFlag("blood_pressure", f"Tekanan darah {bp[0]}/{bp[1]} sangat tinggi. {_URGENT}")
     if glucose_mg_dl is not None:
-        if glucose_mg_dl <= RED_FLAG_GLUCOSE["low"]:
+        if glucose_mg_dl < RED_FLAG_GLUCOSE["low"]:
             return RedFlag("glucose_low", f"Gula darah {glucose_mg_dl:g} mg/dL sangat rendah. {_URGENT}")
         if glucose_mg_dl >= RED_FLAG_GLUCOSE["high"]:
             return RedFlag("glucose_high", f"Gula darah {glucose_mg_dl:g} mg/dL sangat tinggi. {_URGENT}")

@@ -11,6 +11,8 @@ class FoodRecord:
     aliases: list[str]
     per100g: dict[str, float]  # sugar_g, sodium_mg, fat_g, kcal, carb_g
     default_portion_g: float
+    tkpi_code: str | None = None
+    source_note: str | None = None
 
 
 def match_food(query: str, foods: list[FoodRecord]) -> FoodRecord | None:

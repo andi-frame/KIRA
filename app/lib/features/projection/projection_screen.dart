@@ -352,7 +352,8 @@ class _HowCalculated extends StatelessWidget {
             const SizedBox(height: KiraSpace.md),
             Text(
               'Rentang dihitung dari skor skrining diabetes FINDRISC, memakai profilmu dan kebiasaanmu 14 hari terakhir. '
-              'Perhitungannya dilakukan oleh fungsi yang bisa diaudit, bukan ditebak oleh AI.',
+              'Skor ini tervalidasi, termasuk pada populasi Indonesia. Perhitungannya dilakukan oleh fungsi yang bisa '
+              'diaudit, bukan ditebak oleh AI.',
               style: context.text.bodyLarge,
             ),
             const SizedBox(height: KiraSpace.md),
@@ -363,8 +364,15 @@ class _HowCalculated extends StatelessWidget {
             ),
             const SizedBox(height: KiraSpace.md),
             Text(
-              'Catatan prototype: persentase masih memakai asumsi sementara yang belum diverifikasi tim, dan KIRA '
-              'melakukan interpolasi antar kategori skor supaya setiap perubahan kebiasaan terlihat.',
+              'Persentase 10 tahun memakai estimasi resmi skor itu dari penelitian di Finlandia. Studi kohort modern di '
+              'Norwegia menemukan angka yang lebih rendah, jadi anggap persentase sebagai gambaran kasar. KIRA melakukan '
+              'interpolasi antar kategori skor supaya setiap perubahan kebiasaan terlihat.',
+              style: context.text.bodyLarge,
+            ),
+            const SizedBox(height: KiraSpace.md),
+            Text(
+              'Nilai gizi makanan diambil dari TKPI Kemenkes 2017; gula dan ukuran porsi adalah perkiraan. '
+              'Batas harian gula, natrium, dan lemak mengikuti Permenkes 30/2013.',
               style: context.text.bodyLarge,
             ),
             const SizedBox(height: KiraSpace.md),

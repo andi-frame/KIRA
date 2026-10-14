@@ -102,19 +102,16 @@ mustahil ditolak sebelum disimpan.
 - WhatsApp (Baileys), fitur keluarga, scheduler, dan SATUSEHAT belum ada.
 - Pengguna sungguhan di produksi memerlukan WhatsApp Business Platform resmi, OTP asli, dan persetujuan data sesuai UU PDP.
 
-## Angka klinis yang WAJIB diverifikasi sebelum submission
+## Sumber angka klinis
 
-Semua konstanta klinis ada di [`backend/app/core_calc/constants.py`](backend/app/core_calc/constants.py) dan bertanda `TODO-VERIFY`.
-Nilainya **sementara** dan belum dicocokkan dengan sumber aslinya:
+Semua konstanta klinis ada di [`backend/app/core_calc/constants.py`](backend/app/core_calc/constants.py), masing-masing dengan sumber dan
+status verifikasinya. Rincian, tautan, dan **daftar yang belum bersumber** (gula makanan, porsi khas, dan sebagian natrium
+adalah estimasi KIRA karena TKPI tidak memuatnya) ada di [`docs/sumber-angka-klinis.md`](docs/sumber-angka-klinis.md).
 
-1. Tabel poin FINDRISC dan varian cut-off Asia (IMT, lingkar perut).
-2. Peta skor FINDRISC → insidensi diabetes 10 tahun (nilai kategori; di antara kategori diinterpolasi linear antar-skor tengah kategori).
-3. Ambang kategori tekanan darah (Kemenkes/CKG).
-4. Ambang tanda bahaya (tensi dan gula darah sangat tinggi/rendah, gejala).
-5. Batas harian gula, garam, dan lemak (Kemenkes) serta pengali mode pengelolaan.
-6. Nilai gizi per 100 g pada `backend/seed/foods.json` (Tabel Komposisi Pangan Indonesia).
-
-Jangan menampilkan angka sementara di materi submission (deck, video, proposal) sebelum diverifikasi.
+Ringkasnya: poin dan kategori FINDRISC, ambang tekanan darah (KMK 303/2026), kriteria glukosa (PERKENI 2021), dan batas
+harian gula/garam/lemak (Permenkes 30/2013) dibaca dari sumber resmi. Persentase insidensi 10 tahun per kategori berasal dari
+estimasi resmi formulir FINDRISC (kohort Finlandia); studi modern menemukan angka lebih rendah sehingga aplikasi
+mengungkapkannya, dan interpolasi antar kategori adalah asumsi KIRA.
 
 ## Arah visual
 

@@ -42,5 +42,16 @@ def test_red_flag_thresholds_are_present_and_sane():
     assert "nyeri dada" in c.RED_FLAG_KEYWORDS
 
 
-def test_management_is_stricter_than_prevention():
-    assert 0 < c.MANAGEMENT_STRICTNESS < 1
+def test_management_limits_are_stricter_for_sugar_and_never_looser():
+    assert c.DAILY_LIMITS_MANAGEMENT["sugar_g"] < c.DAILY_LIMITS["sugar_g"]
+    assert c.DAILY_LIMITS_MANAGEMENT["sodium_mg"] <= c.DAILY_LIMITS["sodium_mg"]
+    assert c.DAILY_LIMITS_MANAGEMENT["fat_g"] <= c.DAILY_LIMITS["fat_g"]
+
+
+def test_values_checked_against_primary_sources():
+    # Permenkes 30/2013 Pasal 4(2); KMK HK.01.07/MENKES/303/2026; PERKENI 2021.
+    assert c.DAILY_LIMITS == {"sugar_g": 50.0, "sodium_mg": 2000.0, "fat_g": 67.0}
+    assert c.BP_THRESHOLDS == {"hypertension": (140, 90), "prehypertension": (130, 85)}
+    assert c.RED_FLAG_BP == (180, 110)
+    assert (c.GLUCOSE_HIGH_FASTING, c.GLUCOSE_HIGH_RANDOM, c.GLUCOSE_HIGH_HBA1C) == (100, 200, 5.7)
+    assert c.RED_FLAG_GLUCOSE == {"high": 300, "low": 70}

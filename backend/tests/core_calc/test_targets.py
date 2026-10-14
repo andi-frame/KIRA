@@ -13,8 +13,9 @@ def test_never_negative():
     assert remaining_targets(Totals(60, 0, 0), "prevention").sugar_g == 0
 
 
-def test_management_leaves_less_than_prevention():
+def test_management_leaves_less_sugar_and_never_more_of_anything():
     consumed = Totals(20, 500, 10)
     p = remaining_targets(consumed, "prevention")
     m = remaining_targets(consumed, "management")
-    assert m.sugar_g < p.sugar_g and m.sodium_mg < p.sodium_mg and m.fat_g < p.fat_g
+    assert m.sugar_g < p.sugar_g
+    assert m.sodium_mg <= p.sodium_mg and m.fat_g <= p.fat_g

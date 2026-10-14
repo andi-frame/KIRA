@@ -35,7 +35,7 @@ async def test_cari_gizi_scales_with_default_portion(session_maker, make_user):
     uid = await make_user()
     out = await cari_gizi.ainvoke({"makanan": "rendang"}, config=cfg(uid, session_maker))
     assert out["found"] is True and out["portion_g"] == 70
-    assert out["fat_g"] == pytest.approx(14.0)
+    assert out["fat_g"] == pytest.approx(7.9 * 0.7)  # TKPI FP062
 
 
 async def test_cari_gizi_unknown_food_is_not_found(session_maker, make_user):
@@ -81,3 +81,12 @@ async def test_faskes_sorted_by_distance(session_maker, make_user):
     out = await cari_faskes.ainvoke({"lat": -6.8930, "lng": 107.6130}, config=cfg(uid, session_maker))
     distances = [f["distance_km"] for f in out["faskes"]]
     assert distances == sorted(distances) and distances[0] < 0.5
+
+
+async def test_cari_gizi_reports_where_the_numbers_come_from(session_maker, make_user):
+    uid = await make_user()
+    rendang = await cari_gizi.ainvoke({"makanan": "rendang"}, config=cfg(uid, session_maker))
+    assert "TKPI" in rendang["sumber"] and "FP062" in rendang["sumber"]
+    assert rendang["fat_g"] == pytest.approx(7.9 * 0.7)  # lemak TKPI 7,9 g/100 g x porsi 70 g
+    boba = await cari_gizi.ainvoke({"makanan": "boba"}, config=cfg(uid, session_maker))
+    assert "estimasi" in boba["sumber"].lower() and "TKPI" not in boba["sumber"].split("(")[0]

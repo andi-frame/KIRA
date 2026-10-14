@@ -77,3 +77,16 @@ def test_common_indonesian_phrasings_of_danger_are_caught(text):
 )
 def test_ordinary_text_is_not_flagged(text):
     assert detect_red_flags(text=text) is None, text
+
+
+def test_glucose_boundaries_follow_perkeni():
+    assert detect_red_flags(glucose_mg_dl=70) is None  # hipoglikemia = di bawah 70
+    assert detect_red_flags(glucose_mg_dl=69).kind == "glucose_low"
+    assert detect_red_flags(glucose_mg_dl=299) is None
+    assert detect_red_flags(glucose_mg_dl=300).kind == "glucose_high"
+
+
+def test_bp_boundaries_follow_kemenkes_grade_3():
+    assert detect_red_flags(bp=(179, 109)) is None
+    assert detect_red_flags(bp=(180, 100)).kind == "blood_pressure"
+    assert detect_red_flags(bp=(150, 110)).kind == "blood_pressure"
