@@ -1,0 +1,39 @@
+{
+  "e343f225822cf7e3": {
+    "reply": "Sip, sudah kucatat: nasi padang pakai rendang, es teh manis, dan kamu tidur larut. Malam ini coba tidur lebih awal, dan besok es tehnya ganti jadi tawar ya.",
+    "extraction": {
+      "items": [
+        {
+          "name": "nasi putih",
+          "portion_text": "1 porsi",
+          "portion_g_guess": 200,
+          "meal_time": "lunch"
+        },
+        {
+          "name": "rendang",
+          "portion_text": "1 potong",
+          "portion_g_guess": 70,
+          "meal_time": "lunch"
+        }
+      ],
+      "drinks": [
+        {
+          "name": "es teh manis",
+          "size": "gelas",
+          "count": 1
+        }
+      ],
+      "sleep": {
+        "bed_time": "02:00",
+        "wake_time": null
+      },
+      "activity": [],
+      "clinical_result": null,
+      "intent": "log",
+      "summary": "Makan siang nasi padang rendang, es teh manis, tidur jam 2 pagi."
+    }
+  },
+  "c0389bf77bc90ece": {
+    "reply": "Satu potong rendang (sekitar 70 g) masih sesuai targetmu hari ini kalau nasinya setengah porsi dan ditambah sayur. Setelah makan, jalan santai 20 menit ya."
+  }
+}

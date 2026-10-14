@@ -1,0 +1,12 @@
+{
+  "_note": "DATA DUMMY untuk demo (koordinat perkiraan di sekitar Bandung). Bukan data faskes resmi.",
+  "rows": [
+    {"name": "Puskesmas Coblong (dummy)", "kind": "puskesmas", "lat": -6.8930, "lng": 107.6130, "address": "Jl. Contoh No. 1, Coblong, Bandung"},
+    {"name": "Puskesmas Dago (dummy)", "kind": "puskesmas", "lat": -6.8850, "lng": 107.6150, "address": "Jl. Contoh No. 2, Dago, Bandung"},
+    {"name": "Posyandu Melati Sekeloa (dummy)", "kind": "posyandu", "lat": -6.8870, "lng": 107.6080, "address": "Balai RW 05 Sekeloa, Bandung"},
+    {"name": "Posyandu Mawar Lebak Siliwangi (dummy)", "kind": "posyandu", "lat": -6.8900, "lng": 107.6100, "address": "Balai RW 02 Lebak Siliwangi, Bandung"},
+    {"name": "Puskesmas Sukajadi (dummy)", "kind": "puskesmas", "lat": -6.8890, "lng": 107.5960, "address": "Jl. Contoh No. 3, Sukajadi, Bandung"},
+    {"name": "Posyandu Kenanga Cihampelas (dummy)", "kind": "posyandu", "lat": -6.8980, "lng": 107.6040, "address": "Balai RW 07 Cihampelas, Bandung"},
+    {"name": "Puskesmas Cicendo (dummy)", "kind": "puskesmas", "lat": -6.9030, "lng": 107.5970, "address": "Jl. Contoh No. 4, Cicendo, Bandung"}
+  ]
+}
