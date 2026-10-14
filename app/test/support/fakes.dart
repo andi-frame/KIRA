@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:kira/core/api_client.dart';
 import 'package:kira/core/providers.dart';
 import 'package:kira/core/theme.dart';
+import 'package:kira/features/chat/media.dart';
+import 'package:image_picker/image_picker.dart' show ImageSource;
 import 'package:kira/shared/models.dart';
 
 List<double> _curve(double p10) => [for (var t = 0; t <= 10; t++) 1 - _pow(1 - p10, t / 10)];
@@ -182,3 +184,13 @@ Widget testApp(Widget child, {FakeApi? api, bool dark = false, List<Override> ov
     ),
   );
 }
+
+class FakePhotoPicker implements PhotoPicker {
+  FakePhotoPicker(this.bytes);
+  final Uint8List bytes;
+
+  @override
+  Future<PickedMedia?> pick(ImageSource source) async => PickedMedia(bytes, 'foto.jpg');
+}
+
+Override photoPickerOverride(Uint8List bytes) => photoPickerProvider.overrideWithValue(FakePhotoPicker(bytes));

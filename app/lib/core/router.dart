@@ -15,7 +15,7 @@ const _gatedPaths = {'/splash', '/login', '/onboarding'};
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
-  ref.listen(gateProvider, (_, __) => refresh.value++);
+  ref.listen(gateProvider, (_, _) => refresh.value++);
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
@@ -35,16 +35,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
     },
     routes: [
-      GoRoute(path: '/splash', builder: (_, __) => const _Splash()),
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
-      GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+      GoRoute(path: '/splash', builder: (_, _) => const _Splash()),
+      GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
+      GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
+      GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AppShell(shell: shell),
         branches: [
-          StatefulShellBranch(routes: [GoRoute(path: '/chat', builder: (_, __) => const ChatScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/projection', builder: (_, __) => const ProjectionScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/check', builder: (_, __) => const CheckScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/chat', builder: (_, _) => const ChatScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/projection', builder: (_, _) => const ProjectionScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/check', builder: (_, _) => const CheckScreen())]),
         ],
       ),
     ],

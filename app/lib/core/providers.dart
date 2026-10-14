@@ -89,6 +89,6 @@ final gateProvider = Provider<Gate>((ref) {
   return ref.watch(profileProvider).when(
         data: (p) => p.isComplete ? Gate.ready : Gate.needsOnboarding,
         loading: () => Gate.loading,
-        error: (_, __) => Gate.ready,
+        error: (_, _) => Gate.ready,
       );
 });
