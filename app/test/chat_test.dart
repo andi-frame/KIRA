@@ -2,7 +2,9 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kira/core/api_client.dart';
+import 'package:kira/features/projection/projection_providers.dart';
 import 'package:kira/features/chat/chat_screen.dart';
 import 'package:kira/shared/models.dart';
 
@@ -136,5 +138,19 @@ void main() {
 
     expect(sentKind, 'receipt');
     expect(find.text('Foto struk terbaca.'), findsOneWidget);
+  });
+
+  testWidgets('check-in yang tersimpan memuat ulang proyeksi', (tester) async {
+    final api = FakeApi()
+      ..onMessage = (t) async => const ChatReply(reply: 'Sudah kucatat.', logIds: ['log-1']);
+    await tester.pumpWidget(testApp(const ChatScreen(), api: api));
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(tester.element(find.byType(ChatScreen)));
+    await container.read(projectionProvider.future);
+    expect(api.projectionCalls, 1);
+
+    await typeAndSend(tester, 'makan rendang');
+    await container.read(projectionProvider.future);
+    expect(api.projectionCalls, 2);
   });
 }

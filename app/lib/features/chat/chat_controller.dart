@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_client.dart';
 import '../../core/providers.dart';
 import '../../shared/models.dart';
+import '../projection/projection_providers.dart';
 
 enum ChatKind { user, kira, extraction, emergency, error }
 
@@ -81,6 +82,7 @@ class ChatController extends Notifier<ChatState> {
   void _apply(ChatReply reply) {
     if (reply.transcript != null && reply.transcript!.trim().isNotEmpty) _add(ChatItem.user(reply.transcript!));
     _add(reply.redFlag != null ? ChatItem.emergency(reply.reply) : ChatItem.kira(reply.reply));
+    if (reply.logIds.isNotEmpty) ref.invalidate(projectionProvider); // catatan baru mengubah proyeksi
     final data = reply.extraction;
     if (data != null && !data.isEmpty && reply.logIds.isNotEmpty && reply.redFlag == null) {
       _add(ChatItem.extraction(data, reply.logIds));

@@ -114,3 +114,33 @@ class ChatBubble extends StatelessWidget {
   }
 }
 
+
+/// Status gagal memuat: pesan ramah + tombol coba lagi (tanpa tampilan bernada menyalahkan).
+class LoadError extends StatelessWidget {
+  const LoadError({super.key, required this.message, required this.onRetry});
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(KiraSpace.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.cloud_off_outlined, size: 40, color: context.scheme.onSurfaceVariant),
+            const SizedBox(height: KiraSpace.md),
+            Text(message, textAlign: TextAlign.center, style: context.text.bodyLarge),
+            const SizedBox(height: KiraSpace.lg),
+            FilledButton.tonal(key: const Key('retry_button'), onPressed: onRetry, child: const Text('Coba lagi')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String friendlyError(Object error) => error.toString().contains('ApiException') || error is Exception
+    ? error.toString()
+    : 'Ada kendala saat memuat. Coba lagi sebentar lagi ya.';

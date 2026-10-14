@@ -82,6 +82,8 @@ class FakeApi implements KiraApi {
   Future<ChatReply> Function(String kind)? onPhoto;
   Future<ResultOutcome> Function(String kind, Map<String, num> value)? onResult;
   Object? loginError;
+  Object? projectionError;
+  Object? checkError;
 
   final List<String> messages = [];
   final List<WhatIfChange> whatIfRequests = [];
@@ -142,6 +144,7 @@ class FakeApi implements KiraApi {
   @override
   Future<Projection> getProjection() async {
     projectionCalls++;
+    if (projectionError != null) throw projectionError!;
     return projection;
   }
 
@@ -152,7 +155,10 @@ class FakeApi implements KiraApi {
   }
 
   @override
-  Future<CheckRecommendation?> getCheck() async => recommendation;
+  Future<CheckRecommendation?> getCheck() async {
+    if (checkError != null) throw checkError!;
+    return recommendation;
+  }
 
   @override
   Future<ResultOutcome> postResult(String kind, Map<String, num> value, {String source = 'self'}) {
