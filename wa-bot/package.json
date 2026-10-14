@@ -1,0 +1,19 @@
+{
+  "name": "kira-wa-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Jembatan WhatsApp (Baileys, tidak resmi, HANYA prototype) ke API KIRA",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "pino": "^10.4.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
