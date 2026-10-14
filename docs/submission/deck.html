@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>KIRA - Pitch deck JOINTS 2026</title>
+<style>
+@font-face { font-family: "Figtree"; src: url("../../app/assets/fonts/Figtree.ttf"); font-weight: 300 900; }
+@page { size: 1280px 720px; margin: 0; }
+:root {
+  --bg: #F6F8F8; --card: #FFFFFF; --ink: #14201F; --muted: #4A5C5A; --line: #D5DEDD;
+  --primary: #0B6E6A; --primary-soft: #D6EDEA; --coral: #B8492A; --coral-soft: #FFE3D8;
+  --green: #1F7A4A; --green-soft: #DCF0E4;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Figtree", sans-serif; color: var(--ink); background: #fff; }
+.slide { width: 1280px; height: 720px; padding: 56px 72px; background: var(--bg); position: relative; overflow: hidden; page-break-after: always; display: flex; flex-direction: column; }
+.slide:last-child { page-break-after: auto; }
+.kicker { font-size: 18px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--primary); margin-bottom: 14px; }
+h1 { font-size: 76px; font-weight: 800; line-height: 1.02; letter-spacing: -0.02em; }
+h2 { font-size: 46px; font-weight: 800; line-height: 1.1; letter-spacing: -0.015em; max-width: 1000px; }
+h3 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+p, li { font-size: 24px; line-height: 1.4; color: var(--ink); }
+.sub { font-size: 26px; color: var(--muted); margin-top: 18px; max-width: 900px; line-height: 1.4; }
+.foot { position: absolute; left: 72px; right: 72px; bottom: 28px; display: flex; justify-content: space-between; font-size: 15px; color: var(--muted); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 28px 32px; }
+.row { display: flex; gap: 28px; }
+.col { flex: 1; }
+.grow { flex: 1; }
+.big { font-size: 120px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+.coral { color: var(--coral); } .primary { color: var(--primary); } .green { color: var(--green); }
+.pill { display: inline-block; border-radius: 999px; padding: 6px 16px; font-size: 17px; font-weight: 700; background: var(--primary-soft); color: var(--primary); }
+.pill.coral { background: var(--coral-soft); color: var(--coral); }
+.pill.green { background: var(--green-soft); color: var(--green); }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 11px 14px; font-size: 19px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.35; }
+th { font-size: 15px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+ul { list-style: none; } ul li { padding-left: 22px; position: relative; margin-bottom: 10px; }
+ul li::before { content: ""; position: absolute; left: 0; top: 14px; width: 9px; height: 9px; border-radius: 50%; background: var(--primary); }
+.phone { height: 470px; width: 226px; object-fit: cover; object-position: top; border-radius: 28px; border: 1px solid var(--line); box-shadow: 0 2px 0 #E6ECEB; display: block; }
+.src { font-size: 15px; color: var(--muted); margin-top: 10px; line-height: 1.35; }
+.flow { display: flex; align-items: stretch; gap: 14px; margin-top: 30px; }
+.flow .step { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px; }
+.flow .step b { display: block; font-size: 22px; margin-bottom: 6px; }
+.flow .step span { font-size: 18px; color: var(--muted); line-height: 1.35; display: block; }
+.flow .arrow { align-self: center; font-size: 30px; color: var(--primary); font-weight: 700; }
+.node { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; font-size: 18px; font-weight: 600; text-align: center; }
+.node.red { background: var(--coral-soft); border-color: #E8B9A6; color: var(--coral); }
+.node.teal { background: var(--primary-soft); border-color: #A9D6D1; color: var(--primary); }
+.todo { color: var(--coral); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- 1. Judul -->
+<section class="slide" style="justify-content:center">
+  <div class="kicker">JOINTS 2026 · Healthcare · Subtema 5</div>
+  <h1>KIRA</h1>
+  <p class="sub" style="font-size:36px; color:var(--ink); font-weight:600; max-width:900px">Kira-kira kesehatanmu 10 tahun lagi seperti apa? Tanya KIRA.</p>
+  <p class="sub">Teman ngobrol 1 menit sehari yang memproyeksikan risiko diabetes, menunjukkan kebiasaan paling berdampak, dan tahu kapan kamu harus cek.</p>
+  <div class="foot"><span>Tim <span class="todo">[isi nama tim]</span></span><span>Prototype · data demo adalah data dummy</span></div>
+</section>
+
+<!-- 2. Masalah -->
+<section class="slide">
+  <div class="kicker">Permasalahan</div>
+  <h2>Penyakitnya diam. Orangnya merasa sehat.</h2>
+  <div class="row" style="margin-top:38px">
+    <div class="card col">
+      <div class="big coral">11,7%</div>
+      <p style="margin-top:10px">orang usia 15 tahun ke atas punya gula darah di rentang diabetes (pemeriksaan)</p>
+    </div>
+    <div class="card col">
+      <div class="big primary">2,2%</div>
+      <p style="margin-top:10px">yang pernah didiagnosis dokter. Artinya sekitar 4 dari 5 kasus belum terdiagnosis*</p>
+    </div>
+    <div class="card col">
+      <div class="big coral">26,9%</div>
+      <p style="margin-top:10px">tingkat diagnosis hipertensi pada 2023 (24,1% pada 2018)</p>
+    </div>
+  </div>
+  <p class="src">Sumber: Kemenkes, Survei Kesehatan Indonesia (SKI) 2023; Muharram dkk., BMJ Open 2025;15(12):e109588. *Hitungan tim: (11,7 − 2,2) / 11,7 ≈ 81%.
+  Kemenkes (4 Agustus 2026): sekitar 1 juta kasus hipertensi baru terdeteksi pada 9,2 juta peserta Cek Kesehatan Gratis yang diperiksa ulang.</p>
+  <div class="foot"><span>KIRA</span><span>2</span></div>
+</section>
+
+<!-- 3. Persona -->
+<section class="slide">
+  <div class="kicker">Persona</div>
+  <h2>Raka, 28 tahun, software engineer</h2>
+  <div class="row" style="margin-top:36px">
+    <div class="card col">
+      <ul>
+        <li>Kerja sekitar 50 jam seminggu, tidur 5 jam</li>
+        <li>Kopi susu gula aren hampir tiap hari</li>
+        <li>Ayahnya diabetes</li>
+        <li>Belum pernah cek gula darah</li>
+      </ul>
+    </div>
+    <div class="card col" style="background:var(--coral-soft); border-color:#E8B9A6">
+      <h3 class="coral">Kenapa dia tidak cek?</h3>
+      <p>Tidak ada keluhan, tidak ada alasan. Sistem baru bertemu dia saat sudah terlambat. Celahnya ada di antara <b>"merasa sehat"</b> dan <b>"diperiksa"</b>.</p>
+    </div>
+  </div>
+  <div class="foot"><span>KIRA</span><span>3</span></div>
+</section>
+
+<!-- 4. Kenapa solusi sekarang gagal -->
+<section class="slide">
+  <div class="kicker">Celah solusi yang ada</div>
+  <h2>Kenapa yang ada sekarang belum cukup</h2>
+  <div class="row" style="margin-top:38px">
+    <div class="card col"><h3>Aplikasi diet</h3><p>Mencatat kalori, tidak memproyeksikan risiko dan tidak tahu kapan kamu harus cek ke fasilitas kesehatan.</p></div>
+    <div class="card col"><h3>Chatbot umum</h3><p>Tidak menyimpan profil dan state kesehatan terstruktur, tidak menghitung risiko dengan skor tervalidasi.</p></div>
+    <div class="card col"><h3>Cek Kesehatan Gratis</h3><p>Memotret kondisi sekali setahun. Tidak ada pendamping di hari-hari di antaranya.</p></div>
+  </div>
+  <div class="foot"><span>KIRA</span><span>4</span></div>
+</section>
+
+<!-- 5. Solusi -->
+<section class="slide">
+  <div class="kicker">Solusi</div>
+  <h2>Satu menit sehari, dari obrolan sampai pemeriksaan nyata</h2>
+  <div class="flow">
+    <div class="step"><b>1. Ngobrol</b><span>Teks, suara, foto makanan atau struk, juga lewat WhatsApp</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>2. Proyeksi</b><span>Peluang diabetes 10 tahun sebagai rentang, dua kurva dengan slider</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>3. Saatnya cek</b><span>Cek apa yang paling berguna, plus faskes terdekat</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>4. Kalibrasi</b><span>Hasil cek nyata menyempitkan rentang. Setelah diagnosis: mode pengelolaan</span></div>
+  </div>
+  <p class="sub" style="margin-top:34px">Prinsip: <b>angka tidak pernah datang dari LLM.</b> Risiko, gizi, dan sisa target dihitung fungsi deterministik yang bisa diaudit.</p>
+  <div class="foot"><span>KIRA</span><span>5</span></div>
+</section>
+
+<!-- 6. Tiga inovasi -->
+<section class="slide">
+  <div class="kicker">Inovasi</div>
+  <h2>Tiga hal yang membedakan KIRA</h2>
+  <div class="row" style="margin-top:34px; align-items:stretch">
+    <div class="card col"><span class="pill">1</span><h3 style="margin-top:12px">Kira-kira 10 Tahun</h3><p>Dua proyeksi berdampingan: kebiasaan sekarang dan kebiasaan yang diperbaiki. Slider menggeser grafik langsung, dan KIRA menyorot satu kebiasaan paling berdampak.</p></div>
+    <div class="card col"><span class="pill coral">2</span><h3 style="margin-top:12px">Tahu kapan harus cek</h3><p>Ketidakpastian ditampilkan sebagai rentang. Saat rentang terlalu lebar atau risiko naik, KIRA menyarankan cek yang paling berguna dan menunjukkan faskes terdekat.</p></div>
+    <div class="card col"><span class="pill green">3</span><h3 style="margin-top:12px">Mode setelah diagnosis</h3><p>Setelah dokter mendiagnosis, fokus pindah dari pencegahan ke pendampingan: target harian lebih ketat, ringkasan untuk dokter, dukungan keluarga atas izin pengguna.</p></div>
+  </div>
+  <div class="foot"><span>KIRA</span><span>6</span></div>
+</section>
+
+<!-- 7. Demo -->
+<section class="slide">
+  <div class="kicker">Demo</div>
+  <h2>Dari satu kalimat sampai rentang risiko</h2>
+  <div class="row" style="margin-top:26px; align-items:flex-start; gap:40px">
+    <img class="phone" src="../screenshots/02-chat-checkin.png" alt="Layar chat dengan kartu Yang kucatat">
+    <img class="phone" src="../screenshots/03-projection-whatif.png" alt="Layar Kira-kira 10 Tahun dengan dua kurva dan slider">
+    <div class="grow">
+      <ul>
+        <li>"Tadi siang nasi padang rendang, es teh manis, begadang sampai jam 2" menjadi kartu terstruktur.</li>
+        <li>Pita rentang dua kurva bergeser saat slider digeser.</li>
+        <li>Hasil cek masuk, rentang menyempit.</li>
+      </ul>
+      <p class="src">Tangkapan layar prototype web dengan persona Raka (data dummy). Demo langsung memakai APK di HP Android.</p>
+    </div>
+  </div>
+  <div class="foot"><span>KIRA</span><span>7</span></div>
+</section>
+
+<!-- 8. Teknologi -->
+<section class="slide">
+  <div class="kicker">Teknologi &amp; arsitektur</div>
+  <h2>AI menafsirkan. Kode menghitung.</h2>
+  <div style="display:flex; gap:12px; margin-top:34px; align-items:center">
+    <div class="node red">Deteksi tanda bahaya<br><span style="font-weight:500">aturan, sebelum LLM</span></div><span class="primary">→</span>
+    <div class="node teal">Ekstraksi<br><span style="font-weight:500">Claude, keluaran terstruktur</span></div><span class="primary">→</span>
+    <div class="node">Simpan log</div><span class="primary">→</span>
+    <div class="node">Konteks<br><span style="font-weight:500">profil, ringkasan</span></div><span class="primary">→</span>
+    <div class="node teal">Agen ⇄ tools</div><span class="primary">→</span>
+    <div class="node red">Pagar keluaran</div>
+  </div>
+  <div class="row" style="margin-top:30px">
+    <div class="card col">
+      <h3>Tools deterministik (Python)</h3>
+      <ul style="font-size:20px">
+        <li>hitung_risiko: FINDRISC; Framingham hipertensi 4 tahun (Parikh 2008)</li>
+        <li>cari_gizi: Tabel Komposisi Pangan Indonesia 2017</li>
+        <li>sisa_target_harian, simulasi_whatif, cari_faskes</li>
+      </ul>
+    </div>
+    <div class="card col">
+      <h3>Stack</h3>
+      <ul style="font-size:20px">
+        <li>Flutter (Android), Riverpod</li>
+        <li>FastAPI, PostgreSQL, LangGraph</li>
+        <li>Penjadwal untuk ringkasan mingguan dan pengingat</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>KIRA</span><span>8</span></div>
+</section>
+
+<!-- 9. Keamanan & privasi -->
+<section class="slide">
+  <div class="kicker">Keamanan &amp; privasi</div>
+  <h2>Batas yang tidak boleh dilewati</h2>
+  <div class="row" style="margin-top:34px">
+    <div class="card col">
+      <h3>Batas klinis</h3>
+      <ul style="font-size:21px">
+        <li>Bukan alat diagnosis; tanpa saran obat atau dosis</li>
+        <li>Risiko selalu berupa rentang beserta jalur perbaikan</li>
+        <li>Tanda bahaya (nyeri dada, sesak, tensi atau gula ekstrem) dicegat aturan dan diarahkan ke IGD atau Puskesmas</li>
+      </ul>
+    </div>
+    <div class="card col">
+      <h3>Privasi data</h3>
+      <ul style="font-size:21px">
+        <li>Keluarga hanya atas undangan; pengguna memilih apa yang dibagikan; bisa dicabut kapan saja</li>
+        <li>Notifikasi keluarga bernada mengajak mendukung, bukan melapor</li>
+        <li>WhatsApp tidak resmi (Baileys) hanya untuk prototype dengan data dummy; produksi memakai WhatsApp Business Platform resmi</li>
+        <li>Penerapan UU Pelindungan Data Pribadi untuk produksi masih rencana</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>KIRA</span><span>9</span></div>
+</section>
+
+<!-- 10. Dampak & kelayakan -->
+<section class="slide">
+  <div class="kicker">Dampak &amp; kelayakan</div>
+  <h2>Mengisi hari-hari di antara Cek Kesehatan Gratis</h2>
+  <div class="row" style="margin-top:34px">
+    <div class="card col">
+      <h3>Siapa yang terbantu</h3>
+      <p style="font-size:21px">Usia 20-40 tahun yang merasa sehat dan belum rutin cek; pengguna terdiagnosis yang butuh pendampingan harian; Puskesmas dan Posyandu yang menerima peserta yang memang perlu cek.</p>
+    </div>
+    <div class="card col">
+      <h3>Model keberlanjutan (rencana)</h3>
+      <ul style="font-size:21px">
+        <li>B2C freemium</li>
+        <li>B2B program wellness kantor</li>
+        <li>B2G kemitraan Dinkes/Puskesmas untuk tindak lanjut peserta CKG</li>
+      </ul>
+    </div>
+    <div class="card col">
+      <h3>Metrik sukses</h3>
+      <ul style="font-size:21px">
+        <li>Check-in 7 hari berturut-turut</li>
+        <li>Rasio saran cek yang benar-benar dilakukan</li>
+        <li>Rentang risiko menyempit setelah hasil masuk</li>
+      </ul>
+    </div>
+  </div>
+  <p class="src">Belum ada uji pengguna atau pelanggan; semua metrik di atas adalah target yang akan diukur, bukan hasil.</p>
+  <div class="foot"><span>KIRA</span><span>10</span></div>
+</section>
+
+<!-- 11. Penggunaan AI -->
+<section class="slide">
+  <div class="kicker">Penggunaan AI (wajib)</div>
+  <h2 style="font-size:40px">Apa yang dikerjakan AI, dan apa yang tidak</h2>
+  <div class="card" style="margin-top:24px; padding:10px 22px">
+  <table>
+    <tr><th style="width:34%">Tool</th><th>Dipakai untuk</th><th style="width:16%">Bagian</th></tr>
+    <tr><td>Claude Haiku 5.5 (Anthropic)</td><td>Ekstraksi makanan, minuman, tidur, aktivitas dari teks dan foto (struk, makanan, hasil cek) menjadi data terstruktur</td><td>Di produk</td></tr>
+    <tr><td>Claude Sonnet 5.5 (Anthropic)</td><td>Percakapan, memutuskan kapan memanggil tool, merangkai jawaban dari angka hasil tool</td><td>Di produk</td></tr>
+    <tr><td>Whisper large-v3-turbo (via Groq)</td><td>Mengubah voice note berbahasa campur menjadi teks</td><td>Di produk</td></tr>
+    <tr><td>Claude Code (Anthropic)</td><td>Asisten coding: menulis, menguji, dan men-debug kode aplikasi dan backend; menyusun dokumen</td><td>Pengembangan</td></tr>
+    <tr><td>Claude (riset &amp; konsep)</td><td>Riset ide, penyusunan konsep dan struktur pitch</td><td>Pengembangan</td></tr>
+  </table>
+  </div>
+  <p class="src" style="font-size:17px; margin-top:14px"><b>Bukan dikerjakan AI:</b> skor risiko (FINDRISC, Framingham), perhitungan gizi dan sisa target, deteksi tanda bahaya. Semuanya fungsi deterministik dengan tes otomatis. Tidak ada OCR terpisah: foto dibaca model visi Claude, hasilnya dicek ulang aturan untuk nilai gula dan tensi.</p>
+  <div class="foot"><span>KIRA</span><span>11</span></div>
+</section>
+
+<!-- 12. Penutup -->
+<section class="slide" style="justify-content:center">
+  <div class="kicker">Roadmap</div>
+  <h2 style="font-size:54px">Dari prototype ke pendamping harian</h2>
+  <div class="row" style="margin-top:34px">
+    <div class="card col"><span class="pill green">Sudah ada</span><p style="margin-top:12px; font-size:21px">Chat teks, suara, foto; proyeksi what-if; Saatnya cek; kalibrasi; mode pengelolaan; keluarga; ringkasan dokter; tautan WhatsApp (prototype)</p></div>
+    <div class="card col"><span class="pill">Berikutnya</span><p style="margin-top:12px; font-size:21px">WhatsApp Business Platform resmi, integrasi SATUSEHAT, kepatuhan UU PDP, uji pengguna</p></div>
+  </div>
+  <p class="sub" style="font-size:34px; color:var(--ink); font-weight:700; margin-top:36px">KIRA. Kira-kira kesehatanmu 10 tahun lagi seperti apa? Tanya KIRA.</p>
+  <div class="foot"><span>Tim <span class="todo">[isi nama tim]</span></span><span>12</span></div>
+</section>
+
+</body>
+</html>

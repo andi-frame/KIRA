@@ -83,23 +83,38 @@ Bangun ulang dengan `python -m seed.build_demo_cache` bila skrip demo berubah.
 | `STT_BASE_URL`, `STT_API_KEY`, `STT_MODEL` | Speech-to-text |
 | `DEMO_CACHE` | `true` untuk mode demo |
 | `CORS_ORIGINS` | Origin yang boleh memanggil API dari browser (pisahkan dengan koma) |
+| `ENVIRONMENT` | `production` membuat API menolak jalan dengan `JWT_SECRET` bawaan atau pendek |
+| `BOT_SECRET` | Rahasia bersama dengan bot WhatsApp; kosong berarti kanal WhatsApp nonaktif |
+| `SCHEDULER_ENABLED` | `true` menjalankan penjadwal (ringkasan mingguan, pemeriksaan malam, pengingat) di dalam API |
 
 ## Pengujian
 
 ```bash
-cd backend && uv run pytest                       # 190+ tes: angka klinis, graf, API (butuh Postgres)
-cd app && flutter test                            # tes widget: chat, onboarding, proyeksi, cek, tema (kontras WCAG)
+cd backend && uv run pytest                       # 260+ tes: angka klinis, graf, API, penjadwal, keluarga, WhatsApp (butuh Postgres)
+cd app && flutter test                            # tes widget: chat, onboarding, proyeksi, cek, keluarga, ringkasan dokter, tema
+cd wa-bot && npm test                             # logika jembatan WhatsApp (tanpa nomor sungguhan)
+cd backend && uv run python -m seed.eval_extraction   # akurasi ekstraksi pada 22 kalimat campur; memanggil model SUNGGUHAN (butuh API key, berbayar)
 ```
 
 Yang dites otomatis difokuskan pada bagian yang menghasilkan angka dan pada jalur keselamatan: tanda bahaya tidak pernah
 sampai ke LLM, `user_id` tidak bisa dipalsukan lewat tool, guardrail menolak saran obat/diagnosis, dan nilai klinis
 mustahil ditolak sebelum disimpan.
 
-## Batasan yang disengaja (Fase 1)
+## Fase 2
 
-- Proyeksi 10 tahun hanya untuk **diabetes** (FINDRISC). Hipertensi hanya sampai kategori tekanan darah dari hasil ukur;
-  skor Framingham masuk Fase 2.
-- WhatsApp (Baileys), fitur keluarga, scheduler, dan SATUSEHAT belum ada.
+- **Hipertensi:** risiko 4 tahun dengan skor Framingham (Parikh 2008), tampil sebagai rentang di layar 10 Tahun bila profil dan tensi tersedia.
+- **Keluarga:** undangan, izin per jenis data (status check-in, pengingat cek), bisa dicabut; anggota hanya melihat yang diizinkan.
+- **Ringkasan dokter:** `GET /summary/doctor?days=7..90` (teks siap salin) dan `GET /insights/food-glucose` (butuh minimal 3 pasangan data).
+- **Penjadwal** (`backend/app/scheduler.py`, jam WIB): ringkasan mingguan Senin 00:10, pemeriksaan "Saatnya cek" 02:00, pengingat check-in 19:00
+  (maksimal 1 per hari, hanya bila belum ada catatan), dorongan dukungan ke keluarga 19:30.
+- **WhatsApp (prototype):** endpoint tautan dan webhook di backend, jembatan Baileys di [`wa-bot/`](wa-bot/README.md). Tidak resmi; lihat peringatannya.
+- **Dokumen submission:** [`docs/submission/`](docs/submission/) (naskah video, pitch deck, proposal, checklist).
+
+## Batasan yang disengaja
+
+- Proyeksi 10 tahun untuk diabetes memakai FINDRISC; hipertensi memakai Framingham 4 tahun dan hanya untuk usia dan kondisi yang memenuhi syarat kelayakannya.
+- Koneksi WhatsApp sungguhan belum diuji (butuh nomor khusus dan pemindaian QR); logikanya dites otomatis.
+- Integrasi SATUSEHAT belum diimplementasikan (roadmap).
 - Pengguna sungguhan di produksi memerlukan WhatsApp Business Platform resmi, OTP asli, dan persetujuan data sesuai UU PDP.
 
 ## Sumber angka klinis
