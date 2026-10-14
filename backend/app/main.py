@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, chat, health, logs, profile, whatsapp
+from app.api import auth, chat, family, health, logs, profile, summary, whatsapp
 from app.config import settings, validate_settings
 from app.db import SessionLocal
 from app.scheduler import build_scheduler
@@ -27,7 +27,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-for module in (auth, profile, chat, logs, health, whatsapp):
+for module in (auth, profile, chat, logs, health, whatsapp, family, summary):
     app.include_router(module.router)
 
 

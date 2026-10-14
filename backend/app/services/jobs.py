@@ -6,11 +6,11 @@ import uuid
 from collections import defaultdict
 from datetime import date, datetime, time, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Log, LogItem, User, WeeklySummary
+from app.models import FamilyLink, Log, LogItem, User, WeeklySummary
 from app.models.whatsapp import WaLink, WaOutbox
 from app.services import risk
 from app.timeutil import WIB, local_date, start_of_today_utc, utcnow
@@ -140,6 +140,56 @@ async def enqueue_reminders(session: AsyncSession) -> int:
                 user_id=link.user_id,
                 kind="reminder",
                 text=f"Hai{name}, sudah check-in hari ini? Ceritakan makan, minum, dan tidurmu, cukup satu menit.",
+            )
+        )
+        queued += 1
+    await session.commit()
+    return queued
+
+
+async def enqueue_family_nudges(session: AsyncSession) -> int:
+    """Ajakan mendukung ke anggota keluarga bila pemilik >= 3 hari belum check-in dan mengizinkan status check-in.
+
+    Isinya hanya soal check-in (tanpa detail makanan atau hasil), nadanya mengajak, bukan melapor. Sekali per 3 hari.
+    """
+    cutoff = utcnow() - timedelta(days=3)
+    links = (await session.execute(select(FamilyLink).where(FamilyLink.status == "active"))).scalars().all()
+    queued = 0
+    for link in links:
+        if not link.permissions.get("checkin_status", True) or link.member_id is None:
+            continue
+        last = (
+            await session.execute(select(func.max(Log.occurred_at)).where(Log.user_id == link.owner_id))
+        ).scalar_one()
+        if last is None or last > cutoff:
+            continue
+        wa = (await session.execute(select(WaLink).where(WaLink.user_id == link.member_id))).scalar_one_or_none()
+        if wa is None:
+            continue
+        recent = (
+            await session.execute(
+                select(WaOutbox.id)
+                .where(
+                    WaOutbox.user_id == link.member_id,
+                    WaOutbox.kind == "family",
+                    WaOutbox.ref == str(link.id),
+                    WaOutbox.created_at >= cutoff,
+                )
+                .limit(1)
+            )
+        ).first()
+        if recent:
+            continue
+        owner = await session.get(User, link.owner_id)
+        who = owner.display_name if owner and owner.display_name else "Anggota keluargamu"
+        session.add(
+            WaOutbox(
+                jid=wa.jid,
+                user_id=link.member_id,
+                kind="family",
+                ref=str(link.id),
+                text=f"{who} sudah beberapa hari belum check-in di KIRA. Mungkin ini saat yang baik untuk "
+                "menyapa dan mengajak ngobrol, tanpa menghakimi.",
             )
         )
         queued += 1

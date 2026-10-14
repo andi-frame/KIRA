@@ -41,6 +41,7 @@ class WaOutbox(Base):
     )
     kind: Mapped[str] = mapped_column(Text, nullable=False)  # reminder | family
     text: Mapped[str] = mapped_column(Text, nullable=False)
+    ref: Mapped[str | None] = mapped_column(Text)  # mis. id tautan keluarga, mencegah pengulangan
     created_at: Mapped[datetime] = created_at()
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

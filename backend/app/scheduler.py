@@ -39,4 +39,9 @@ def build_scheduler(session_factory) -> AsyncIOScheduler:
         CronTrigger(hour=19, minute=0, timezone=TIMEZONE),
         id="daily_reminders",
     )
+    scheduler.add_job(
+        _wrap(session_factory, jobs.enqueue_family_nudges),
+        CronTrigger(hour=19, minute=30, timezone=TIMEZONE),
+        id="family_nudges",
+    )
     return scheduler
