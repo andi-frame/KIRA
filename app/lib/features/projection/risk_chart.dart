@@ -99,7 +99,8 @@ class RiskBandChart extends StatelessWidget {
                 if (hasAfter) line(afterHigh!, kira.chartBetter, dashed: true),
               ],
               betweenBarsData: [
-                BetweenBarsData(fromIndex: 0, toIndex: 1, color: kira.chartNow.withAlpha(46)),
+                // Satu pita berisi sekali: bila ada kurva kedua, hanya pita itu yang diisi (dua isian bertumpuk keruh).
+                if (!hasAfter) BetweenBarsData(fromIndex: 0, toIndex: 1, color: kira.chartNow.withAlpha(46)),
                 if (hasAfter) BetweenBarsData(fromIndex: 2, toIndex: 3, color: kira.chartBetter.withAlpha(46)),
               ],
             ),

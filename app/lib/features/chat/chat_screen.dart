@@ -193,6 +193,7 @@ class _InputBar extends StatelessWidget {
               children: [
                 IconButton(
                   key: const Key('camera_button'),
+                  style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
                   tooltip: 'Kirim foto makanan, struk, atau hasil cek',
                   icon: const Icon(Icons.photo_camera_outlined),
                   onPressed: onCamera,
@@ -212,6 +213,7 @@ class _InputBar extends StatelessWidget {
                 _MicButton(recording: false, onStart: onRecordStart, onEnd: onRecordEnd),
                 IconButton.filled(
                   key: const Key('send_button'),
+                  style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
                   tooltip: 'Kirim',
                   icon: const Icon(Icons.arrow_upward),
                   onPressed: hasText ? onSend : null,

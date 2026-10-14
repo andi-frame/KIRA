@@ -79,8 +79,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: KiraSpace.xl),
                   SegmentedButton<bool>(
                     segments: const [
-                      ButtonSegment(value: false, label: Text('Sudah punya akun')),
-                      ButtonSegment(value: true, label: Text('Baru di sini')),
+                      ButtonSegment(value: false, label: Text('Masuk')),
+                      ButtonSegment(value: true, label: Text('Daftar')),
                     ],
                     selected: {_register},
                     onSelectionChanged: (s) => setState(() {

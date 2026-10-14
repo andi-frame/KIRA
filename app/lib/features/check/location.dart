@@ -13,6 +13,11 @@ abstract class LocationService {
 class DeviceLocationService implements LocationService {
   @override
   Future<({double lat, double lng})?> current() async {
+    // Batas total: izin lokasi yang menggantung tidak boleh menahan daftar faskes.
+    return _lookup().timeout(const Duration(seconds: 6), onTimeout: () => null);
+  }
+
+  Future<({double lat, double lng})?> _lookup() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) return null;
       var permission = await Geolocator.checkPermission();
