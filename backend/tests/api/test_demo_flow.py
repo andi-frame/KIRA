@@ -59,3 +59,20 @@ async def test_full_demo_flow_projection_whatif_check_calibrate_manage(client, s
     targets = (await client.get("/targets/today", headers=headers)).json()
     assert targets["mode"] == "management"
     assert targets["remaining"]["sugar_g"] < targets["limits"]["sugar_g"]
+
+
+async def test_reset_returns_raka_to_the_clean_starting_state(client, session_maker):
+    from seed.raka import reset_raka
+
+    headers = await login_raka(client, session_maker)
+    await client.post("/results", json={"kind": "fasting_glucose", "value": {"mg_dl": 108}, "source": "lab"},
+                      headers=headers)
+    await client.post("/diagnoses", json={"condition": "prediabetes"}, headers=headers)
+
+    async with session_maker() as session:
+        await reset_raka(session)
+    headers = await login_raka(client, session_maker)
+
+    assert (await client.get("/profile", headers=headers)).json()["mode"] == "prevention"
+    rec = (await client.get("/recommendations/check", headers=headers)).json()
+    assert rec["test_kind"] == "fasting_glucose"

@@ -10,5 +10,32 @@ services:
     volumes:
       - kira_pg:/var/lib/postgresql/data
       - ./backend/seed/init_test_db.sql:/docker-entrypoint-initdb.d/init_test_db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kira"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Backend dalam container: docker compose --profile app up --build
+  backend:
+    profiles: ["app"]
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://kira:kira@db:5432/kira
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-please-use-a-long-random-secret}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LLM_MODEL_CHAT: ${LLM_MODEL_CHAT:-claude-sonnet-5-5}
+      LLM_MODEL_EXTRACT: ${LLM_MODEL_EXTRACT:-claude-haiku-5-5}
+      STT_BASE_URL: ${STT_BASE_URL:-https://api.groq.com/openai/v1}
+      STT_API_KEY: ${STT_API_KEY:-}
+      STT_MODEL: ${STT_MODEL:-whisper-large-v3-turbo}
+      DEMO_CACHE: ${DEMO_CACHE:-false}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+    ports:
+      - "8000:8000"
+
 volumes:
   kira_pg:

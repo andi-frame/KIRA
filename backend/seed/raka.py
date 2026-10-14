@@ -4,12 +4,14 @@ Kerja ±50 jam/minggu, tidur ±5 jam, kopi susu gula aren hampir tiap hari, ayah
 belum pernah cek gula darah. 21 hari riwayat (kemarin dan sebelumnya); hari ini sengaja kosong
 agar check-in live di panggung.
 
-Pakai: python -m seed.raka
+Pakai: python -m seed.raka [--reset]
 """
 import asyncio
+import sys
 import uuid
 from datetime import date, datetime, timedelta
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from app.config import settings
@@ -48,6 +50,12 @@ def _at(day_offset: int, hour: int, minute: int = 0) -> datetime:
     today: date = utcnow().astimezone(WIB).date()
     local = datetime.combine(today - timedelta(days=day_offset), datetime.min.time(), tzinfo=WIB)
     return (local + timedelta(hours=hour, minutes=minute)).astimezone(utcnow().tzinfo)
+
+
+async def reset_raka(session: AsyncSession) -> None:
+    """Hapus Raka beserta semua datanya (cascade) agar demo bisa diulang dari keadaan awal."""
+    await session.execute(text("delete from users where phone = :phone"), {"phone": RAKA_PHONE})
+    await session.commit()
 
 
 async def create_raka(session: AsyncSession) -> uuid.UUID:
@@ -108,6 +116,8 @@ async def _main() -> None:
     engine = create_async_engine(settings.database_url)
     try:
         async with async_sessionmaker(engine, expire_on_commit=False)() as session:
+            if "--reset" in sys.argv:
+                await reset_raka(session)
             uid = await create_raka(session)
         print(f"Raka siap: user {uid}, login {RAKA_PHONE} / PIN {RAKA_PIN} (data dummy)")
     finally:
