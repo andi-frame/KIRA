@@ -41,20 +41,20 @@ dideteksi oleh aturan sebelum LLM bekerja.
 
 ## Menjalankan
 
-Prasyarat: Docker, Python 3.12, Flutter 3.47+.
+Prasyarat: Docker, [uv](https://docs.astral.sh/uv/) (mengelola Python dan dependensi), Flutter 3.47+.
 
 ```bash
 # 1. Database
 docker compose up -d db                       # Postgres di localhost:5455
 
-# 2. Backend
+# 2. Backend (uv: https://docs.astral.sh/uv/)
 cd backend
-python -m venv .venv && .venv/Scripts/pip install -r requirements.txt   # Linux/macOS: .venv/bin/pip
 cp ../.env.example ../.env                    # isi ANTHROPIC_API_KEY dan STT_API_KEY
-.venv/Scripts/python -m alembic upgrade head
-.venv/Scripts/python -m seed.load             # ~100 makanan lokal + faskes dummy
-.venv/Scripts/python -m seed.raka [--reset]     # persona demo Raka (081234567890 / PIN 123456); --reset = ulang dari awal
-.venv/Scripts/python -m uvicorn app.main:app --port 8000
+uv sync                                       # membuat .venv dari pyproject.toml + uv.lock
+uv run alembic upgrade head
+uv run python -m seed.load                    # ~100 makanan lokal + faskes dummy
+uv run python -m seed.raka --reset            # persona demo Raka (081234567890 / PIN 123456), ulang dari awal
+uv run uvicorn app.main:app --port 8000
 
 # 3. Aplikasi
 cd ../app
@@ -87,7 +87,7 @@ Bangun ulang dengan `python -m seed.build_demo_cache` bila skrip demo berubah.
 ## Pengujian
 
 ```bash
-cd backend && .venv/Scripts/python -m pytest      # 150+ tes: angka klinis, graf, API (butuh Postgres)
+cd backend && uv run pytest                       # 190+ tes: angka klinis, graf, API (butuh Postgres)
 cd app && flutter test                            # tes widget: chat, onboarding, proyeksi, cek, tema (kontras WCAG)
 ```
 
