@@ -166,3 +166,38 @@ def test_guardrail_rejects_medication_diagnosis_and_safe_claims(text_):
 )
 def test_guardrail_allows_normal_lifestyle_replies(text_):
     assert check_reply(text_) == (True, text_)
+
+
+async def test_demo_cache_entry_with_extraction_still_saves_logs_without_models(
+    session_maker, make_user, tmp_path, monkeypatch
+):
+    uid = await make_user()
+    cache = tmp_path / "demo_cache.json"
+    cache.write_text(json.dumps({kira_graph.cache_key("check-in demo"): {"reply": "Sudah kucatat.", "extraction": RAKA}}))
+    monkeypatch.setattr(settings, "demo_cache", True)
+    monkeypatch.setattr(kira_graph, "DEMO_CACHE_PATH", cache)
+    chat, extract = install([ai("tidak dipakai")], RAKA)
+    result = await run(uid, session_maker, input_text="check-in demo")
+    assert result.reply == "Sudah kucatat."
+    assert result.extraction.items[0].name == "rendang" and len(result.log_ids) == 3
+    assert chat.call_count == 0 and extract.calls == []
+    assert await count(session_maker, "logs") == 3
+
+
+async def test_demo_cache_never_bypasses_red_flag_check(session_maker, make_user, tmp_path, monkeypatch):
+    uid = await make_user()
+    cache = tmp_path / "demo_cache.json"
+    cache.write_text(json.dumps({kira_graph.cache_key("nyeri dada"): "Balasan cache yang salah."}))
+    monkeypatch.setattr(settings, "demo_cache", True)
+    monkeypatch.setattr(kira_graph, "DEMO_CACHE_PATH", cache)
+    install([ai("x")], RAKA)
+    result = await run(uid, session_maker, input_text="nyeri dada")
+    assert result.red_flag == "symptom" and "IGD" in result.reply
+
+
+async def test_shipped_demo_cache_covers_every_scripted_input():
+    from seed.build_demo_cache import DEMO_ENTRIES
+
+    shipped = json.loads(kira_graph.DEMO_CACHE_PATH.read_text(encoding="utf-8"))
+    for scripted in DEMO_ENTRIES:
+        assert kira_graph.cache_key(scripted) in shipped, scripted

@@ -10,6 +10,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 
 from app.config import settings
+from app.core_calc.red_flags import detect_red_flags
 from app.db import SessionLocal
 from app.graph.nodes.build_context import build_context
 from app.graph.nodes.extract import extract
@@ -99,10 +100,14 @@ def _tool_calls(messages: list) -> list[dict]:
     return list(calls.values())
 
 
-def _cached_reply(text: str) -> str | None:
+def _cached_entry(text: str) -> dict | None:
+    """Entri demo cache: string (balasan saja) atau {"reply", "extraction"?}. Tanda bahaya tidak pernah dilewati."""
     if not settings.demo_cache or not DEMO_CACHE_PATH.exists():
         return None
-    return json.loads(DEMO_CACHE_PATH.read_text(encoding="utf-8")).get(cache_key(text))
+    if detect_red_flags(text=text) is not None:
+        return None
+    entry = json.loads(DEMO_CACHE_PATH.read_text(encoding="utf-8")).get(cache_key(text))
+    return {"reply": entry} if isinstance(entry, str) else entry
 
 
 async def _persist(session_factory, user_id: str, channel: str, user_text: str, result: RunResult) -> None:
@@ -132,8 +137,19 @@ async def run_kira_graph(
     session_factory = session_factory or SessionLocal
     user_text = text or f"[foto {image_kind or 'makanan'}]"
 
-    if text and not image and (cached := _cached_reply(text)):
-        result = RunResult(reply=cached)
+    config = {
+        "recursion_limit": RECURSION_LIMIT,
+        "configurable": {"user_id": user_id, "session_factory": session_factory},
+    }
+    if text and not image and (cached := _cached_entry(text)):
+        extraction = Extraction.model_validate(cached["extraction"]) if cached.get("extraction") else None
+        log_ids: list[str] = []
+        if extraction:
+            saved = await save_logs(
+                {"extraction": extraction.model_dump(), "source": source or "text", "input_text": text}, config
+            )
+            log_ids = saved["log_ids"]
+        result = RunResult(reply=cached["reply"], extraction=extraction, log_ids=log_ids)
         await _persist(session_factory, user_id, channel, user_text, result)
         return result
 
@@ -141,10 +157,6 @@ async def run_kira_graph(
         "user_id": user_id, "channel": channel, "input_text": text, "image": image, "image_kind": image_kind,
         "source": source or (f"photo_{image_kind}" if image else "text"),
         "notes": [], "log_ids": [], "messages": [],
-    }
-    config = {
-        "recursion_limit": RECURSION_LIMIT,
-        "configurable": {"user_id": user_id, "session_factory": session_factory},
     }
     try:
         out = await kira_graph.ainvoke(initial, config=config)
