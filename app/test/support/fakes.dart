@@ -7,6 +7,7 @@ import 'package:kira/core/api_client.dart';
 import 'package:kira/core/providers.dart';
 import 'package:kira/core/theme.dart';
 import 'package:kira/features/chat/media.dart';
+import 'package:kira/features/check/location.dart';
 import 'package:image_picker/image_picker.dart' show ImageSource;
 import 'package:kira/shared/models.dart';
 
@@ -41,16 +42,23 @@ double _exp(double x) {
   return sum;
 }
 
-Projection sampleProjection({bool needsProfile = false, int low = 9, int high = 18, String? mostImpactful = 'activity'}) =>
+Projection sampleProjection({
+  bool needsProfile = false,
+  int low = 9,
+  int high = 18,
+  String? mostImpactful = 'activity',
+  double p10Low = 0.04,
+  double p10High = 0.33,
+}) =>
     Projection(
       scoreLow: low,
       scoreHigh: high,
       categoryLow: 'slightly_elevated',
       categoryHigh: 'high',
-      p10Low: 0.04,
-      p10High: 0.33,
-      curveLow: _curve(0.04),
-      curveHigh: _curve(0.33),
+      p10Low: p10Low,
+      p10High: p10High,
+      curveLow: _curve(p10Low),
+      curveHigh: _curve(p10High),
       needsProfile: needsProfile,
       mode: 'prevention',
       mostImpactful: mostImpactful,
@@ -200,3 +208,15 @@ class FakePhotoPicker implements PhotoPicker {
 }
 
 Override photoPickerOverride(Uint8List bytes) => photoPickerProvider.overrideWithValue(FakePhotoPicker(bytes));
+
+
+class FakeLocation implements LocationService {
+  FakeLocation([this.position]);
+  final ({double lat, double lng})? position;
+
+  @override
+  Future<({double lat, double lng})?> current() async => position;
+}
+
+Override locationOverride([({double lat, double lng})? position]) =>
+    locationProvider.overrideWithValue(FakeLocation(position));
