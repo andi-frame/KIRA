@@ -9,7 +9,22 @@ def _range(rng: ScoreRange) -> dict:
     return {"low": rng.low, "high": rng.high}
 
 
-def projection_payload(state: RiskState, most_impactful: str | None = None) -> dict:
+def suggested_change(state: RiskState) -> WhatIfChange:
+    """Perbaikan kebiasaan yang masuk akal untuk pengguna ini (dasar kartu 'kebiasaan paling berdampak')."""
+    i = state.inputs
+    return WhatIfChange(
+        active_30min=True if i.active_30min is not True else None,
+        daily_veg_fruit=True if i.daily_veg_fruit is not True else None,
+        weight_delta_kg=-round(state.weight_kg * 0.05, 1) if state.weight_kg and i.bmi and i.bmi >= 25 else None,
+        sweet_drinks_delta_per_day=-state.avg_sweet_drinks_per_day if state.avg_sweet_drinks_per_day > 0 else 0.0,
+    )
+
+
+def most_impactful_habit(state: RiskState) -> str:
+    return whatif_payload(state, suggested_change(state))["most_impactful"]
+
+
+def projection_payload(state: RiskState) -> dict:
     return {
         "score_low": state.rng.low,
         "score_high": state.rng.high,
@@ -22,7 +37,7 @@ def projection_payload(state: RiskState, most_impactful: str | None = None) -> d
         "needs_profile": state.needs_profile,
         "mode": state.mode,
         "bp_category": state.last_bp_category,
-        "most_impactful": most_impactful,
+        "most_impactful": most_impactful_habit(state),
     }
 
 

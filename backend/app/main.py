@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 
-from app.api import auth, profile
+from app.api import auth, chat, health, logs, profile
 
 app = FastAPI(title="KIRA API")
-app.include_router(auth.router)
-app.include_router(profile.router)
+for module in (auth, profile, chat, logs, health):
+    app.include_router(module.router)
 
 
 @app.get("/health")
-async def health() -> dict[str, str]:
+async def health_check() -> dict[str, str]:
     return {"status": "ok"}

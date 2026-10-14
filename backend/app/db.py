@@ -11,3 +11,8 @@ SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 async def get_session() -> AsyncIterator[AsyncSession]:
     async with SessionLocal() as session:
         yield session
+
+
+def get_session_factory() -> async_sessionmaker:
+    """Dependency agar router (dan graf) bisa memakai factory yang sama; di-override saat tes."""
+    return SessionLocal

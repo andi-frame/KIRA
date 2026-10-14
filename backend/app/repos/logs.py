@@ -1,14 +1,14 @@
 import re
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core_calc.targets import Totals
 from app.models import Log, LogItem
-from app.timeutil import start_of_today_utc, utcnow
+from app.timeutil import WIB, start_of_today_utc, utcnow
 
 
 @dataclass
@@ -91,6 +91,26 @@ async def search_older(
         .limit(limit)
     )
     return list((await session.execute(stmt)).scalars().all())
+
+
+async def on_date(session: AsyncSession, user_id: uuid.UUID, day: date):
+    """Log pada tanggal tertentu menurut WIB, terbaru dulu."""
+    start = datetime.combine(day, time.min, tzinfo=WIB)
+    stmt = (
+        select(Log)
+        .where(Log.user_id == user_id, Log.occurred_at >= start, Log.occurred_at < start + timedelta(days=1))
+        .order_by(Log.occurred_at.desc())
+    )
+    return await _with_items(session, list((await session.execute(stmt)).scalars().all()))
+
+
+async def replace_items(session: AsyncSession, log: Log, items: list[ItemData]) -> list[LogItem]:
+    await session.execute(delete(LogItem).where(LogItem.log_id == log.id))
+    rows = [LogItem(log_id=log.id, **item.__dict__) for item in items]
+    session.add_all(rows)
+    log.corrected = True
+    await session.commit()
+    return rows
 
 
 async def get_owned(session: AsyncSession, user_id: uuid.UUID, log_id: uuid.UUID) -> Log | None:
