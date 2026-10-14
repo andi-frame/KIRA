@@ -37,3 +37,21 @@ async def test_pin_is_stored_hashed(client, engine):
     async with engine.connect() as conn:
         stored = (await conn.execute(text("select pin_hash from users"))).scalar_one()
     assert stored != CREDS["pin"] and stored.startswith("$argon2")
+
+
+async def test_repeated_wrong_pins_lock_the_account_for_a_while(client):
+    await client.post("/auth/register", json=CREDS)
+    for _ in range(5):
+        assert (await client.post("/auth/login", json={**CREDS, "pin": "000000"})).status_code == 401
+    locked = await client.post("/auth/login", json=CREDS)  # PIN benar pun ditolak selama terkunci
+    assert locked.status_code == 429
+    assert "coba lagi" in locked.json()["detail"].lower()
+
+
+async def test_successful_login_resets_the_failure_counter(client):
+    await client.post("/auth/register", json=CREDS)
+    for _ in range(4):
+        await client.post("/auth/login", json={**CREDS, "pin": "000000"})
+    assert (await client.post("/auth/login", json=CREDS)).status_code == 200
+    for _ in range(4):
+        assert (await client.post("/auth/login", json={**CREDS, "pin": "000000"})).status_code == 401

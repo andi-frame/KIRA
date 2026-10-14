@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core_calc.bp import bp_category, validate_glucose
 from app.core_calc.check_trigger import CheckRecommendation as CheckRec
 from app.core_calc.check_trigger import evaluate_check
-from app.core_calc.constants import GLUCOSE_HIGH_FASTING, GLUCOSE_HIGH_RANDOM
+from app.core_calc.constants import GLUCOSE_HIGH_FASTING, GLUCOSE_HIGH_HBA1C, GLUCOSE_HIGH_RANDOM
 from app.core_calc.findrisc import FindriscInputs, ScoreRange, category, p10, score_range
 from app.core_calc.projection import projection_band
 from app.core_calc.red_flags import RedFlag, detect_red_flags
@@ -68,25 +68,35 @@ class ResultOutcome:
 def _glucose_flag(profile: HealthProfile | None, results: list[ClinicalResult]) -> bool | None:
     if profile is not None and profile.history_high_glucose:
         return True
-    measured = [r for r in results if r.kind in {"fasting_glucose", "random_glucose"}]
+    measured = [r for r in results if r.kind in {"fasting_glucose", "random_glucose", "hba1c"}]
     if measured:
         high = any(
             (r.kind == "fasting_glucose" and r.value.get("mg_dl", 0) >= GLUCOSE_HIGH_FASTING)
             or (r.kind == "random_glucose" and r.value.get("mg_dl", 0) >= GLUCOSE_HIGH_RANDOM)
+            or (r.kind == "hba1c" and r.value.get("percent", 0) >= GLUCOSE_HIGH_HBA1C)
             for r in measured
         )
         return high
     return profile.history_high_glucose if profile is not None else None
 
 
+def _covered_days(recent: list) -> int:
+    """Berapa hari yang benar-benar tercakup log (maks. WINDOW_DAYS); pembagi rata-rata harian."""
+    if not recent:
+        return 1
+    earliest = min(log.occurred_at for log, _ in recent)
+    return max(1, min(WINDOW_DAYS, (utcnow() - earliest).days + 1))
+
+
 def _activity_flag(profile: HealthProfile | None, recent: list) -> bool | None:
-    minutes = sum(
-        float(log.extracted.get("minutes", 0) or 0) for log, _ in recent if log.kind == "activity"
-    )
+    baseline = profile.usual_active_30min if profile is not None else None
+    covered = _covered_days(recent)
     has_activity_logs = any(log.kind == "activity" for log, _ in recent)
-    if has_activity_logs:
-        return minutes / WINDOW_DAYS >= ACTIVE_MINUTES_PER_DAY
-    return profile.usual_active_30min if profile is not None else None
+    # Log baru belum cukup mewakili kebiasaan: pakai baseline onboarding sampai ada beberapa hari log.
+    if not has_activity_logs or covered < MIN_LOGGED_DAYS:
+        return baseline
+    minutes = sum(float(log.extracted.get("minutes", 0) or 0) for log, _ in recent if log.kind == "activity")
+    return minutes / covered >= ACTIVE_MINUTES_PER_DAY
 
 
 def _veg_fruit_flag(profile: HealthProfile | None, recent: list) -> bool | None:
@@ -115,7 +125,7 @@ def _sweet_drink_stats(recent: list) -> tuple[float, float]:
             sugar_total += sugar
     if count_total == 0:
         return 0.0, DEFAULT_SUGAR_PER_DRINK
-    return count_total / WINDOW_DAYS, sugar_total / count_total
+    return count_total / _covered_days(recent), sugar_total / count_total
 
 
 def _habits_worsening(recent: list) -> bool:

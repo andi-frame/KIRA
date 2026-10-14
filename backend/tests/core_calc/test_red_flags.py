@@ -39,3 +39,41 @@ def test_sleep_hours_across_midnight(bed, wake, hours):
 def test_bad_time_format_raises():
     with pytest.raises(ValueError):
         parse_sleep_hours("25:00", "07:00")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "sakit dada dari tadi",
+        "dadaku nyeri banget",
+        "nyeri di dada kiri",
+        "napas sesak sejak pagi",
+        "susah napas pas naik tangga",
+        "sulit nafas",
+        "tangan kiri mati rasa, mulut mencong",
+        "tiba-tiba bicara pelo",
+        "tadi sempat pingsan",
+        "tensi saya 200/130 dan pusing",
+        "tekanan darah 190/115",
+        "gula darah 450",
+        "gds saya 38 lemas",
+    ],
+)
+def test_common_indonesian_phrasings_of_danger_are_caught(text):
+    assert detect_red_flags(text=text) is not None, text
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "tadi makan dada ayam goreng",
+        "sakit perut habis makan dada ayam",
+        "gula 20 gram di kopi",
+        "tensi saya 120/80",
+        "gula darah 110",
+        "tanggal 12/10 aku tidur jam 11",
+        "gula 5000",
+    ],
+)
+def test_ordinary_text_is_not_flagged(text):
+    assert detect_red_flags(text=text) is None, text

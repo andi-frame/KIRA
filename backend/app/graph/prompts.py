@@ -28,3 +28,8 @@ FALLBACK_REPLY = (
     "Maaf, aku lagi kesulitan memproses itu. Coba lagi sebentar lagi ya, "
     "atau ceritakan dengan kata-kata lain."
 )
+
+LOGGED_BUT_NO_ANSWER_REPLY = (
+    "Sudah kucatat, tapi aku belum bisa menjawab sekarang. "
+    "Catatanmu tidak perlu dikirim ulang. Tanya lagi sebentar lagi ya."
+)

@@ -4,6 +4,14 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.db import get_session, get_session_factory
 from app.main import app
+from app.ratelimit import login_limiter
+
+
+@pytest.fixture(autouse=True)
+def _fresh_limiter():
+    login_limiter.clear()
+    yield
+    login_limiter.clear()
 
 
 @pytest.fixture

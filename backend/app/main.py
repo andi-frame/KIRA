@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings
-
 from app.api import auth, chat, health, logs, profile
+from app.config import settings, validate_settings
+
+validate_settings(settings)
 
 app = FastAPI(title="KIRA API")
 app.add_middleware(

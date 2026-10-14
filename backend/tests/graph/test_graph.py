@@ -201,3 +201,53 @@ async def test_shipped_demo_cache_covers_every_scripted_input():
     shipped = json.loads(kira_graph.DEMO_CACHE_PATH.read_text(encoding="utf-8"))
     for scripted in DEMO_ENTRIES:
         assert kira_graph.cache_key(scripted) in shipped, scripted
+
+
+@pytest.mark.parametrize(
+    "text_",
+    [
+        "Coba glimepiride 2 mg ya",
+        "Minum obat gula 500mg setelah makan",
+        "Sepertinya kamu sudah kena diabetes",
+        "Kamu punya diabetes tipe 2",
+        "Gulamu 180, itu tergolong diabetes",
+        "Rendang masih aman kok buat kamu",
+        "Aman, makan saja",
+    ],
+)
+def test_guardrail_catches_more_drug_diagnosis_and_safe_phrasings(text_):
+    ok, safe = check_reply(text_)
+    assert ok is False and "dokter" in safe.lower(), text_
+
+
+@pytest.mark.parametrize(
+    "text_",
+    [
+        "Kalau kamu punya riwayat diabetes di keluarga, cek gula darah ya.",
+        "Natrium rendang itu sekitar 420 mg, minum air putih setelahnya.",
+        "Ini belum tentu aman kalau kamu lanjut begadang, tidur lebih awal ya.",
+    ],
+)
+def test_guardrail_still_allows_ordinary_lifestyle_replies(text_):
+    assert check_reply(text_) == (True, text_)
+
+
+async def test_agent_failure_after_logs_saved_says_so_instead_of_asking_to_resend(session_maker, make_user):
+    uid = await make_user()
+    chat = FakeChatModel(responses=[ai("x")], fail_with=TimeoutError("llm down"))
+    llm.set_models_for_tests(chat, FakeExtractModel(RAKA))
+    result = await run(uid, session_maker, input_text="tadi rendang, es teh manis, tidur jam 2")
+    assert len(result.log_ids) == 3
+    assert result.extraction is not None
+    assert "sudah kucatat" in result.reply.lower()
+    assert "tidak perlu" in result.reply.lower()
+    assert await count(session_maker, "logs") == 3
+
+
+async def test_clinical_numbers_in_a_question_are_not_saved_as_results(session_maker, make_user):
+    uid = await make_user()
+    hypothetical = {**RAKA, "items": [], "drinks": [], "sleep": None, "intent": "question_general",
+                    "clinical_result": {"kind": "fasting_glucose", "value": {"mg_dl": 130}}}
+    install([ai("Itu sebaiknya dikonfirmasi lewat pemeriksaan ya.")], hypothetical)
+    await run(uid, session_maker, input_text="kalau gula puasaku 130 itu gimana?")
+    assert await count(session_maker, "clinical_results") == 0

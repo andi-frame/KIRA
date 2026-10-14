@@ -11,6 +11,7 @@ class FakeChatModel(BaseChatModel):
     """Mengembalikan pesan terjadwal berurutan; setelah habis mengulang pesan terakhir."""
 
     responses: list[BaseMessage]
+    fail_with: Exception | None = None
     call_count: int = 0
     seen: list[list[BaseMessage]] = []
 
@@ -22,6 +23,8 @@ class FakeChatModel(BaseChatModel):
         return self
 
     def _generate(self, messages: list[BaseMessage], stop=None, run_manager=None, **kwargs: Any) -> ChatResult:
+        if self.fail_with is not None:
+            raise self.fail_with
         index = min(self.call_count, len(self.responses) - 1)
         self.call_count += 1
         self.seen.append(list(messages))

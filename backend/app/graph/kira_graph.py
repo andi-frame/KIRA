@@ -17,7 +17,7 @@ from app.graph.nodes.extract import extract
 from app.graph.nodes.guards import emergency_reply, fallback_reply, safety_check
 from app.graph.nodes.output_guardrail import output_guardrail
 from app.graph.nodes.save_logs import save_logs
-from app.graph.prompts import FALLBACK_REPLY
+from app.graph.prompts import FALLBACK_REPLY, LOGGED_BUT_NO_ANSWER_REPLY
 from app.graph.state import KiraState
 from app.repos import messages as messages_repo
 from app.schemas.extraction import Extraction
@@ -158,14 +158,21 @@ async def run_kira_graph(
         "source": source or (f"photo_{image_kind}" if image else "text"),
         "notes": [], "log_ids": [], "messages": [],
     }
+    # Pantau state per langkah: bila agent gagal setelah catatan tersimpan, hasil parsial tidak boleh hilang
+    # (kalau tidak, pengguna disuruh kirim ulang dan makanannya tercatat dua kali).
+    out: dict = dict(initial)
+    failed = False
     try:
-        out = await kira_graph.ainvoke(initial, config=config)
+        async for snapshot in kira_graph.astream(initial, config=config, stream_mode="values"):
+            out = snapshot
     except GraphRecursionError:
         log.warning("recursion limit reached for user %s", user_id)
-        out = {"reply": FALLBACK_REPLY, "messages": []}
+        failed = True
     except Exception:  # noqa: BLE001 - kegagalan model/jaringan tidak boleh menjatuhkan chat
         log.exception("graph failed for user %s", user_id)
-        out = {"reply": FALLBACK_REPLY, "messages": []}
+        failed = True
+    if failed:
+        out = {**out, "reply": LOGGED_BUT_NO_ANSWER_REPLY if out.get("log_ids") else FALLBACK_REPLY}
 
     result = RunResult(
         reply=out.get("reply") or FALLBACK_REPLY,

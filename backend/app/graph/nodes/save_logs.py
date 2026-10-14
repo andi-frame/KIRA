@@ -54,7 +54,12 @@ async def save_logs(state: KiraState, config: RunnableConfig) -> dict:
                 await add("activity", act.model_dump(), [])
 
         clinical = extraction.clinical_result
-        if clinical is not None:
+        # Angka dalam pertanyaan ("kalau gula puasaku 130...") bukan hasil pemeriksaan: jangan disimpan.
+        is_result = extraction.intent == "result_input" or state.get("image_kind") == "result"
+        if clinical is not None and not is_result:
+            notes.append("Ada angka pemeriksaan di pesan ini tetapi bukan laporan hasil, jadi tidak disimpan. "
+                         "Minta pengguna memasukkannya lewat Saatnya cek bila memang hasil ukur.")
+        elif clinical is not None:
             try:
                 await risk.record_result(
                     session, user_id, clinical.kind, clinical.value,
