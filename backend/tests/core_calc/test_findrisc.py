@@ -57,3 +57,18 @@ def test_category_edges():
 def test_p10_is_monotonic_non_decreasing():
     values = [p10(s) for s in range(0, 27)]
     assert values == sorted(values)
+
+
+def test_p10_moves_with_every_score_point_inside_a_category():
+    # What-if kecil (mis. +2 poin aktivitas) harus menggeser kurva walau kategorinya sama.
+    assert p10(7) < p10(9) < p10(11)
+
+
+def test_p10_hits_the_category_value_at_the_category_midpoint():
+    assert p10(9) == pytest.approx(0.04)   # tengah 7-11
+    assert p10(13) == pytest.approx(0.17)  # tengah 12-14
+
+
+def test_p10_is_clamped_at_the_extremes():
+    assert p10(0) == pytest.approx(0.01)
+    assert p10(26) == pytest.approx(0.50)

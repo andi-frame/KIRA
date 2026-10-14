@@ -83,5 +83,23 @@ def category(score: int) -> str:
     raise ValueError(f"skor FINDRISC di luar 0-26: {score}")
 
 
+def _anchors() -> list[tuple[float, float]]:
+    """Titik jangkar (skor tengah kategori, p10 kategori) untuk interpolasi."""
+    return [((lo + hi) / 2, P10_BY_CATEGORY[label]) for lo, hi, label in FINDRISC_CATEGORIES]
+
+
 def p10(score: int) -> float:
-    return P10_BY_CATEGORY[category(score)]
+    """Perkiraan insidensi 10 tahun untuk sebuah skor.
+
+    Nilai kategori (TODO-VERIFY, constants.py) dipasang di skor tengah tiap kategori, lalu diinterpolasi
+    linear di antaranya, agar setiap poin skor menggeser proyeksi (tidak berupa tangga per kategori).
+    Di luar jangkar pertama/terakhir nilainya dikunci.
+    """
+    category(score)  # validasi 0-26
+    points = _anchors()
+    if score <= points[0][0]:
+        return points[0][1]
+    for (x0, y0), (x1, y1) in zip(points, points[1:]):
+        if score <= x1:
+            return y0 + (y1 - y0) * (score - x0) / (x1 - x0)
+    return points[-1][1]
