@@ -86,8 +86,9 @@ async def test_tool_call_is_recorded_and_result_returned(session_maker, make_use
         {**RAKA, "items": [], "drinks": [], "sleep": None, "intent": "question_portion"},
     )
     result = await run(uid, session_maker, input_text="mau makan rendang malam ini, boleh berapa?")
-    assert [c["name"] for c in result.tool_calls] == ["cari_gizi"]
-    assert result.tool_calls[0]["result"]["found"] is True
+    # Tanpa nama makanan di ekstraksi tidak ada tool awal; yang diminta agent tetap dijalankan dan dicatat.
+    assert [c["name"] for c in result.tool_calls][-1] == "cari_gizi"
+    assert result.tool_calls[-1]["result"]["found"] is True
 
 
 async def test_unknown_food_flows_through_without_invented_numbers(session_maker, make_user):
@@ -98,7 +99,8 @@ async def test_unknown_food_flows_through_without_invented_numbers(session_maker
         {**RAKA, "items": [], "drinks": [], "sleep": None, "intent": "question_portion"},
     )
     result = await run(uid, session_maker, input_text="boleh makan xyzxyz?")
-    assert result.tool_calls[0]["result"] == {"found": False}
+    # pertanyaan porsi menyiapkan sisa target lebih dulu; pencarian makanan tak dikenal dari agent tetap tanpa angka karangan
+    assert result.tool_calls[-1]["name"] == "cari_gizi" and result.tool_calls[-1]["result"] == {"found": False}
     assert not any(ch.isdigit() for ch in result.reply)
 
 

@@ -16,6 +16,7 @@ from app.graph.nodes.build_context import build_context
 from app.graph.nodes.extract import extract
 from app.graph.nodes.guards import emergency_reply, fallback_reply, safety_check
 from app.graph.nodes.output_guardrail import after_guardrail, output_guardrail
+from app.graph.nodes.prefetch_tools import prefetch_tools
 from app.graph.nodes.save_logs import save_logs
 from app.graph.prompts import FALLBACK_REPLY, LOGGED_BUT_NO_ANSWER_REPLY
 from app.graph.state import KiraState
@@ -57,6 +58,7 @@ def build_graph():
     g.add_node("extract", extract)
     g.add_node("save_logs", save_logs)
     g.add_node("build_context", build_context)
+    g.add_node("prefetch_tools", prefetch_tools)
     g.add_node("agent", agent)
     g.add_node("tools", ToolNode(TOOLS))
     g.add_node("output_guardrail", output_guardrail)
@@ -67,7 +69,8 @@ def build_graph():
     g.add_edge("emergency_reply", END)
     g.add_edge("fallback_reply", END)
     g.add_edge("save_logs", "build_context")
-    g.add_edge("build_context", "agent")
+    g.add_edge("build_context", "prefetch_tools")
+    g.add_edge("prefetch_tools", "agent")
     g.add_conditional_edges("agent", tools_condition, {"tools": "tools", END: "output_guardrail"})
     g.add_edge("tools", "agent")
     g.add_conditional_edges("output_guardrail", after_guardrail, {"agent": "agent", "__end__": END})
