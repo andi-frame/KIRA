@@ -18,6 +18,7 @@ import 'package:kira/features/reminders/reminder_plan.dart';
 import 'package:kira/features/health/health_sync.dart';
 import 'package:image_picker/image_picker.dart' show ImageSource;
 import 'package:kira/shared/account_models.dart';
+import 'package:kira/shared/clinical_extras_models.dart';
 import 'package:kira/shared/engagement_models.dart';
 import 'package:kira/shared/family_models.dart';
 import 'package:kira/shared/insight_models.dart';
@@ -336,6 +337,47 @@ class FakeApi implements KiraApi {
   }
 
   bool loggedToday = false;
+  RiskHistory riskHistory = const RiskHistory(boundaries: [7, 12, 15, 21]);
+  SleepPatterns patterns = const SleepPatterns();
+  List<SavedScenario> scenarios = [];
+  final List<({String name, WhatIfChange change})> savedScenarios = [];
+  final List<String> deletedScenarios = [];
+  Object? scenarioError;
+
+  @override
+  Future<RiskHistory> getRiskHistory(int days) async => riskHistory;
+
+  @override
+  Future<SleepPatterns> getPatterns(int days) async => patterns;
+
+  @override
+  Future<List<SavedScenario>> listScenarios() async => scenarios;
+
+  @override
+  Future<SavedScenario> saveScenario(String name, WhatIfChange change) async {
+    if (scenarioError != null) throw scenarioError!;
+    savedScenarios.add((name: name, change: change));
+    final s = SavedScenario(
+      id: 'sc-${savedScenarios.length}',
+      name: name,
+      params: change.toJson(),
+      savedBefore: const ScoreSpan(9, 18),
+      savedAfter: const ScoreSpan(9, 16),
+      nowBefore: const ScoreSpan(9, 18),
+      nowAfter: const ScoreSpan(9, 16),
+    );
+    scenarios = [s, ...scenarios];
+    return s;
+  }
+
+  @override
+  Future<void> deleteScenario(String id) async {
+    deletedScenarios.add(id);
+    scenarios = [
+      for (final s in scenarios)
+        if (s.id != id) s,
+    ];
+  }
   BpProtocolView bpView = const BpProtocolView();
   Object? bpError;
   final List<({int sys, int dia, String session})> bpReadings = [];

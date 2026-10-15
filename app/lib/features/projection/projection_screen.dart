@@ -9,6 +9,7 @@ import '../../shared/labels.dart';
 import '../../shared/models.dart';
 import '../../shared/widgets.dart';
 import 'projection_providers.dart';
+import 'scenarios_card.dart';
 import 'risk_chart.dart';
 import 'weekly_recap_card.dart';
 
@@ -121,6 +122,8 @@ class _Content extends ConsumerWidget {
         ],
         const SizedBox(height: KiraSpace.lg),
         _Controls(whatIf: whatIf),
+        const SizedBox(height: KiraSpace.lg),
+        ScenariosCard(whatIf: whatIf),
         const SizedBox(height: KiraSpace.sm),
         Align(
           alignment: Alignment.centerLeft,

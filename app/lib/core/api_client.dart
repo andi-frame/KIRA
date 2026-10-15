@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
 import '../shared/account_models.dart';
+import '../shared/clinical_extras_models.dart';
 import '../shared/engagement_models.dart';
 import '../shared/family_models.dart';
 import '../shared/insight_models.dart';
@@ -52,6 +53,11 @@ abstract class KiraApi {
   Future<CheckRespondResult> respondCheck(String id, String action);
   Future<List<FrequentFood>> getFrequentFoods();
   Future<bool> hasLoggedToday();
+  Future<RiskHistory> getRiskHistory(int days);
+  Future<SleepPatterns> getPatterns(int days);
+  Future<List<SavedScenario>> listScenarios();
+  Future<SavedScenario> saveScenario(String name, WhatIfChange change);
+  Future<void> deleteScenario(String id);
   Future<BpProtocolView> getBpProtocol();
   Future<BpProtocolView> startBpProtocol();
   Future<BpProtocolView> addBpReading(int sys, int dia, String session);
@@ -303,6 +309,33 @@ class DioKiraApi implements KiraApi {
         () => _dio.post('/recommendations/$id/respond', data: {'action': action}),
         (d) => CheckRespondResult.fromJson(d as Map<String, dynamic>),
       );
+
+  @override
+  Future<RiskHistory> getRiskHistory(int days) => _run(
+        () => _dio.get('/insights/risk-history', queryParameters: {'days': days}),
+        (d) => RiskHistory.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<SleepPatterns> getPatterns(int days) => _run(
+        () => _dio.get('/insights/patterns', queryParameters: {'days': days}),
+        (d) => SleepPatterns.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<List<SavedScenario>> listScenarios() => _run(
+        () => _dio.get('/projection/scenarios'),
+        (d) => (d['scenarios'] as List).map((e) => SavedScenario.fromJson(e as Map<String, dynamic>)).toList(),
+      );
+
+  @override
+  Future<SavedScenario> saveScenario(String name, WhatIfChange change) => _run(
+        () => _dio.post('/projection/scenarios', data: {'name': name, ...change.toJson()}),
+        (d) => SavedScenario.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<void> deleteScenario(String id) => _run(() => _dio.delete('/projection/scenarios/$id'), (_) {});
 
   @override
   Future<BpProtocolView> getBpProtocol() =>

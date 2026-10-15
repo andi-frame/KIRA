@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../shared/insight_models.dart';
 import '../../shared/widgets.dart';
+import 'insight_cards.dart';
 import 'trends_widgets.dart';
 
 final trendsProvider = FutureProvider.family<TrendsData, int>((ref, days) {
@@ -56,6 +57,10 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
             ),
             data: (data) => TrendsSection(data: data),
           ),
+          const SizedBox(height: KiraSpace.xl),
+          const RiskHistoryCard(),
+          const SizedBox(height: KiraSpace.lg),
+          const SleepPatternsCard(),
         ],
       ),
     );
