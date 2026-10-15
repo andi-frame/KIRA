@@ -272,6 +272,22 @@ class _ItemView extends ConsumerWidget {
     switch (item.kind) {
       case ChatKind.user:
         return ChatBubble(text: item.text, mine: true);
+      case ChatKind.pending:
+        return Column(
+          key: Key('pending_${item.id}'),
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            ChatBubble(text: item.text, mine: true),
+            Padding(
+              padding: const EdgeInsets.only(top: KiraSpace.xs, right: KiraSpace.sm),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.schedule, size: 14, color: context.scheme.onSurfaceVariant),
+                const SizedBox(width: KiraSpace.xs),
+                Text('Menunggu sinyal, dikirim otomatis', style: context.text.bodySmall),
+              ]),
+            ),
+          ],
+        );
       case ChatKind.kira:
         if (item.calls.isEmpty) return ChatBubble(text: item.text, mine: false);
         return Column(
@@ -490,7 +506,8 @@ class _KindSheet extends StatelessWidget {
           onTap: () => Navigator.pop(context, kind),
         );
     return SafeArea(
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
+      child: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
         tile('photo_kind_food', 'food', Icons.restaurant_outlined, 'Foto makanan', 'KIRA mengenali menu dan porsinya'),
         tile('photo_kind_receipt', 'receipt', Icons.receipt_long_outlined, 'Foto struk belanja', 'Daftar item dibaca dari struk'),
         tile('photo_kind_label', 'label', Icons.fact_check_outlined, 'Foto label gizi kemasan',
@@ -498,7 +515,8 @@ class _KindSheet extends StatelessWidget {
         tile('photo_kind_barcode', 'barcode', Icons.qr_code_scanner, 'Pindai kode batang kemasan',
             'Gizi produk dicari di Open Food Facts, tinggal pilih porsinya'),
         tile('photo_kind_result', 'result', Icons.biotech_outlined, 'Foto hasil cek', 'Hasil lab, CKG, atau layar tensimeter'),
-      ]),
+        ]),
+      ),
     );
   }
 }

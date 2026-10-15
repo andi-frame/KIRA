@@ -103,7 +103,10 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> _load() async {
     final store = ref.read(tokenStoreProvider);
-    state = AuthState(loaded: true, token: await store.read(), refreshToken: await store.readRefresh());
+    final token = await store.read();
+    final refresh = await store.readRefresh();
+    if (!ref.mounted) return;
+    state = AuthState(loaded: true, token: token, refreshToken: refresh);
   }
 
   Future<void> setTokens(AuthTokens tokens) async {

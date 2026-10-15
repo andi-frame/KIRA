@@ -1,19 +1,24 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
+import '../../core/outbox.dart';
 import '../../core/providers.dart';
 import '../../shared/models.dart';
 import '../projection/projection_providers.dart';
+import '../reminders/reminders_controller.dart';
 import 'frequent_foods.dart';
 
-enum ChatKind { user, kira, extraction, emergency, error }
+enum ChatKind { user, pending, kira, extraction, emergency, error }
 
 class ChatItem {
-  const ChatItem._(this.kind, {this.text = '', this.data, this.logIds = const [], this.retry, this.calls = const []});
+  const ChatItem._(this.kind, {this.text = '', this.data, this.logIds = const [], this.retry, this.calls = const [], this.id});
 
   const ChatItem.user(String text) : this._(ChatKind.user, text: text);
+  /// Pesan yang belum terkirim karena tidak ada sinyal; tersimpan di ponsel dan dikirim otomatis.
+  const ChatItem.pending(String text, String id) : this._(ChatKind.pending, text: text, id: id);
   const ChatItem.kira(String text, {List<ToolCall> calls = const []}) : this._(ChatKind.kira, text: text, calls: calls);
   const ChatItem.emergency(String text) : this._(ChatKind.emergency, text: text);
   const ChatItem.extraction(ExtractionData data, List<String> logIds)
@@ -26,6 +31,7 @@ class ChatItem {
   final List<String> logIds;
   final Future<void> Function()? retry;
   final List<ToolCall> calls;
+  final String? id;
 }
 
 class ChatState {
@@ -44,15 +50,48 @@ const greetingText =
 
 class ChatController extends Notifier<ChatState> {
   @override
-  ChatState build() => const ChatState(items: [ChatItem.kira(greetingText)]);
+  ChatState build() {
+    final outbox = ref.read(outboxProvider.notifier);
+    final sub = outbox.events.listen(_onOutbox);
+    ref.onDispose(sub.cancel);
+    return const ChatState(items: [ChatItem.kira(greetingText)]);
+  }
+
+  /// Pesan tertunda sudah terkirim (atau ditolak): ganti gelembung "menunggu" dengan hasilnya.
+  void _onOutbox(OutboxEvent event) {
+    if (event.item.kind != OutboxKind.message) return;
+    final id = event.item.id;
+    final items = [
+      for (final i in state.items)
+        if (i.kind == ChatKind.pending && i.id == id) ChatItem.user(i.text) else i,
+    ];
+    state = state.copyWith(items: items);
+    if (event.reply != null) {
+      _apply(event.reply!);
+    } else if (event.error != null) {
+      _add(ChatItem.kira('Pesan "${event.item.text}" tidak bisa dikirim: ${event.error}'));
+    }
+  }
 
   void _add(ChatItem item) => state = state.copyWith(items: [...state.items, item]);
 
   Future<void> send(String raw) async {
     final text = raw.trim();
     if (text.isEmpty || state.busy) return;
+    final id = newOutboxId();
     _add(ChatItem.user(text));
-    await _run(() => ref.read(apiProvider).sendMessage(text));
+    await _run(() => ref.read(apiProvider).sendMessage(text, idempotencyKey: id), onOffline: () {
+      // Tanpa sinyal: simpan di ponsel (dengan kunci yang sama, jadi tidak tercatat dua kali) dan kirim otomatis nanti.
+      ref.read(outboxProvider.notifier).enqueueMessage(text, id: id);
+      final items = [...state.items];
+      final at = items.lastIndexWhere((i) => i.kind == ChatKind.user && i.text == text);
+      if (at >= 0) items[at] = ChatItem.pending(text, id);
+      state = state.copyWith(items: [
+        ...items,
+        const ChatItem.kira('Belum ada sinyal. Pesanmu tersimpan di ponsel dan akan dikirim otomatis begitu tersambung. '
+            '$offlineEmergencyHint'),
+      ]);
+    });
   }
 
   Future<void> sendPhoto(String kind, Uint8List bytes, String name) async {
@@ -72,11 +111,16 @@ class ChatController extends Notifier<ChatState> {
     await _run(() => ref.read(apiProvider).sendVoice(bytes, name));
   }
 
-  Future<void> _run(Future<ChatReply> Function() call) async {
+  Future<void> _run(Future<ChatReply> Function() call, {void Function()? onOffline}) async {
     state = state.copyWith(busy: true);
     try {
       _apply(await call());
+      unawaited(ref.read(outboxProvider.notifier).flush()); // sinyal ada: sekalian kirim yang tertunda
     } on ApiException catch (e) {
+      if (e.isNetwork && onOffline != null) {
+        onOffline();
+        return;
+      }
       _add(ChatItem.error(e.message, () async {
         state = state.copyWith(items: [...state.items]..removeWhere((i) => i.kind == ChatKind.error));
         await _run(call);
@@ -93,6 +137,7 @@ class ChatController extends Notifier<ChatState> {
       ref
         ..invalidate(projectionProvider) // catatan baru mengubah proyeksi
         ..invalidate(frequentFoodsProvider);
+      unawaited(ref.read(remindersProvider.notifier).reschedule()); // sudah mencatat: pengingat hari ini tak perlu
     }
     final data = reply.extraction;
     if (data != null && !data.isEmpty && reply.logIds.isNotEmpty && reply.redFlag == null) {
