@@ -7,7 +7,7 @@ import 'package:kira/shared/models.dart';
 import 'support/fakes.dart';
 
 Future<void> pumpProjection(WidgetTester tester, FakeApi api) async {
-  tester.view.physicalSize = const Size(900, 2400);
+  tester.view.physicalSize = const Size(900, 3600);
   tester.view.devicePixelRatio = 2;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(testApp(const ProjectionScreen(), api: api));

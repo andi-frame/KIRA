@@ -11,6 +11,7 @@ import '../features/check/check_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../features/doctor/doctor_summary_screen.dart';
 import '../features/family/family_screen.dart';
+import '../features/goals/goals_screen.dart';
 import '../features/health/health_screen.dart';
 import '../features/trends/trends_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
@@ -48,6 +49,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
       GoRoute(path: '/reminders', builder: (_, _) => const RemindersScreen()),
+      GoRoute(path: '/goals', builder: (_, _) => const GoalsScreen()),
       GoRoute(path: '/bp-protocol', builder: (_, _) => const BpProtocolScreen()),
       GoRoute(path: '/barcode', builder: (_, _) => const BarcodeScreen()),
       GoRoute(path: '/reset-pin', builder: (_, _) => const ResetPinScreen()),

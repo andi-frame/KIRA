@@ -21,6 +21,7 @@ import 'package:kira/shared/account_models.dart';
 import 'package:kira/shared/clinical_extras_models.dart';
 import 'package:kira/shared/engagement_models.dart';
 import 'package:kira/shared/family_models.dart';
+import 'package:kira/shared/goal_models.dart';
 import 'package:kira/shared/insight_models.dart';
 import 'package:kira/shared/models.dart';
 
@@ -337,6 +338,43 @@ class FakeApi implements KiraApi {
   }
 
   bool loggedToday = false;
+  GoalsData goalsData = const GoalsData(kinds: sampleGoalKinds, daysLeft: 3);
+  final List<({String kind, double target})> createdGoals = [];
+  final List<({String id, double target})> updatedGoals = [];
+  final List<String> deletedGoals = [];
+  Object? goalError;
+
+  @override
+  Future<GoalsData> getGoals() async => goalsData;
+
+  @override
+  Future<void> createGoal(String kind, double target) async {
+    if (goalError != null) throw goalError!;
+    createdGoals.add((kind: kind, target: target));
+    final spec = goalsData.kinds.firstWhere((k) => k.kind == kind);
+    goalsData = GoalsData(
+      kinds: goalsData.kinds,
+      daysLeft: goalsData.daysLeft,
+      goals: [
+        ...goalsData.goals,
+        sampleGoal(kind: kind, label: spec.label, unit: spec.unit, target: target, isMax: spec.isMax),
+      ],
+    );
+  }
+
+  @override
+  Future<void> updateGoal(String id, double target) async {
+    updatedGoals.add((id: id, target: target));
+  }
+
+  @override
+  Future<void> deleteGoal(String id) async {
+    deletedGoals.add(id);
+    goalsData = GoalsData(kinds: goalsData.kinds, daysLeft: goalsData.daysLeft, goals: [
+      for (final g in goalsData.goals)
+        if (g.id != id) g,
+    ]);
+  }
   RiskHistory riskHistory = const RiskHistory(boundaries: [7, 12, 15, 21]);
   SleepPatterns patterns = const SleepPatterns();
   List<SavedScenario> scenarios = [];
@@ -806,3 +844,39 @@ class FakeLinks implements LinkOpener {
 }
 
 Override linksOverride(FakeLinks links) => linkOpenerProvider.overrideWithValue(links);
+
+
+const sampleGoalKinds = [
+  GoalKind(kind: 'active_minutes_week', label: 'Bergerak minggu ini', unit: 'menit', isMax: false, defaultTarget: 150, min: 30, max: 600),
+  GoalKind(kind: 'sweet_drinks_week', label: 'Minuman manis minggu ini', unit: 'gelas', isMax: true, defaultTarget: 7, min: 0, max: 28),
+  GoalKind(kind: 'sleep_nights', label: 'Malam tidur 7 jam atau lebih', unit: 'malam', isMax: false, defaultTarget: 5, min: 1, max: 7),
+];
+
+Goal sampleGoal({
+  String kind = 'active_minutes_week',
+  String label = 'Bergerak minggu ini',
+  String unit = 'menit',
+  double current = 70,
+  double target = 150,
+  bool isMax = false,
+  List<WeekResult> history = const [],
+  int metWeeks = 0,
+  int weeksWithData = 0,
+}) {
+  final met = isMax ? current <= target : current >= target;
+  return Goal(
+    id: 'g-$kind',
+    kind: kind,
+    label: label,
+    unit: unit,
+    current: current,
+    target: target,
+    isMax: isMax,
+    met: met,
+    fraction: target <= 0 ? 1 : (current / target).clamp(0, 1).toDouble(),
+    remaining: met ? 0 : (isMax ? 0 : target - current),
+    history: history,
+    metWeeks: metWeeks,
+    weeksWithData: weeksWithData,
+  );
+}

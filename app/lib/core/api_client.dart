@@ -6,8 +6,12 @@ import '../shared/account_models.dart';
 import '../shared/clinical_extras_models.dart';
 import '../shared/engagement_models.dart';
 import '../shared/family_models.dart';
+import '../shared/goal_models.dart';
 import '../shared/insight_models.dart';
 import '../shared/models.dart';
+
+/// Balasan KIRA melewati model bahasa (bisa beberapa kali memanggil tool): beri waktu lebih lama dari panggilan biasa.
+const Duration kChatTimeout = Duration(seconds: 150);
 
 const String kApiUrl = String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8000');
 
@@ -53,6 +57,10 @@ abstract class KiraApi {
   Future<CheckRespondResult> respondCheck(String id, String action);
   Future<List<FrequentFood>> getFrequentFoods();
   Future<bool> hasLoggedToday();
+  Future<GoalsData> getGoals();
+  Future<void> createGoal(String kind, double target);
+  Future<void> updateGoal(String id, double target);
+  Future<void> deleteGoal(String id);
   Future<RiskHistory> getRiskHistory(int days);
   Future<SleepPatterns> getPatterns(int days);
   Future<List<SavedScenario>> listScenarios();
@@ -258,11 +266,13 @@ class DioKiraApi implements KiraApi {
       );
 
   /// Kunci unik per kiriman: bila jaringan putus setelah server mencatat, kiriman ulang tidak tercatat dua kali.
-  Options? _idempotent(String? key) => key == null ? null : Options(headers: {'Idempotency-Key': key});
+  Options _idempotent(String? key) =>
+      Options(receiveTimeout: kChatTimeout, headers: {'Idempotency-Key': ?key});
 
   @override
   Future<ChatReply> sendVoice(Uint8List audio, String filename) => _run(
         () => _dio.post('/chat/voice',
+            options: Options(receiveTimeout: kChatTimeout),
             data: FormData.fromMap({'audio': MultipartFile.fromBytes(audio, filename: filename)})),
         (d) => ChatReply.fromJson(d as Map<String, dynamic>),
       );
@@ -271,6 +281,7 @@ class DioKiraApi implements KiraApi {
   Future<ChatReply> sendPhoto(String kind, Uint8List image, String filename) => _run(
         () => _dio.post('/chat/photo',
             queryParameters: {'kind': kind},
+            options: Options(receiveTimeout: kChatTimeout),
             data: FormData.fromMap({'image': MultipartFile.fromBytes(image, filename: filename)})),
         (d) => ChatReply.fromJson(d as Map<String, dynamic>),
       );
@@ -309,6 +320,20 @@ class DioKiraApi implements KiraApi {
         () => _dio.post('/recommendations/$id/respond', data: {'action': action}),
         (d) => CheckRespondResult.fromJson(d as Map<String, dynamic>),
       );
+
+  @override
+  Future<GoalsData> getGoals() => _run(() => _dio.get('/goals'), (d) => GoalsData.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<void> createGoal(String kind, double target) =>
+      _run(() => _dio.post('/goals', data: {'kind': kind, 'target': target}), (_) {});
+
+  @override
+  Future<void> updateGoal(String id, double target) =>
+      _run(() => _dio.patch('/goals/$id', data: {'target': target}), (_) {});
+
+  @override
+  Future<void> deleteGoal(String id) => _run(() => _dio.delete('/goals/$id'), (_) {});
 
   @override
   Future<RiskHistory> getRiskHistory(int days) => _run(
