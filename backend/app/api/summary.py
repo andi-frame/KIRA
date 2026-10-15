@@ -14,6 +14,7 @@ from app.security import current_user_id
 from app.services import risk
 from app.services.jobs import _metrics, _summary_text, week_bounds, weekly_changes
 from app.services.projection_view import hypertension_payload
+from app.services.trends import build_trends
 from app.timeutil import local_date, utcnow
 
 router = APIRouter(tags=["summary"])
@@ -201,3 +202,13 @@ async def weekly_recap(
             "text": _summary_text(start, end, metrics), "changes": weekly_changes(metrics, prev),
         }
     }
+
+
+@router.get("/insights/trends")
+async def trends(
+    days: int = Query(default=30, ge=1, le=90),
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Grafik tren: hasil pemeriksaan (180 hari), kebiasaan harian (`days`), dan penanda triase untuk dokter."""
+    return await build_trends(session, user_id, days)

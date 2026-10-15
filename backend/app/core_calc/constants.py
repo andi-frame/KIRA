@@ -94,3 +94,11 @@ DAILY_LIMITS = {"sugar_g": 50.0, "sodium_mg": 2000.0, "fat_g": 67.0}
 # Mode pengelolaan: gula 25 g (~5% energi, rekomendasi bersyarat WHO 2015 untuk manfaat tambahan); natrium dan
 # lemak tetap sama. ASUMSI KIRA: tidak ada angka resmi Indonesia yang lebih ketat; ikuti arahan dokter/ahli gizi.
 DAILY_LIMITS_MANAGEMENT = {"sugar_g": 25.0, "sodium_mg": 2000.0, "fat_g": 67.0}
+
+# Rentang diabetes untuk penanda triase (bukan diagnosis). SUMBER (primer): PERKENI 2021 Tabel 3-4: GDP >=126 mg/dL,
+# HbA1c >=6,5 %, glukosa sewaktu >=200 mg/dL (dengan keluhan klasik) berada di rentang diabetes; prediabetes memakai
+# GLUCOSE_HIGH_FASTING dan GLUCOSE_HIGH_HBA1C di atas (batas atas prediabetes: GDP 125, HbA1c 6,4).
+GLUCOSE_DIABETES_FASTING = 126
+HBA1C_DIABETES = 6.5
+# ASUMSI KIRA: selisih pengukuran pertama dan terakhir di bawah ini dianggap "stabil" (derau pengukuran harian).
+TREND_NOISE = {"sys": 5.0, "dia": 3.0, "fasting_glucose": 10.0, "random_glucose": 20.0, "hba1c": 0.3, "waist": 2.0}
