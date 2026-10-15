@@ -87,3 +87,34 @@ async def test_data_pengguna_lain_tidak_tersentuh(client, auth_headers, engine):
     other_h = {"Authorization": f"Bearer {other.json()['access_token']}"}
     await client.post("/sync/passive", json={"steps": [steps(1, 10, 1200)]}, headers=other_h)
     assert len(await rows(engine, "activity")) == 2
+
+
+async def test_sinkron_sebagian_hanya_menggantikan_hari_yang_dikirim(client, auth_headers, engine):
+    await client.post("/sync/passive", json={"steps": [steps(1, 40, 4400), steps(3, 30, 3300)]}, headers=auth_headers)
+    await client.post("/sync/passive", json={"steps": [steps(2, 20, 2200)]}, headers=auth_headers)
+    assert sorted(x[2]["steps"] for x in await rows(engine, "activity")) == [2200, 3300, 4400]
+    await client.post("/sync/passive", json={"steps": [steps(2, 10, 1200)]}, headers=auth_headers)
+    assert sorted(x[2]["steps"] for x in await rows(engine, "activity")) == [1200, 3300, 4400]
+
+
+async def test_hapus_data_pasif_hanya_menghapus_milik_sendiri_dan_hanya_health_connect(client, auth_headers, engine):
+    await client.post("/sync/passive", json={"steps": [steps(1, 40, 4400)], "sleep": [sleep(1, 7)]}, headers=auth_headers)
+    async with engine.begin() as conn:  # catatan manual milik pengguna yang sama
+        await conn.execute(text(
+            "insert into logs (id, user_id, occurred_at, kind, source, extracted) "
+            "select gen_random_uuid(), id, now(), 'activity', 'text', '{\"minutes\": 10}' from users limit 1"
+        ))
+    other = await client.post("/auth/register", json={"phone": "081200000066", "pin": "654321"})
+    other_h = {"Authorization": f"Bearer {other.json()['access_token']}"}
+    await client.post("/sync/passive", json={"steps": [steps(1, 10, 1200)]}, headers=other_h)
+
+    r = await client.delete("/sync/passive", headers=auth_headers)
+    assert r.status_code == 200 and r.json() == {"deleted": 2}
+    assert len(await rows(engine)) == 1  # milik pengguna lain tetap ada
+    async with engine.connect() as conn:
+        manual = (await conn.execute(text("select count(*) from logs where source = 'text'"))).scalar_one()
+    assert manual == 1  # catatan manual tidak tersentuh
+
+
+async def test_hapus_data_pasif_butuh_login(client):
+    assert (await client.delete("/sync/passive")).status_code in (401, 403)

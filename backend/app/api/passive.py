@@ -1,14 +1,14 @@
 """Sinkronisasi data pasif dari perangkat (Health Connect): langkah dan tidur.
 
 Klien mengirim catatan mentah; menit aktif dihitung di sini (core_calc.steps), bukan di aplikasi. Sinkron ulang
-menggantikan catatan health_connect sejak hari paling awal di kiriman, jadi tidak pernah menggandakan.
+menggantikan catatan health_connect pada hari-hari yang ada di kiriman, jadi tidak pernah menggandakan.
 """
 import uuid
 from datetime import date, datetime, time, timedelta
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import delete
+from sqlalchemy import and_, delete, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core_calc.steps import StepSegment, moderate_minutes_by_day, steps_by_day
@@ -76,10 +76,13 @@ async def sync_passive(
     if not days_touched:
         return {"activity_days": 0, "sleep_nights": 0}
 
-    cutoff = datetime.combine(min(days_touched), time.min, tzinfo=WIB)
-    await session.execute(
-        delete(Log).where(Log.user_id == user_id, Log.source == SOURCE, Log.occurred_at >= cutoff)
-    )
+    # Hanya hari yang ada di kiriman yang diganti: sinkron sebagian tidak menghapus hari lain.
+    day_ranges = [
+        and_(Log.occurred_at >= datetime.combine(d, time.min, tzinfo=WIB),
+             Log.occurred_at < datetime.combine(d + timedelta(days=1), time.min, tzinfo=WIB))
+        for d in set(days_touched)
+    ]
+    await session.execute(delete(Log).where(Log.user_id == user_id, Log.source == SOURCE, or_(*day_ranges)))
     for day, count in totals.items():
         await logs_repo.add_log(
             session, user_id, kind="activity", source=SOURCE, occurred_at=_noon(day), raw_text=None, items=[],
@@ -100,3 +103,16 @@ async def sync_passive(
     await risk.refresh_check_recommendation(session, user_id, state, commit=False)
     await session.commit()
     return {"activity_days": len(totals), "sleep_nights": len(nights)}
+
+
+@router.delete("/passive")
+async def delete_passive(
+    user_id: uuid.UUID = Depends(current_user_id), session: AsyncSession = Depends(get_session)
+) -> dict[str, int]:
+    """Hapus semua catatan langkah dan tidur dari perangkat milik pengguna ini (saat sinkronisasi dimatikan).
+    Catatan manual atau dari obrolan tidak tersentuh."""
+    result = await session.execute(delete(Log).where(Log.user_id == user_id, Log.source == SOURCE))
+    state = await risk.compute_risk_state(session, user_id)
+    await risk.save_snapshot(session, user_id, state, commit=False)
+    await session.commit()
+    return {"deleted": result.rowcount or 0}
