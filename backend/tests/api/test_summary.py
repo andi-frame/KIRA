@@ -77,3 +77,21 @@ async def test_food_glucose_correlation_needs_enough_paired_readings(client, aut
 async def test_food_glucose_without_readings_says_more_data_is_needed(client, auth_headers):
     body = (await client.get("/insights/food-glucose", headers=auth_headers)).json()
     assert body["foods"] == [] and body["needs_more_data"] is True and body["total_readings"] == 0
+
+
+async def test_ringkasan_dokter_memuat_penanda_triase_di_json_dan_teks(client, session_maker):
+    h = await raka_headers(client, session_maker)
+    await client.post("/results", json={"kind": "blood_pressure", "value": {"sys": 150, "dia": 95}, "source": "self"}, headers=h)
+    s = (await client.get("/summary/doctor?days=30", headers=h)).json()
+    assert s["triage"][0]["level"] == "perhatian" and "150/95" in s["triage"][0]["text"]
+    assert "Penanda untuk perhatian" in s["text"] and "150/95" in s["text"]
+    assert "bukan diagnosis" in s["text"].lower()
+
+
+async def test_ringkasan_dokter_tanpa_penanda_tidak_menampilkan_bagiannya(client, auth_headers):
+    h = auth_headers
+    await client.post("/results", json={"kind": "blood_pressure", "value": {"sys": 118, "dia": 76}, "source": "self"}, headers=h)
+    await client.post("/results", json={"kind": "fasting_glucose", "value": {"mg_dl": 90}, "source": "self"}, headers=h)
+    s = (await client.get("/summary/doctor?days=30", headers=h)).json()
+    assert all(f["level"] != "perhatian" for f in s["triage"])
+    assert "Penanda untuk perhatian" not in s["text"]
