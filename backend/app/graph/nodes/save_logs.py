@@ -1,10 +1,12 @@
 from langchain_core.runnables import RunnableConfig
 
+from app.core_calc.label import LabelFacts, label_totals
 from app.core_calc.nutrition import match_food
 from app.core_calc.red_flags import parse_sleep_hours
 from app.graph.state import KiraState
 from app.repos import foods as foods_repo
 from app.repos import logs as logs_repo
+from app.repos.logs import ItemData
 from app.schemas.extraction import Extraction
 from app.services import risk
 from app.services.nutrition_items import item_data
@@ -31,7 +33,12 @@ async def save_logs(state: KiraState, config: RunnableConfig) -> dict:
             )
             log_ids.append(str(log.id))
 
-        if extraction.intent in LOGGING_INTENTS:
+        is_label = state.get("image_kind") == "label"
+        if is_label:
+            note = await _save_label(add, extraction)
+            if note:
+                notes.append(note)
+        elif extraction.intent in LOGGING_INTENTS:
             if extraction.items:
                 items = []
                 for it in extraction.items:
@@ -75,3 +82,35 @@ async def save_logs(state: KiraState, config: RunnableConfig) -> dict:
         await session.commit()
     return {"log_ids": log_ids, "notes": notes}
 
+
+
+async def _save_label(add, extraction: Extraction) -> str | None:
+    """Foto tabel gizi kemasan: simpan angka tercetak (food_id kosong, sumbernya label). Mengembalikan catatan
+    sistem bila tidak ada yang tersimpan atau ada yang perlu ditanyakan ke pengguna."""
+    label = extraction.label
+    if label is None:
+        return "Foto label gizi belum terbaca. Minta pengguna memotret ulang tabel informasi nilai gizinya lebih dekat."
+    facts = LabelFacts(
+        basis=label.basis, serving_g=label.serving_g, servings_consumed=label.servings_consumed,
+        sugar_g=label.sugar_g, sodium_mg=label.sodium_mg, fat_g=label.fat_g, kcal=label.kcal,
+    )
+    try:
+        totals = label_totals(facts)
+    except ValueError:
+        return (f"Angka di label '{label.product_name}' tidak masuk akal (kemungkinan salah baca foto), "
+                "jadi tidak disimpan. Minta pengguna memotret ulang label atau menyebutkan angkanya.")
+    note = None
+    if totals is None:  # label per 100 g tanpa takaran saji: porsi belum bisa dihitung
+        totals = {"portion_g": None, "sugar_g": None, "sodium_mg": None, "fat_g": None, "kcal": None}
+        note = (f"Label '{label.product_name}' per 100 g tetapi takaran saji tidak terbaca, jadi gizinya belum "
+                "terhitung. Tanyakan berapa gram yang dimakan.")
+    item = ItemData(name=label.product_name, portion_g=totals["portion_g"], sugar_g=totals["sugar_g"],
+                    sodium_mg=totals["sodium_mg"], fat_g=totals["fat_g"], kcal=totals["kcal"])
+    kind = "drink" if label.is_drink else "meal"
+    extracted = {"label": label.model_dump()}
+    if label.is_drink:
+        extracted.update({"name": label.product_name, "size": None, "count": 1})
+    else:
+        extracted["items"] = [{"name": label.product_name}]
+    await add(kind, extracted, [item])
+    return note

@@ -23,6 +23,13 @@ _BY_KIND = {
     "text": "",
     "food": " Input adalah FOTO makanan: sebutkan tiap makanan/minuman yang terlihat.",
     "receipt": " Input adalah FOTO struk belanja: tiap item makanan/minuman di struk menjadi item atau drink.",
+    "label": (
+        " Input adalah FOTO tabel informasi nilai gizi di kemasan: isi label dengan nama produk, apakah minuman, "
+        "basis (per_serving bila angka per sajian, per_100g bila per 100 g/ml), takaran saji dalam gram atau ml, "
+        "dan gula (g), natrium (mg), lemak total (g), energi (kkal) PERSIS seperti tercetak. Zat yang tidak tertera "
+        "dibiarkan kosong, jangan menebak atau menghitung. servings_consumed=1 kecuali pengguna menyebut lain. "
+        "intent=log. Jangan mengisi items atau drinks."
+    ),
     "result": (
         " Input adalah FOTO hasil pemeriksaan (lab/CKG/tensimeter): isi clinical_result dengan kind dan value "
         "(glukosa {mg_dl}, tensi {sys, dia}, hba1c {percent}, lingkar perut {cm}); intent=result_input."
@@ -54,7 +61,7 @@ async def extract_from_text(text: str) -> Extraction:
     return await _run([SystemMessage(_BASE + _BY_KIND["text"]), HumanMessage(text.strip())])
 
 
-async def extract_from_image(image: bytes, kind: Literal["food", "receipt", "result"]) -> Extraction:
+async def extract_from_image(image: bytes, kind: Literal["food", "receipt", "label", "result"]) -> Extraction:
     if not image:
         raise ValueError("gambar kosong")
     data_uri = f"data:{_mime(image)};base64,{base64.b64encode(image).decode()}"

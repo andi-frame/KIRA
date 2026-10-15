@@ -37,6 +37,23 @@ async def list_logs(
     return {"date": day.isoformat(), "logs": [_out(lg, items) for lg, items in rows]}
 
 
+async def _scaled_label_items(session: AsyncSession, log: Log, patches: list) -> list[logs_repo.ItemData]:
+    """Log dari label kemasan: angkanya tercetak, bukan dari tabel pangan. Koreksi porsi menskalakan angka itu
+    secara proporsional (nama tidak dicocokkan ulang, supaya gizi tidak hilang)."""
+    existing = {i.name.lower(): i for i in (await logs_repo._with_items(session, [log]))[0][1]}
+    out: list[logs_repo.ItemData] = []
+    for p in patches:
+        old = existing.get(p.name.lower())
+        if old is None or p.portion_g is None or not old.portion_g:
+            out.append(logs_repo.ItemData(name=p.name, portion_g=p.portion_g))
+            continue
+        ratio = p.portion_g / old.portion_g
+        scale = lambda v: None if v is None else v * ratio  # noqa: E731
+        out.append(logs_repo.ItemData(name=old.name, portion_g=p.portion_g, sugar_g=scale(old.sugar_g),
+                                      sodium_mg=scale(old.sodium_mg), fat_g=scale(old.fat_g), kcal=scale(old.kcal)))
+    return out
+
+
 @router.patch("/{log_id}", response_model=LogOut)
 async def patch_log(
     log_id: uuid.UUID,
@@ -47,7 +64,10 @@ async def patch_log(
     log = await logs_repo.get_owned(session, user_id, log_id)
     if log is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Catatan tidak ditemukan")
-    foods = await foods_repo.all_foods(session)
-    new_items = [item_data(p.name, match_food(p.name, foods), p.portion_g) for p in body.items]
+    if log.source == "photo_label":
+        new_items = await _scaled_label_items(session, log, body.items)
+    else:
+        foods = await foods_repo.all_foods(session)
+        new_items = [item_data(p.name, match_food(p.name, foods), p.portion_g) for p in body.items]
     rows = await logs_repo.replace_items(session, log, new_items)
     return _out(log, rows)

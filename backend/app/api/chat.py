@@ -55,7 +55,7 @@ async def voice(
 
 @router.post("/photo", response_model=ChatOut)
 async def photo(
-    kind: Literal["food", "receipt", "result"],
+    kind: Literal["food", "receipt", "label", "result"],
     image: UploadFile = File(...),
     user_id: uuid.UUID = Depends(current_user_id),
     session_factory=Depends(get_session_factory),
