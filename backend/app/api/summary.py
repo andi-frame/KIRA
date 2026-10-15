@@ -15,7 +15,7 @@ from app.services import risk
 from app.services.jobs import _metrics, _summary_text, week_bounds, weekly_changes
 from app.services.projection_view import hypertension_payload
 from app.services.doctor_pdf import build_doctor_pdf
-from app.services.trends import build_trends
+from app.services.trends import build_trends, risk_history, sleep_patterns
 from app.timeutil import local_date, utcnow
 
 router = APIRouter(tags=["summary"])
@@ -32,12 +32,28 @@ KIND_ID = {
 }
 
 
+def _n(v) -> str:
+    """Angka tanpa ekor ".0" (146.0 -> 146, 5.9 -> 5.9)."""
+    try:
+        return f"{float(v):g}"
+    except (TypeError, ValueError):
+        return str(v)
+
+
 def _value_text(kind: str, value: dict) -> str:
+    if kind == "blood_pressure" and value.get("protocol"):
+        return f"{_n(value.get('avg_sys', value.get('sys')))}/{_n(value.get('avg_dia', value.get('dia')))} mmHg ({value.get('readings')} bacaan)"
     if kind == "blood_pressure":
-        return f"{value.get('sys')}/{value.get('dia')} mmHg"
+        return f"{_n(value.get('sys'))}/{_n(value.get('dia'))} mmHg"
     unit = {"fasting_glucose": "mg/dL", "random_glucose": "mg/dL", "hba1c": "%", "waist": "cm"}.get(kind, "")
     number = next(iter(value.values()), "")
-    return f"{number} {unit}".strip()
+    return f"{_n(number)} {unit}".strip()
+
+
+def _result_label(kind: str, value: dict) -> str:
+    if kind == "blood_pressure" and value.get("protocol"):
+        return "Tensi rata-rata di rumah (7 hari)"
+    return KIND_ID.get(kind, kind)
 
 
 def _render_text(s: dict) -> str:
@@ -129,7 +145,7 @@ async def compute_doctor_summary(session: AsyncSession, user_id: uuid.UUID, days
         "top_foods": [{"name": n, "count": c} for n, c in top],
         "clinical_results": [
             {
-                "kind": r.kind, "label": KIND_ID.get(r.kind, r.kind), "value": r.value,
+                "kind": r.kind, "label": _result_label(r.kind, r.value), "value": r.value,
                 "display": _value_text(r.kind, r.value), "measured_on": local_date(r.measured_at).isoformat(),
                 "source": {"ckg": "CKG", "lab": "laboratorium", "self": "ukur sendiri"}.get(r.source, r.source),
             }
@@ -223,6 +239,26 @@ async def trends(
 ) -> dict:
     """Grafik tren: hasil pemeriksaan (180 hari), kebiasaan harian (`days`), dan penanda triase untuk dokter."""
     return await build_trends(session, user_id, days)
+
+
+@router.get("/insights/patterns")
+async def patterns(
+    days: int = Query(default=60, ge=14, le=90),
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Pola deskriptif: hari tidur pendek (< 6 jam) dibanding hari lain. Butuh minimal 3 hari di tiap kelompok."""
+    return await sleep_patterns(session, user_id, days)
+
+
+@router.get("/insights/risk-history")
+async def risk_history_endpoint(
+    days: int = Query(default=180, ge=7, le=730),
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Skor FINDRISC dari waktu ke waktu: bagaimana rentang risikomu berubah seiring data masuk."""
+    return await risk_history(session, user_id, days)
 
 
 @router.get("/summary/doctor.pdf")

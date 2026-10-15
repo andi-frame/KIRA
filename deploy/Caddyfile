@@ -1,0 +1,26 @@
+# HTTPS otomatis (Let's Encrypt) untuk domain di KIRA_DOMAIN. Port 80 dan 443 harus terbuka dan DNS sudah mengarah ke server.
+{$KIRA_DOMAIN} {
+	encode zstd gzip
+
+	# Foto dan suara dibatasi di backend (8 dan 10 MB); batas ini menolak badan permintaan yang lebih besar lebih awal.
+	request_body {
+		max_size 16MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	reverse_proxy backend:8000 {
+		# Penyeimbang beban hanya mengirim lalu lintas ke API yang basis datanya terjangkau.
+		health_uri /health/ready
+		health_interval 15s
+		# Jawaban model bahasa bisa lama (beberapa panggilan tool berturut-turut).
+		transport http {
+			response_header_timeout 170s
+		}
+	}
+}

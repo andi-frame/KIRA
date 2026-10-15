@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/api_client.dart';
+import '../../core/link_opener.dart';
+import '../../core/outbox.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../shared/app_shell.dart';
@@ -60,6 +62,15 @@ class CheckScreen extends ConsumerWidget {
               const SizedBox(height: KiraSpace.xl),
               const _FaskesSection(),
               const SizedBox(height: KiraSpace.lg),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const Key('bp_protocol_button'),
+                  icon: const Icon(Icons.monitor_heart_outlined),
+                  label: const Text('Ukur tensi di rumah 7 hari'),
+                  onPressed: () => context.push('/bp-protocol'),
+                ),
+              ),
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
@@ -127,12 +138,30 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _RecommendationCard extends StatelessWidget {
+class _RecommendationCard extends ConsumerWidget {
   const _RecommendationCard({required this.rec});
   final CheckRecommendation rec;
 
+  /// Jawaban atas "sudah dicek?". Nadanya bertanya, bukan menagih: menunda dan "tidak perlu" selalu tersedia.
+  Future<void> _respond(BuildContext context, WidgetRef ref, String action) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final out = await ref.read(apiProvider).respondCheck(rec.id, action);
+      ref.invalidate(checkProvider);
+      if (action == 'snooze') {
+        messenger.showSnackBar(const SnackBar(content: Text('Oke, KIRA tanya lagi dalam 3 hari.')));
+      } else if (action == 'dismiss') {
+        messenger.showSnackBar(const SnackBar(content: Text('Baik, KIRA tidak menyarankan ini lagi dalam waktu dekat.')));
+      } else if (out.resultNeeded && context.mounted) {
+        await showResultSheet(context); // sudah dicek: langsung masukkan angkanya supaya proyeksi terbarui
+      }
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final kira = context.kira;
     final prep = rec.testKind == 'fasting_glucose'
         ? 'Puasa sekitar 8 jam sebelum cek (air putih boleh).'
@@ -161,6 +190,40 @@ class _RecommendationCard extends StatelessWidget {
             label: const Text('Masukkan hasil'),
             onPressed: () => showResultSheet(context),
           ),
+          if (rec.followUp) ...[
+            const SizedBox(height: KiraSpace.lg),
+            Divider(color: kira.onAttentionContainer.withValues(alpha: 0.25)),
+            const SizedBox(height: KiraSpace.sm),
+            Semantics(
+              container: true,
+              label: 'Tindak lanjut',
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  'Sudah sempat cek? Saran ini muncul ${rec.ageDays} hari lalu.',
+                  key: const Key('followup_question'),
+                  style: context.text.titleSmall?.copyWith(color: kira.onAttentionContainer),
+                ),
+                const SizedBox(height: KiraSpace.sm),
+                Wrap(spacing: KiraSpace.sm, runSpacing: KiraSpace.xs, children: [
+                  OutlinedButton(
+                    key: const Key('followup_done'),
+                    onPressed: () => _respond(context, ref, 'done'),
+                    child: const Text('Sudah'),
+                  ),
+                  OutlinedButton(
+                    key: const Key('followup_snooze'),
+                    onPressed: () => _respond(context, ref, 'snooze'),
+                    child: const Text('Nanti'),
+                  ),
+                  TextButton(
+                    key: const Key('followup_dismiss'),
+                    onPressed: () => _respond(context, ref, 'dismiss'),
+                    child: const Text('Tidak perlu'),
+                  ),
+                ]),
+              ]),
+            ),
+          ],
         ],
       ),
     );
@@ -206,12 +269,18 @@ class _FaskesSection extends ConsumerWidget {
   }
 }
 
-class _FaskesTile extends StatelessWidget {
+class _FaskesTile extends ConsumerWidget {
   const _FaskesTile(this.f);
   final Faskes f;
 
+  Future<void> _openMap(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await ref.read(linkOpenerProvider).open(mapsUri(f.lat!, f.lng!, label: f.name));
+    if (!ok) messenger.showSnackBar(const SnackBar(content: Text('Aplikasi peta belum bisa dibuka di perangkat ini.')));
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final km = f.distanceKm.toStringAsFixed(1).replaceAll('.', ',');
     return Card(
       child: ListTile(
@@ -224,6 +293,14 @@ class _FaskesTile extends StatelessWidget {
         title: Text(f.name, style: context.text.titleSmall),
         subtitle: Text('${f.kind == 'puskesmas' ? 'Puskesmas' : 'Posyandu'}, $km km${f.address == null ? '' : '\n${f.address}'}'),
         isThreeLine: f.address != null,
+        trailing: f.lat == null || f.lng == null
+            ? null
+            : IconButton(
+                key: Key('map_${f.name}'),
+                tooltip: 'Buka ${f.name} di peta',
+                icon: const Icon(Icons.map_outlined),
+                onPressed: () => _openMap(context, ref),
+              ),
       ),
     );
   }
@@ -248,6 +325,7 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
   Projection? _before;
   String? _photoReply;
   bool _photoFlag = false;
+  bool _queued = false; // tersimpan di ponsel karena tidak ada sinyal
 
   @override
   void dispose() {
@@ -272,19 +350,25 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
     } catch (_) {
       _before = null; // tanpa pembanding, hasil tetap disimpan
     }
+    final kind = _bp ? 'blood_pressure' : (_fasting ? 'fasting_glucose' : 'random_glucose');
+    final Map<String, num> value = _bp
+        ? {'sys': int.parse(_sys.text.trim()), 'dia': int.parse(_dia.text.trim())}
+        : {'mg_dl': double.parse(_glucose.text.trim().replaceAll(',', '.'))};
+    final key = newOutboxId();
     try {
-      final outcome = _bp
-          ? await ref.read(apiProvider).postResult(
-              'blood_pressure', {'sys': int.parse(_sys.text.trim()), 'dia': int.parse(_dia.text.trim())})
-          : await ref.read(apiProvider).postResult(
-              _fasting ? 'fasting_glucose' : 'random_glucose',
-              {'mg_dl': double.parse(_glucose.text.trim().replaceAll(',', '.'))});
+      final outcome = await ref.read(apiProvider).postResult(kind, value, idempotencyKey: key);
       ref
         ..invalidate(projectionProvider)
         ..invalidate(checkProvider);
       if (mounted) setState(() => _outcome = outcome);
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      if (e.isNetwork) {
+        // Tanpa sinyal: simpan di ponsel dengan kunci yang sama, kirim otomatis nanti tanpa tercatat dua kali.
+        ref.read(outboxProvider.notifier).enqueueResult(kind, value, id: key);
+        if (mounted) setState(() => _queued = true);
+      } else if (mounted) {
+        setState(() => _error = e.message);
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -339,7 +423,9 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
     return Padding(
       padding: EdgeInsets.fromLTRB(KiraSpace.xl, 0, KiraSpace.xl, KiraSpace.xl + inset),
       child: SingleChildScrollView(
-        child: _outcome != null ? _OutcomeView(outcome: _outcome!, before: _before) : _form(context),
+        child: _queued
+            ? _QueuedView(onClose: () => Navigator.pop(context))
+            : (_outcome != null ? _OutcomeView(outcome: _outcome!, before: _before) : _form(context)),
       ),
     );
   }
@@ -506,6 +592,35 @@ class _OutcomeView extends StatelessWidget {
         ),
         const SizedBox(height: KiraSpace.lg),
         Align(alignment: Alignment.centerRight, child: FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Selesai'))),
+      ],
+    );
+  }
+}
+
+/// Hasil cek tersimpan di ponsel karena tidak ada sinyal.
+class _QueuedView extends StatelessWidget {
+  const _QueuedView({required this.onClose});
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: const Key('result_queued'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.schedule, size: 36, color: context.scheme.primary),
+        const SizedBox(height: KiraSpace.md),
+        Text('Tersimpan di ponselmu', style: context.text.titleLarge),
+        const SizedBox(height: KiraSpace.xs),
+        Text(
+          'Belum ada sinyal, jadi hasilnya dikirim otomatis begitu tersambung. Proyeksimu diperbarui setelah itu.',
+          style: context.text.bodyLarge,
+        ),
+        const SizedBox(height: KiraSpace.md),
+        const SoftNote(icon: Icons.emergency_outlined, text: offlineEmergencyHint),
+        const SizedBox(height: KiraSpace.lg),
+        FilledButton(key: const Key('result_queued_close'), onPressed: onClose, child: const Text('Mengerti')),
       ],
     );
   }

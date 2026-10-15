@@ -47,6 +47,11 @@ dependencies:
   intl: ^0.20.3
   health: ^13.3.2
   share_plus: ^13.3.1
+  mobile_scanner: ^7.4.2
+  url_launcher: ^6.3.3
+  flutter_local_notifications: ^22.3.2
+  timezone: ^0.11.2
+  flutter_timezone: ^5.1.1
 
 dev_dependencies:
   flutter_test:

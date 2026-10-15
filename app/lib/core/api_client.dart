@@ -3,9 +3,15 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
 import '../shared/account_models.dart';
+import '../shared/clinical_extras_models.dart';
+import '../shared/engagement_models.dart';
 import '../shared/family_models.dart';
+import '../shared/goal_models.dart';
 import '../shared/insight_models.dart';
 import '../shared/models.dart';
+
+/// Balasan KIRA melewati model bahasa (bisa beberapa kali memanggil tool): beri waktu lebih lama dari panggilan biasa.
+const Duration kChatTimeout = Duration(seconds: 150);
 
 const String kApiUrl = String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8000');
 
@@ -15,6 +21,9 @@ class ApiException implements Exception {
   final String message;
   final int? status;
   bool get isUnauthorized => status == 401;
+
+  /// Tidak ada jawaban dari server sama sekali (tanpa sinyal, atau waktu habis).
+  bool get isNetwork => status == null;
   @override
   String toString() => message;
 }
@@ -37,14 +46,33 @@ abstract class KiraApi {
   Future<String> setUsername(String username);
   Future<Profile> getProfile();
   Future<Profile> putProfile(Map<String, dynamic> fields);
-  Future<ChatReply> sendMessage(String text);
+  Future<ChatReply> sendMessage(String text, {String? idempotencyKey});
   Future<ChatReply> sendVoice(Uint8List audio, String filename);
   Future<ChatReply> sendPhoto(String kind, Uint8List image, String filename);
   Future<void> patchLog(String logId, List<Map<String, dynamic>> items);
   Future<Projection> getProjection();
   Future<WhatIfResult> whatIf(WhatIfChange change);
   Future<CheckRecommendation?> getCheck();
-  Future<ResultOutcome> postResult(String kind, Map<String, num> value, {String source = 'self'});
+  Future<ResultOutcome> postResult(String kind, Map<String, num> value, {String source = 'self', String? idempotencyKey});
+  Future<CheckRespondResult> respondCheck(String id, String action);
+  Future<List<FrequentFood>> getFrequentFoods();
+  Future<bool> hasLoggedToday();
+  Future<GoalsData> getGoals();
+  Future<void> createGoal(String kind, double target);
+  Future<void> updateGoal(String id, double target);
+  Future<void> deleteGoal(String id);
+  Future<RiskHistory> getRiskHistory(int days);
+  Future<SleepPatterns> getPatterns(int days);
+  Future<List<SavedScenario>> listScenarios();
+  Future<SavedScenario> saveScenario(String name, WhatIfChange change);
+  Future<void> deleteScenario(String id);
+  Future<BpProtocolView> getBpProtocol();
+  Future<BpProtocolView> startBpProtocol();
+  Future<BpProtocolView> addBpReading(int sys, int dia, String session);
+  Future<BpProtocolView> finishBpProtocol();
+  Future<void> cancelBpProtocol();
+  Future<ProductInfo> getProduct(String barcode);
+  Future<BarcodeLogResult> logBarcode(String barcode, {double? grams, double? servings});
   Future<void> postDiagnosis(String condition);
   Future<List<Faskes>> nearbyFaskes(double lat, double lng);
   Future<FamilyOverview> getFamily();
@@ -232,12 +260,19 @@ class DioKiraApi implements KiraApi {
       _run(() => _dio.put('/profile', data: fields), (d) => Profile.fromJson(d as Map<String, dynamic>));
 
   @override
-  Future<ChatReply> sendMessage(String text) =>
-      _run(() => _dio.post('/chat/message', data: {'text': text}), (d) => ChatReply.fromJson(d as Map<String, dynamic>));
+  Future<ChatReply> sendMessage(String text, {String? idempotencyKey}) => _run(
+        () => _dio.post('/chat/message', data: {'text': text}, options: _idempotent(idempotencyKey)),
+        (d) => ChatReply.fromJson(d as Map<String, dynamic>),
+      );
+
+  /// Kunci unik per kiriman: bila jaringan putus setelah server mencatat, kiriman ulang tidak tercatat dua kali.
+  Options _idempotent(String? key) =>
+      Options(receiveTimeout: kChatTimeout, headers: {'Idempotency-Key': ?key});
 
   @override
   Future<ChatReply> sendVoice(Uint8List audio, String filename) => _run(
         () => _dio.post('/chat/voice',
+            options: Options(receiveTimeout: kChatTimeout),
             data: FormData.fromMap({'audio': MultipartFile.fromBytes(audio, filename: filename)})),
         (d) => ChatReply.fromJson(d as Map<String, dynamic>),
       );
@@ -246,6 +281,7 @@ class DioKiraApi implements KiraApi {
   Future<ChatReply> sendPhoto(String kind, Uint8List image, String filename) => _run(
         () => _dio.post('/chat/photo',
             queryParameters: {'kind': kind},
+            options: Options(receiveTimeout: kChatTimeout),
             data: FormData.fromMap({'image': MultipartFile.fromBytes(image, filename: filename)})),
         (d) => ChatReply.fromJson(d as Map<String, dynamic>),
       );
@@ -271,9 +307,103 @@ class DioKiraApi implements KiraApi {
       );
 
   @override
-  Future<ResultOutcome> postResult(String kind, Map<String, num> value, {String source = 'self'}) => _run(
-        () => _dio.post('/results', data: {'kind': kind, 'value': value, 'source': source}),
+  Future<ResultOutcome> postResult(String kind, Map<String, num> value,
+          {String source = 'self', String? idempotencyKey}) =>
+      _run(
+        () => _dio.post('/results',
+            data: {'kind': kind, 'value': value, 'source': source}, options: _idempotent(idempotencyKey)),
         (d) => ResultOutcome.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<CheckRespondResult> respondCheck(String id, String action) => _run(
+        () => _dio.post('/recommendations/$id/respond', data: {'action': action}),
+        (d) => CheckRespondResult.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<GoalsData> getGoals() => _run(() => _dio.get('/goals'), (d) => GoalsData.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<void> createGoal(String kind, double target) =>
+      _run(() => _dio.post('/goals', data: {'kind': kind, 'target': target}), (_) {});
+
+  @override
+  Future<void> updateGoal(String id, double target) =>
+      _run(() => _dio.patch('/goals/$id', data: {'target': target}), (_) {});
+
+  @override
+  Future<void> deleteGoal(String id) => _run(() => _dio.delete('/goals/$id'), (_) {});
+
+  @override
+  Future<RiskHistory> getRiskHistory(int days) => _run(
+        () => _dio.get('/insights/risk-history', queryParameters: {'days': days}),
+        (d) => RiskHistory.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<SleepPatterns> getPatterns(int days) => _run(
+        () => _dio.get('/insights/patterns', queryParameters: {'days': days}),
+        (d) => SleepPatterns.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<List<SavedScenario>> listScenarios() => _run(
+        () => _dio.get('/projection/scenarios'),
+        (d) => (d['scenarios'] as List).map((e) => SavedScenario.fromJson(e as Map<String, dynamic>)).toList(),
+      );
+
+  @override
+  Future<SavedScenario> saveScenario(String name, WhatIfChange change) => _run(
+        () => _dio.post('/projection/scenarios', data: {'name': name, ...change.toJson()}),
+        (d) => SavedScenario.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<void> deleteScenario(String id) => _run(() => _dio.delete('/projection/scenarios/$id'), (_) {});
+
+  @override
+  Future<BpProtocolView> getBpProtocol() =>
+      _run(() => _dio.get('/bp-protocol'), (d) => BpProtocolView.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<BpProtocolView> startBpProtocol() =>
+      _run(() => _dio.post('/bp-protocol'), (d) => BpProtocolView.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<BpProtocolView> addBpReading(int sys, int dia, String session) => _run(
+        () => _dio.post('/bp-protocol/readings', data: {'sys': sys, 'dia': dia, 'session': session}),
+        (d) => BpProtocolView.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<BpProtocolView> finishBpProtocol() =>
+      _run(() => _dio.post('/bp-protocol/finish'), (d) => BpProtocolView.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<void> cancelBpProtocol() => _run(() => _dio.delete('/bp-protocol'), (_) {});
+
+  @override
+  Future<bool> hasLoggedToday() => _run(() => _dio.get('/logs'), (d) => (d['logs'] as List).isNotEmpty);
+
+  @override
+  Future<List<FrequentFood>> getFrequentFoods() => _run(
+        () => _dio.get('/logs/frequent'),
+        (d) => (d['foods'] as List).map((e) => FrequentFood.fromJson(e as Map<String, dynamic>)).toList(),
+      );
+
+  @override
+  Future<ProductInfo> getProduct(String barcode) =>
+      _run(() => _dio.get('/products/$barcode'), (d) => ProductInfo.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<BarcodeLogResult> logBarcode(String barcode, {double? grams, double? servings}) => _run(
+        () => _dio.post('/logs/barcode', data: {
+          'barcode': barcode,
+          'grams': ?grams,
+          'servings': ?servings,
+        }),
+        (d) => BarcodeLogResult.fromJson(d as Map<String, dynamic>),
       );
 
   @override

@@ -55,14 +55,14 @@ def summary_page(summary: dict, pdf_path: str, expires_label: str) -> str:
         for f in flags
     )
 
+    # Dua kolom saja agar muat di layar ponsel: tanggal dan sumber ditaruh di bawah nama pemeriksaan.
     rows = "".join(
-        f"<tr><td>{escape(r['label'])}</td><td>{escape(r['display'])}</td>"
-        f"<td>{escape(r['measured_on'])}</td><td>{escape(r['source'])}</td></tr>"
+        f"<tr><td>{escape(r['label'])}<br><span class='muted'>{escape(r['measured_on'])} · {escape(r['source'])}</span></td>"
+        f"<td><b>{escape(r['display'])}</b></td></tr>"
         for r in summary["clinical_results"]
     )
     results = (
-        f"<table><thead><tr><th>Pemeriksaan</th><th>Hasil</th><th>Tanggal</th><th>Sumber</th></tr></thead>"
-        f"<tbody>{rows}</tbody></table>"
+        f"<table><thead><tr><th>Pemeriksaan</th><th>Hasil</th></tr></thead><tbody>{rows}</tbody></table>"
         if rows
         else "<p>Belum ada hasil pemeriksaan yang dicatat di KIRA.</p>"
     )

@@ -29,7 +29,7 @@ menghapus data. Dokumen ini bukan nasihat hukum; peninjauan oleh konsultan hukum
 ## Ke mana data pergi (jujur)
 
 - **Server KIRA (PostgreSQL):** seluruh data pengguna. Aplikasi hanya menyimpan token login di penyimpanan aman perangkat.
-- **Penyedia model bahasa (Anthropic):** teks dan foto percakapan, agar bisa dibaca menjadi catatan. Angka risiko, gizi, dan target dihitung
+- **Penyedia model bahasa** (Anthropic, atau gerbang yang dipilih lewat `LLM_BASE_URL` seperti 9router, yang meneruskan ke model di belakangnya): teks dan foto percakapan, agar bisa dibaca menjadi catatan. Gerbang pihak ketiga berarti satu pihak lagi yang menerima isi percakapan; pilih yang kebijakan datanya kamu percayai. Angka risiko, gizi, dan target dihitung
   oleh kode KIRA, bukan oleh model.
 - **Layanan transkripsi suara (Groq, Whisper):** rekaman suara yang dikirim pengguna.
 - **WhatsApp:** hanya bila pengguna menautkan nomornya; pesan melewati jembatan Baileys yang tidak resmi (prototype).

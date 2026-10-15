@@ -45,6 +45,8 @@ def render_context(profile, state, summary, recent, older, extraction, notes, re
         parts.append("BARU DICATAT DARI PESAN INI: " + json.dumps(extraction, ensure_ascii=False))
     if notes:
         parts.append("CATATAN SISTEM:\n" + "\n".join(f"- {n}" for n in notes))
+    # Diletakkan paling akhir: model cenderung paling patuh pada instruksi terdekat dengan pesan pengguna.
+    parts.append("GAYA BALASAN: maksimal 4 kalimat pendek, teks polos seperti chat (tanpa daftar, judul, atau huruf tebal).")
     return "\n".join(parts)
 
 

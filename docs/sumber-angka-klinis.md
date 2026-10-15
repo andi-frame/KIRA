@@ -25,6 +25,10 @@ Status: **Primer** = dibaca langsung dari dokumen resmi; **Sekunder** = dikutip 
 | Penanda triase: rentang diabetes GDP >=126, sewaktu >=200, HbA1c >=6,5; prediabetes GDP 100-125, HbA1c 5,7-6,4; tensi >=140/90 hipertensi, 130-139/85-89 normal-tinggi | `core_calc/triage.py`, `constants.py` | PERKENI 2021 Tabel 3-4; KMK 303/2026 | Primer; kata-kata penanda dan urutan tingkat adalah keputusan KIRA, bukan diagnosis |
 | Gula, natrium, lemak, kalori dari foto label kemasan | `core_calc/label.py` | Angka tercetak di kemasan, dibaca model visi dan divalidasi (gula/lemak tidak boleh melebihi berat sajian; kalori maks. 9 kkal/g; natrium maks. 400 mg/g) | Primer dari label produk; kesalahan baca foto mungkin, jadi nilai mustahil ditolak dan koreksi porsi tersedia |
 
+| Protokol tensi di rumah: 7 hari (minimal 3), pagi dan malam, 2 bacaan berjarak 1 menit; buang hari pertama; rata-rata >= 135/85 mmHg = rentang hipertensi | `HBPM_*` di `constants.py`, `core_calc/hbpm.py` | Stergiou G dkk., 2021 ESH Practice Guidelines for office and out-of-office blood pressure measurement, *J Hypertens* 2021;39:1293-1302, Box 6 dan 7 ([teks lengkap](https://www.grupohospitalariohc.com/wp-content/uploads/2021/04/2021_European_Society_of_Hypertension_practice.96700.pdf)) | Primer (dibaca langsung). "Minimal 12 bacaan" dihitung SETELAH hari pertama dibuang: tafsir KIRA yang lebih ketat dari Box 7 |
+| Gizi produk kemasan dari kode batang (gula, natrium, lemak, energi per 100 g/ml) | `services/barcode.py` | Open Food Facts, basis data terbuka lisensi ODbL, disumbangkan pengguna ([dokumentasi API](https://openfoodfacts.github.io/openfoodfacts-server/api/)); batas 15 permintaan/menit/IP untuk pembacaan produk | Sekunder (data komunitas): nilai mustahil ditolak oleh `core_calc/label.py`, data tidak lengkap ditandai, dan sumbernya selalu ditampilkan |
+| Batas "tidur pendek" < 6 jam untuk perbandingan pola | `SHORT_SLEEP_HOURS` di `core_calc/patterns.py` | Konsensus AASM/SRS: dewasa disarankan tidur >= 7 jam (Watson dkk., *J Clin Sleep Med* 2015;11:591) | Konsensus dibaca dari ringkasan; **batas 6 jam adalah keputusan KIRA** mengikuti kategori yang lazim di studi epidemiologi |
+
 ## Yang BELUM bersumber (jujur)
 
 - **Gula** semua makanan: TKPI tidak memuat gula. Semua nilai gula adalah estimasi KIRA dan ditandai "gula: estimasi" di `foods.source_note`.
@@ -36,6 +40,10 @@ Status: **Primer** = dibaca langsung dari dokumen resmi; **Sekunder** = dikutip 
 - **Arah tren hasil pemeriksaan** (naik/turun/stabil): selisih pengukuran pertama dan terakhir dibandingkan ambang derau KIRA (tensi sistolik 5 mmHg, diastolik 3, gula puasa 10 mg/dL, sewaktu 20, HbA1c 0,3 poin). Bukan ambang klinis; hanya untuk meredam variasi pengukuran biasa.
 - **Menit aktif dari langkah**: dihitung dari segmen dengan kadensi rata-rata >= 100 langkah/menit; jalan santai yang panjang tidak dihitung, jadi cenderung konservatif. Batas kadensi mustahil (250 langkah/menit) dan pemilihan satu sumber data adalah keputusan KIRA.
 - **Ambang perubahan rekap mingguan** (gula 2 g, minuman manis 0,2, aktif 3 menit dianggap "hampir sama"): keputusan KIRA untuk meredam derau harian, bukan angka klinis.
+
+- **Waktu tindak lanjut "Saatnya cek"** (tanya setelah 3 hari, jarak 4 hari, maksimal 2 kali, tunda 3 hari, tahan 14 hari setelah "sudah dicek" tanpa hasil dan 30 hari setelah "tidak perlu"): keputusan produk KIRA agar tidak menagih, bukan angka klinis.
+- **Perbandingan pola tidur**: minimal 3 hari di tiap kelompok; selisih rata-rata dua kelompok, bukan uji statistik dan bukan sebab-akibat. Selalu disertai catatan itu.
+- **Pengingat lokal**: jam 19.00 (check-in) dan Senin 08.00 (rekap) hanyalah bawaan yang bisa diubah pengguna; bukan rekomendasi klinis.
 
 Aplikasi menampilkan sumber ini kepada pengguna di "Bagaimana angka ini dihitung?", dan tool `cari_gizi` mengembalikan field `sumber` per makanan.
 

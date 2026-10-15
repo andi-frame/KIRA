@@ -10,6 +10,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import settings
+from app.ratelimit import llm_daily_limiter, llm_limiter
 
 _hasher = PasswordHasher()
 _bearer = HTTPBearer(auto_error=False)
@@ -50,3 +51,17 @@ def current_user_id(creds: HTTPAuthorizationCredentials | None = Depends(_bearer
         return uuid.UUID(payload["sub"])
     except (jwt.PyJWTError, KeyError, ValueError):
         raise unauthorized from None
+
+
+def limit_llm_calls(user_id: uuid.UUID = Depends(current_user_id)) -> uuid.UUID:
+    """Dependensi untuk endpoint yang memanggil model bahasa: 20 per menit dan 400 per hari per pengguna."""
+    for limiter, message in (
+        (llm_limiter, "Terlalu banyak pesan dalam waktu singkat. Tunggu sebentar lalu coba lagi."),
+        (llm_daily_limiter, "Batas pesan harian tercapai. Coba lagi besok."),
+    ):
+        wait = limiter.check(str(user_id))
+        if wait is not None:
+            raise HTTPException(
+                status.HTTP_429_TOO_MANY_REQUESTS, message, headers={"Retry-After": str(max(1, int(wait) + 1))}
+            )
+    return user_id

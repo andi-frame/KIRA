@@ -5,16 +5,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:kira/core/api_client.dart';
+import 'package:kira/core/link_opener.dart';
 import 'package:kira/core/share_service.dart';
 import 'package:kira/core/providers.dart';
 import 'package:kira/core/theme.dart';
+import 'package:kira/features/barcode/barcode_scanner.dart';
 import 'package:kira/features/chat/media.dart';
 import 'package:kira/features/check/location.dart';
 import 'package:kira/features/health/health_source.dart';
+import 'package:kira/features/reminders/notification_service.dart';
+import 'package:kira/features/reminders/reminder_plan.dart';
 import 'package:kira/features/health/health_sync.dart';
 import 'package:image_picker/image_picker.dart' show ImageSource;
 import 'package:kira/shared/account_models.dart';
+import 'package:kira/shared/clinical_extras_models.dart';
+import 'package:kira/shared/engagement_models.dart';
 import 'package:kira/shared/family_models.dart';
+import 'package:kira/shared/goal_models.dart';
 import 'package:kira/shared/insight_models.dart';
 import 'package:kira/shared/models.dart';
 
@@ -92,7 +99,7 @@ class FakeApi implements KiraApi {
   WhatIfResult Function(WhatIfChange)? onWhatIf;
   CheckRecommendation? recommendation;
   List<Faskes> faskes = const [
-    Faskes(name: 'Puskesmas Coblong', kind: 'puskesmas', distanceKm: 0.4, address: 'Jl. Contoh No. 1'),
+    Faskes(name: 'Puskesmas Coblong', kind: 'puskesmas', distanceKm: 0.4, address: 'Jl. Contoh No. 1', lat: -6.893, lng: 107.613),
     Faskes(name: 'Posyandu Melati', kind: 'posyandu', distanceKm: 1.2),
   ];
   Future<ChatReply> Function(String text)? onMessage;
@@ -256,9 +263,14 @@ class FakeApi implements KiraApi {
     return profile;
   }
 
+  final List<String?> messageKeys = [];
+  Object? networkError; // bila diisi, kiriman teks dan hasil gagal seolah tanpa sinyal
+
   @override
-  Future<ChatReply> sendMessage(String text) {
+  Future<ChatReply> sendMessage(String text, {String? idempotencyKey}) {
+    if (networkError != null) throw networkError!;
     messages.add(text);
+    messageKeys.add(idempotencyKey);
     return (onMessage ?? (t) async => const ChatReply(reply: 'Sip, sudah kucatat.'))(text);
   }
 
@@ -294,11 +306,173 @@ class FakeApi implements KiraApi {
     return recommendation;
   }
 
+  final List<String?> resultKeys = [];
+
   @override
-  Future<ResultOutcome> postResult(String kind, Map<String, num> value, {String source = 'self'}) {
+  Future<ResultOutcome> postResult(String kind, Map<String, num> value,
+      {String source = 'self', String? idempotencyKey}) {
+    if (networkError != null) throw networkError!;
     results.add((kind: kind, value: value));
+    resultKeys.add(idempotencyKey);
     return (onResult ??
         (k, v) async => ResultOutcome(saved: true, projection: sampleProjection(low: 13, high: 17)))(kind, value);
+  }
+
+  final List<({String id, String action})> checkResponses = [];
+  CheckRespondResult Function(String id, String action)? onRespondCheck;
+  List<FrequentFood> frequentFoods = const [];
+  Object? productError;
+  ProductInfo? product;
+  final List<String> productLookups = [];
+  final List<({String barcode, double? grams, double? servings})> barcodeLogs = [];
+  Object? barcodeLogError;
+
+  @override
+  Future<CheckRespondResult> respondCheck(String id, String action) async {
+    checkResponses.add((id: id, action: action));
+    return (onRespondCheck ??
+        (i, a) => CheckRespondResult(
+            status: a == 'done' ? 'done' : (a == 'dismiss' ? 'dismissed' : 'open'),
+            resultNeeded: a == 'done',
+            testKind: 'fasting_glucose'))(id, action);
+  }
+
+  bool loggedToday = false;
+  GoalsData goalsData = const GoalsData(kinds: sampleGoalKinds, daysLeft: 3);
+  final List<({String kind, double target})> createdGoals = [];
+  final List<({String id, double target})> updatedGoals = [];
+  final List<String> deletedGoals = [];
+  Object? goalError;
+
+  @override
+  Future<GoalsData> getGoals() async => goalsData;
+
+  @override
+  Future<void> createGoal(String kind, double target) async {
+    if (goalError != null) throw goalError!;
+    createdGoals.add((kind: kind, target: target));
+    final spec = goalsData.kinds.firstWhere((k) => k.kind == kind);
+    goalsData = GoalsData(
+      kinds: goalsData.kinds,
+      daysLeft: goalsData.daysLeft,
+      goals: [
+        ...goalsData.goals,
+        sampleGoal(kind: kind, label: spec.label, unit: spec.unit, target: target, isMax: spec.isMax),
+      ],
+    );
+  }
+
+  @override
+  Future<void> updateGoal(String id, double target) async {
+    updatedGoals.add((id: id, target: target));
+  }
+
+  @override
+  Future<void> deleteGoal(String id) async {
+    deletedGoals.add(id);
+    goalsData = GoalsData(kinds: goalsData.kinds, daysLeft: goalsData.daysLeft, goals: [
+      for (final g in goalsData.goals)
+        if (g.id != id) g,
+    ]);
+  }
+  RiskHistory riskHistory = const RiskHistory(boundaries: [7, 12, 15, 21]);
+  SleepPatterns patterns = const SleepPatterns();
+  List<SavedScenario> scenarios = [];
+  final List<({String name, WhatIfChange change})> savedScenarios = [];
+  final List<String> deletedScenarios = [];
+  Object? scenarioError;
+
+  @override
+  Future<RiskHistory> getRiskHistory(int days) async => riskHistory;
+
+  @override
+  Future<SleepPatterns> getPatterns(int days) async => patterns;
+
+  @override
+  Future<List<SavedScenario>> listScenarios() async => scenarios;
+
+  @override
+  Future<SavedScenario> saveScenario(String name, WhatIfChange change) async {
+    if (scenarioError != null) throw scenarioError!;
+    savedScenarios.add((name: name, change: change));
+    final s = SavedScenario(
+      id: 'sc-${savedScenarios.length}',
+      name: name,
+      params: change.toJson(),
+      savedBefore: const ScoreSpan(9, 18),
+      savedAfter: const ScoreSpan(9, 16),
+      nowBefore: const ScoreSpan(9, 18),
+      nowAfter: const ScoreSpan(9, 16),
+    );
+    scenarios = [s, ...scenarios];
+    return s;
+  }
+
+  @override
+  Future<void> deleteScenario(String id) async {
+    deletedScenarios.add(id);
+    scenarios = [
+      for (final s in scenarios)
+        if (s.id != id) s,
+    ];
+  }
+  BpProtocolView bpView = const BpProtocolView();
+  Object? bpError;
+  final List<({int sys, int dia, String session})> bpReadings = [];
+  int bpStarts = 0, bpFinishes = 0, bpCancels = 0;
+  BpProtocolView Function(int sys, int dia, String session)? onBpReading;
+
+  @override
+  Future<BpProtocolView> getBpProtocol() async {
+    if (bpError != null) throw bpError!;
+    return bpView;
+  }
+
+  @override
+  Future<BpProtocolView> startBpProtocol() async {
+    if (bpError != null) throw bpError!;
+    bpStarts++;
+    return bpView = BpProtocolView(protocol: sampleBpState());
+  }
+
+  @override
+  Future<BpProtocolView> addBpReading(int sys, int dia, String session) async {
+    if (bpError != null) throw bpError!;
+    bpReadings.add((sys: sys, dia: dia, session: session));
+    return bpView = (onBpReading ?? (a, b, c) => bpView)(sys, dia, session);
+  }
+
+  @override
+  Future<BpProtocolView> finishBpProtocol() async {
+    if (bpError != null) throw bpError!;
+    bpFinishes++;
+    return bpView;
+  }
+
+  @override
+  Future<void> cancelBpProtocol() async {
+    bpCancels++;
+    bpView = const BpProtocolView();
+  }
+
+  @override
+  Future<bool> hasLoggedToday() async => loggedToday;
+
+  @override
+  Future<List<FrequentFood>> getFrequentFoods() async => frequentFoods;
+
+  @override
+  Future<ProductInfo> getProduct(String barcode) async {
+    productLookups.add(barcode);
+    if (productError != null) throw productError!;
+    return product!;
+  }
+
+  @override
+  Future<BarcodeLogResult> logBarcode(String barcode, {double? grams, double? servings}) async {
+    if (barcodeLogError != null) throw barcodeLogError!;
+    barcodeLogs.add((barcode: barcode, grams: grams, servings: servings));
+    return BarcodeLogResult(logId: 'log-1', name: product?.name ?? 'Produk', portionG: grams, sugarG: 7);
   }
 
   @override
@@ -569,3 +743,140 @@ TrendsData sampleTrends({bool withClinical = true, List<TriageFlag>? triage}) =>
             TriageFlag(level: 'pantau', kind: 'findrisc', text: 'Skrining FINDRISC berada di kategori tinggi pada batas atas rentang.'),
           ],
     );
+
+
+/// Pemindai palsu: tombol "pindai" menyerahkan kode yang sudah ditentukan, seolah kamera membacanya.
+class FakeScanner implements BarcodeScanner {
+  FakeScanner(this.code);
+  final String code;
+
+  @override
+  Widget view(BuildContext context, void Function(String code) onCode) =>
+      Center(child: ElevatedButton(key: const Key('fake_scan'), onPressed: () => onCode(code), child: const Text('pindai')));
+}
+
+Override scannerOverride(String code) => barcodeScannerProvider.overrideWithValue(FakeScanner(code));
+
+ProductInfo sampleProduct({bool complete = true, double? servingG = 85, bool drink = false}) => ProductInfo(
+      barcode: '089686010947',
+      name: 'Indomie Mi Goreng Original',
+      brand: 'Indofood',
+      servingG: servingG,
+      isDrink: drink,
+      complete: complete,
+      source: 'Open Food Facts (ODbL)',
+      sugarG: complete ? 7.06 : null,
+      sodiumMg: 397.6,
+      fatG: 18.8,
+      kcal: complete ? 470.6 : null,
+    );
+
+
+/// Notifikasi palsu: mencatat jadwal terakhir yang diterapkan.
+class FakeNotifications implements NotificationService {
+  FakeNotifications({this.grant = true});
+  bool grant;
+  int permissionRequests = 0, cancels = 0;
+  List<PlannedReminder> scheduled = [];
+
+  @override
+  Future<bool> ensurePermission() async {
+    permissionRequests++;
+    return grant;
+  }
+
+  @override
+  Future<void> apply(List<PlannedReminder> reminders) async => scheduled = reminders;
+
+  @override
+  Future<void> cancelAll() async {
+    cancels++;
+    scheduled = [];
+  }
+}
+
+Override notificationsOverride(FakeNotifications n) => notificationServiceProvider.overrideWithValue(n);
+
+
+BpProtocolState sampleBpState({
+  int dayIndex = 1,
+  int morning = 0,
+  int evening = 0,
+  bool canFinish = false,
+  bool over = false,
+  String status = 'active',
+  BpSummary? summary,
+}) =>
+    BpProtocolState(
+      id: 'p1',
+      status: status,
+      dayIndex: dayIndex,
+      days: [
+        for (var i = 0; i < 7; i++)
+          BpDay(
+            date: DateTime(2026, 10, 12).add(Duration(days: i)),
+            morning: i == 0 ? morning : 0,
+            evening: i == 0 ? evening : 0,
+            discarded: i == 0 && (morning + evening) > 0,
+            isToday: i == dayIndex - 1,
+          ),
+      ],
+      summary: summary ??
+          const BpSummary(
+            valid: false, readingsUsed: 0, daysUsed: 0,
+            missing: 'Belum cukup untuk dihitung: butuh 3 hari lagi dan 12 bacaan lagi (hari pertama dibuang; minimal 3 hari dan 12 bacaan).',
+          ),
+      canFinish: canFinish,
+      over: over,
+    );
+
+
+class FakeLinks implements LinkOpener {
+  FakeLinks({this.canOpen = true});
+  final bool canOpen;
+  final List<Uri> opened = [];
+
+  @override
+  Future<bool> open(Uri uri) async {
+    opened.add(uri);
+    return canOpen;
+  }
+}
+
+Override linksOverride(FakeLinks links) => linkOpenerProvider.overrideWithValue(links);
+
+
+const sampleGoalKinds = [
+  GoalKind(kind: 'active_minutes_week', label: 'Bergerak minggu ini', unit: 'menit', isMax: false, defaultTarget: 150, min: 30, max: 600),
+  GoalKind(kind: 'sweet_drinks_week', label: 'Minuman manis minggu ini', unit: 'gelas', isMax: true, defaultTarget: 7, min: 0, max: 28),
+  GoalKind(kind: 'sleep_nights', label: 'Malam tidur 7 jam atau lebih', unit: 'malam', isMax: false, defaultTarget: 5, min: 1, max: 7),
+];
+
+Goal sampleGoal({
+  String kind = 'active_minutes_week',
+  String label = 'Bergerak minggu ini',
+  String unit = 'menit',
+  double current = 70,
+  double target = 150,
+  bool isMax = false,
+  List<WeekResult> history = const [],
+  int metWeeks = 0,
+  int weeksWithData = 0,
+}) {
+  final met = isMax ? current <= target : current >= target;
+  return Goal(
+    id: 'g-$kind',
+    kind: kind,
+    label: label,
+    unit: unit,
+    current: current,
+    target: target,
+    isMax: isMax,
+    met: met,
+    fraction: target <= 0 ? 1 : (current / target).clamp(0, 1).toDouble(),
+    remaining: met ? 0 : (isMax ? 0 : target - current),
+    history: history,
+    metWeeks: metWeeks,
+    weeksWithData: weeksWithData,
+  );
+}

@@ -36,3 +36,31 @@ login_limiter = LoginLimiter()
 
 # Permintaan kode atur ulang PIN: dibatasi per akun/identitas agar tidak dipakai membanjiri WhatsApp pemilik.
 otp_limiter = LoginLimiter(max_failures=3, lock_seconds=60 * 60)
+
+
+class SlidingWindowLimiter:
+    """Batas panggilan per kunci dalam jendela waktu geser. Di memori: cukup untuk satu proses."""
+
+    def __init__(self, max_calls: int, window_seconds: float):
+        self.max_calls = max_calls
+        self.window = window_seconds
+        self._calls: dict[str, list[float]] = {}
+
+    def check(self, key: str) -> float | None:
+        """None bila boleh (dan panggilan dicatat); selain itu detik sampai boleh lagi."""
+        now = time.monotonic()
+        recent = [t for t in self._calls.get(key, []) if now - t < self.window]
+        if len(recent) >= self.max_calls:
+            self._calls[key] = recent
+            return max(0.0, self.window - (now - recent[0]))
+        recent.append(now)
+        self._calls[key] = recent
+        return None
+
+    def clear(self) -> None:
+        self._calls.clear()
+
+
+# Setiap pesan ke KIRA memanggil model bahasa berbayar: batasi per pengguna agar satu akun tidak menghabiskan kuota.
+llm_limiter = SlidingWindowLimiter(max_calls=20, window_seconds=60)
+llm_daily_limiter = SlidingWindowLimiter(max_calls=400, window_seconds=24 * 3600)

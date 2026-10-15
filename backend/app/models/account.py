@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, created_at, uuid_pk
@@ -62,4 +62,17 @@ class PinResetCode(Base):
     code_hash: Mapped[str] = mapped_column(Text, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     attempts: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    created_at: Mapped[datetime] = created_at()
+
+
+class IdempotencyKey(Base):
+    """Jawaban yang sudah diberikan untuk satu kunci kiriman. Kiriman ulang (mis. dari antrean offline) mendapat jawaban
+    yang sama tanpa mencatat dua kali."""
+
+    __tablename__ = "idempotency_keys"
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    key: Mapped[str] = mapped_column(Text, primary_key=True)
+    response: Mapped[dict] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[datetime] = created_at()

@@ -19,6 +19,7 @@ from app.core_calc.projection import projection_band
 from app.core_calc.red_flags import RedFlag, detect_red_flags
 from app.models import CheckRecommendation, ClinicalResult, Diagnosis, HealthProfile, RiskSnapshot, User
 from app.repos import logs as logs_repo
+from app.services import check_followup
 from app.repos.profiles import age_from
 from app.timeutil import local_date, utcnow
 
@@ -78,6 +79,7 @@ class ResultOutcome:
     state: RiskState
     saved: bool
     bp_category: str | None = None
+    result_id: uuid.UUID | None = None
 
 
 def _glucose_flag(profile: HealthProfile | None, results: list[ClinicalResult]) -> bool | None:
@@ -272,7 +274,10 @@ async def refresh_check_recommendation(
         else:
             row.status = "dismissed"
     if rec is not None and keep is None:
-        session.add(CheckRecommendation(user_id=user_id, test_kind=rec.test_kind, reason=rec.reason))
+        # Jangan menagih lagi tepat setelah pengguna menjawab "sudah dicek" atau "tidak perlu".
+        held = await check_followup.held_rows(session, user_id)
+        if not check_followup.is_held(held, rec.test_kind):
+            session.add(CheckRecommendation(user_id=user_id, test_kind=rec.test_kind, reason=rec.reason))
     if commit:
         await session.commit()
     return rec
@@ -319,8 +324,8 @@ async def record_result(
     if flag is not None:
         return ResultOutcome(flag, await compute_risk_state(session, user_id), saved=False, bp_category=bp_cat)
 
-    session.add(ClinicalResult(user_id=user_id, kind=kind, value=value, source=source,
-                               measured_at=measured_at or utcnow()))
+    result = ClinicalResult(user_id=user_id, kind=kind, value=value, source=source, measured_at=measured_at or utcnow())
+    session.add(result)
     await session.flush()
     satisfied = "blood_pressure" if kind == "blood_pressure" else "fasting_glucose"
     for row in await open_recommendations(session, user_id):
@@ -331,4 +336,4 @@ async def record_result(
     await refresh_check_recommendation(session, user_id, state, commit=False)
     if commit:
         await session.commit()
-    return ResultOutcome(None, state, saved=True, bp_category=bp_cat)
+    return ResultOutcome(None, state, saved=True, bp_category=bp_cat, result_id=result.id)

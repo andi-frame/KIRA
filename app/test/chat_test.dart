@@ -44,24 +44,24 @@ void main() {
     expect(api.messages, isEmpty);
   });
 
-  testWidgets('gangguan jaringan menampilkan pesan ramah dan bisa dicoba lagi', (tester) async {
+  testWidgets('gangguan di server menampilkan pesan ramah dan bisa dicoba lagi', (tester) async {
     var attempts = 0;
     final api = FakeApi()
       ..onMessage = (t) async {
         attempts++;
-        if (attempts == 1) throw ApiException('Tidak bisa terhubung ke server. Cek koneksimu lalu coba lagi.');
+        if (attempts == 1) throw ApiException('Ada kendala di server. Coba lagi sebentar lagi ya.', status: 500);
         return const ChatReply(reply: 'Berhasil sekarang.');
       };
     await tester.pumpWidget(testApp(const ChatScreen(), api: api));
     await tester.pumpAndSettle();
 
     await typeAndSend(tester, 'halo');
-    expect(find.textContaining('Tidak bisa terhubung'), findsOneWidget);
+    expect(find.textContaining('Ada kendala di server'), findsOneWidget);
     await tester.tap(find.byKey(const Key('retry_button')));
     await tester.pumpAndSettle();
 
     expect(find.text('Berhasil sekarang.'), findsOneWidget);
-    expect(find.textContaining('Tidak bisa terhubung'), findsNothing);
+    expect(find.textContaining('Ada kendala di server'), findsNothing);
     expect(attempts, 2);
   });
 

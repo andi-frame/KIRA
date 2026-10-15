@@ -1,7 +1,8 @@
 import uuid
-from datetime import date
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core_calc.nutrition import match_food
@@ -37,6 +38,41 @@ async def list_logs(
     return {"date": day.isoformat(), "logs": [_out(lg, items) for lg, items in rows]}
 
 
+FREQUENT_MIN_COUNT = 2
+
+
+@router.get("/frequent")
+async def frequent_foods(
+    days: int = Query(default=60, ge=7, le=180),
+    limit: int = Query(default=8, ge=1, le=20),
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Makanan dan minuman yang sering dicatat, supaya mencatat ulang cukup satu ketukan. Hanya yang muncul minimal 2 kali."""
+    cutoff = utcnow() - timedelta(days=days)
+    last = func.max(Log.occurred_at)
+    rows = (
+        await session.execute(
+            select(LogItem.name, Log.kind, func.count().label("n"), last.label("last_at"),
+                   func.avg(LogItem.portion_g).label("avg_portion"))
+            .join(Log, Log.id == LogItem.log_id)
+            .where(Log.user_id == user_id, Log.kind.in_(("meal", "drink")), Log.occurred_at >= cutoff,
+                   func.length(func.trim(LogItem.name)) > 0)
+            .group_by(LogItem.name, Log.kind)
+            .having(func.count() >= FREQUENT_MIN_COUNT)
+            .order_by(func.count().desc(), last.desc())
+            .limit(limit)
+        )
+    ).all()
+    return {
+        "foods": [
+            {"name": name, "kind": kind, "count": n, "last_at": at.isoformat(),
+             "portion_g": round(float(avg), 0) if avg is not None else None}
+            for name, kind, n, at, avg in rows
+        ]
+    }
+
+
 async def _scaled_label_items(session: AsyncSession, log: Log, patches: list) -> list[logs_repo.ItemData]:
     """Log dari label kemasan: angkanya tercetak, bukan dari tabel pangan. Koreksi porsi menskalakan angka itu
     secara proporsional (nama tidak dicocokkan ulang, supaya gizi tidak hilang)."""
@@ -64,7 +100,7 @@ async def patch_log(
     log = await logs_repo.get_owned(session, user_id, log_id)
     if log is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Catatan tidak ditemukan")
-    if log.source == "photo_label":
+    if log.source in {"photo_label", "barcode"}:  # angka tercetak di kemasan, bukan dari tabel pangan
         new_items = await _scaled_label_items(session, log, body.items)
     else:
         foods = await foods_repo.all_foods(session)

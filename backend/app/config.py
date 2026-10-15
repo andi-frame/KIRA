@@ -1,3 +1,4 @@
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_JWT_SECRET = "dev-only-change-me-please-use-a-long-random-secret"
@@ -14,6 +15,9 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 60  # token akses singkat; perangkat memperbaruinya dengan token penyegar
     refresh_expire_days: int = 30
     anthropic_api_key: str = ""
+    # Penyedia model yang kompatibel OpenAI (mis. gerbang 9router). Bila LLM_BASE_URL terisi, ia dipakai menggantikan Anthropic.
+    llm_base_url: str = ""
+    llm_api_key: str = Field(default="", validation_alias=AliasChoices("LLM_API_KEY", "9ROUTER_API_KEY"))
     llm_model_chat: str = "claude-sonnet-5-5"
     llm_model_extract: str = "claude-haiku-5-5"
     stt_base_url: str = "https://api.groq.com/openai/v1"

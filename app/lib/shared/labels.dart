@@ -32,6 +32,11 @@ String bpLabel(String? category) => switch (category) {
 
 const _monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
+const _weekdayNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+
+/// "Sen", "Sel", ... (DateTime.weekday: 1 = Senin)
+String weekdayShort(DateTime d) => _weekdayNames[d.weekday - 1];
+
 /// "12 Okt 2026"
 String formatDate(DateTime d) => '${d.day} ${_monthNames[d.month - 1]} ${d.year}';
 

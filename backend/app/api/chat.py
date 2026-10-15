@@ -2,11 +2,13 @@ import uuid
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db import get_session_factory
+from app.db import get_session, get_session_factory
 from app.graph.kira_graph import RunResult, run_kira_graph
 from app.schemas.api import ChatIn, ChatOut
-from app.security import current_user_id
+from app.security import limit_llm_calls
+from app.services import idempotency
 from app.services.stt import SttError, get_stt
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -22,16 +24,26 @@ def _out(result: RunResult, transcript: str | None = None) -> ChatOut:
 
 @router.post("/message", response_model=ChatOut)
 async def message(
-    body: ChatIn, user_id: uuid.UUID = Depends(current_user_id), session_factory=Depends(get_session_factory)
+    body: ChatIn,
+    user_id: uuid.UUID = Depends(limit_llm_calls),
+    session_factory=Depends(get_session_factory),
+    session: AsyncSession = Depends(get_session),
+    key: str | None = Depends(idempotency.idempotency_key),
 ) -> ChatOut:
+    # Kiriman ulang dari antrean offline mendapat jawaban yang sama dan tidak dicatat dua kali.
+    stored = await idempotency.replay(session, user_id, key)
+    if stored is not None:
+        return ChatOut(**stored)
     result = await run_kira_graph(str(user_id), "app", input_text=body.text, session_factory=session_factory)
-    return _out(result)
+    out = _out(result)
+    await idempotency.remember(session, user_id, key, out.model_dump(mode="json"))
+    return out
 
 
 @router.post("/voice", response_model=ChatOut)
 async def voice(
     audio: UploadFile = File(...),
-    user_id: uuid.UUID = Depends(current_user_id),
+    user_id: uuid.UUID = Depends(limit_llm_calls),
     session_factory=Depends(get_session_factory),
 ) -> ChatOut:
     data = await audio.read()
@@ -57,7 +69,7 @@ async def voice(
 async def photo(
     kind: Literal["food", "receipt", "label", "result"],
     image: UploadFile = File(...),
-    user_id: uuid.UUID = Depends(current_user_id),
+    user_id: uuid.UUID = Depends(limit_llm_calls),
     session_factory=Depends(get_session_factory),
 ) -> ChatOut:
     data = await image.read()

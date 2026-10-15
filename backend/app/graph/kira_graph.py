@@ -15,7 +15,7 @@ from app.db import SessionLocal
 from app.graph.nodes.build_context import build_context
 from app.graph.nodes.extract import extract
 from app.graph.nodes.guards import emergency_reply, fallback_reply, safety_check
-from app.graph.nodes.output_guardrail import output_guardrail
+from app.graph.nodes.output_guardrail import after_guardrail, output_guardrail
 from app.graph.nodes.save_logs import save_logs
 from app.graph.prompts import FALLBACK_REPLY, LOGGED_BUT_NO_ANSWER_REPLY
 from app.graph.state import KiraState
@@ -27,7 +27,7 @@ from app.tools import TOOLS
 log = logging.getLogger("kira.graph")
 
 DEMO_CACHE_PATH = Path(__file__).resolve().parents[2] / "seed" / "demo_cache.json"
-RECURSION_LIMIT = 12
+RECURSION_LIMIT = 24  # tiap putaran agent+tool memakai 2 langkah; model yang memanggil tool satu per satu butuh ruang
 
 
 def cache_key(text: str) -> str:
@@ -70,7 +70,7 @@ def build_graph():
     g.add_edge("build_context", "agent")
     g.add_conditional_edges("agent", tools_condition, {"tools": "tools", END: "output_guardrail"})
     g.add_edge("tools", "agent")
-    g.add_edge("output_guardrail", END)
+    g.add_conditional_edges("output_guardrail", after_guardrail, {"agent": "agent", "__end__": END})
     return g.compile()
 
 

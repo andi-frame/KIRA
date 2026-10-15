@@ -79,7 +79,8 @@ Bangun ulang dengan `python -m seed.build_demo_cache` bila skrip demo berubah.
 |---|---|
 | `DATABASE_URL`, `TEST_DATABASE_URL` | Koneksi Postgres (asyncpg) |
 | `JWT_SECRET` | Kunci token login (gunakan string acak ≥ 32 karakter) |
-| `ANTHROPIC_API_KEY`, `LLM_MODEL_CHAT`, `LLM_MODEL_EXTRACT` | Model chat/vision dan ekstraksi |
+| `ANTHROPIC_API_KEY`, `LLM_MODEL_CHAT`, `LLM_MODEL_EXTRACT` | Model chat/vision dan ekstraksi (Anthropic bila `LLM_BASE_URL` kosong) |
+| `LLM_BASE_URL`, `LLM_API_KEY` (atau `9ROUTER_API_KEY`) | Penyedia kompatibel OpenAI menggantikan Anthropic, mis. `https://9router.byhan.id/v1` |
 | `STT_BASE_URL`, `STT_API_KEY`, `STT_MODEL` | Speech-to-text |
 | `DEMO_CACHE` | `true` untuk mode demo |
 | `CORS_ORIGINS` | Origin yang boleh memanggil API dari browser (pisahkan dengan koma) |
@@ -139,6 +140,22 @@ Rincian dan batasnya ada di [`docs/privasi-dan-keamanan.md`](docs/privasi-dan-ke
 - **Hak pemilik data:** unduh semua data (`GET /account/export`), hapus akun dengan PIN (`POST /account/delete`), riwayat siapa yang membuka ringkasanmu (`GET /account/access-log`). Layar Profil, Data dan privasi.
 - **Lupa PIN:** kode 6 angka lewat WhatsApp yang tertaut (`/auth/pin-reset/request`, `/confirm`); ganti PIN saat masuk (`PUT /auth/pin`) mengeluarkan perangkat lain.
 - **Tautan untuk dokter:** `POST /summary/share` membuat tautan sementara (1-30 hari, bisa dicabut) ke halaman ringkasan dan PDF tanpa perlu akun; pembukaannya tercatat.
+
+## Fase 5: keterlibatan, klinis, dan platform
+
+- **Model bahasa dari penyedia mana pun:** `LLM_BASE_URL` terisi memakai penyedia kompatibel OpenAI (mis. gerbang 9router, kunci `LLM_API_KEY` atau `9ROUTER_API_KEY`),
+  kosong memakai Anthropic. Ekstraksi memakai function calling (didukung hampir semua gerbang). Sudah dicoba nyata dengan `ag/gemini-3.8-flash-high`: chat, tool calling,
+  output terstruktur, dan gambar jalan; model penalaran "high" butuh sekitar 10 detik per panggilan, jadi balasan dengan beberapa tool bisa puluhan detik
+  (varian `-medium`/`-low` kira-kira dua kali lebih cepat). Balasan yang melanggar guardrail ditulis ulang sekali sebelum diganti kalimat baku.
+- **Menutup lingkaran "Saatnya cek":** setelah 3 hari KIRA bertanya "sudah dicek?" (Sudah / Nanti / Tidak perlu), di aplikasi dan sekali-dua kali lewat WhatsApp.
+- **Antrean offline:** pesan teks dan hasil cek tanpa sinyal tersimpan terenkripsi di ponsel dan dikirim otomatis dengan `Idempotency-Key` (tidak tercatat dua kali). Selalu disertai pengingat 119/IGD.
+- **Pengingat lokal (opt-in):** check-in harian, rekap mingguan, tanya "sudah dicek?". Isi notifikasi tidak memuat data kesehatan; check-in dilewati bila hari itu sudah mencatat.
+- **Pindai kode batang** (`GET /products/{kode}`, `POST /logs/barcode`): gizi dari Open Food Facts dengan sumber ditampilkan, di-cache, dan divalidasi seperti foto label; fallback ketik nomor dan foto label.
+- **Makanan yang sering dicatat:** chip sekali ketuk di chat (`GET /logs/frequent`).
+- **Tensi di rumah 7 hari** (`/bp-protocol`): protokol ESH 2021, rata-rata tanpa hari pertama menjadi satu hasil cek dan memengaruhi proyeksi, penanda, dan ringkasan dokter.
+- **Pola tidur** (`/insights/patterns`), **riwayat skor FINDRISC** (`/insights/risk-history`), **skenario what-if tersimpan** (`/projection/scenarios`), dan **buka tempat cek di peta**.
+- **Platform:** batas pesan per pengguna (20/menit, 400/hari), `X-Request-ID` + log per permintaan, `GET /health/ready`, CI GitHub Actions,
+  `docker-compose.prod.yml` + Caddy (HTTPS otomatis), skrip cadangan/pemulihan. Lihat [`docs/deploy.md`](docs/deploy.md) (belum pernah dijalankan di server sungguhan).
 
 ## Batasan yang disengaja
 

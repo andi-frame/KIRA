@@ -314,8 +314,18 @@ class WhatIfResult {
 }
 
 class CheckRecommendation {
-  const CheckRecommendation({required this.id, required this.testKind, required this.reason});
+  const CheckRecommendation({
+    required this.id,
+    required this.testKind,
+    required this.reason,
+    this.followUp = false,
+    this.ageDays = 0,
+  });
   final String id, testKind, reason;
+
+  /// Sudah beberapa hari sejak rekomendasi muncul: saatnya bertanya "sudah dicek?".
+  final bool followUp;
+  final int ageDays;
 
   String get label => testKind == 'fasting_glucose' ? 'Cek gula darah puasa' : 'Cek tekanan darah';
 
@@ -323,20 +333,25 @@ class CheckRecommendation {
         id: j['id'] as String,
         testKind: j['test_kind'] as String,
         reason: j['reason'] as String,
+        followUp: j['follow_up'] as bool? ?? false,
+        ageDays: (j['age_days'] as num?)?.toInt() ?? 0,
       );
 }
 
 class Faskes {
-  const Faskes({required this.name, required this.kind, required this.distanceKm, this.address});
+  const Faskes({required this.name, required this.kind, required this.distanceKm, this.address, this.lat, this.lng});
   final String name, kind;
   final double distanceKm;
   final String? address;
+  final double? lat, lng;
 
   factory Faskes.fromJson(Map<String, dynamic> j) => Faskes(
         name: j['name'] as String,
         kind: j['kind'] as String,
         distanceKm: (j['distance_km'] as num).toDouble(),
         address: j['address'] as String?,
+        lat: (j['lat'] as num?)?.toDouble(),
+        lng: (j['lng'] as num?)?.toDouble(),
       );
 }
 

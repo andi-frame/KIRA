@@ -57,6 +57,16 @@ BP_THRESHOLDS = {
     "prehypertension": (130, 85),
 }
 
+# Tensi di rumah (HBPM). SUMBER (primer, dibaca langsung): Stergiou G dkk., 2021 European Society of Hypertension Practice
+# Guidelines for office and out-of-office blood pressure measurement, J Hypertens 2021;39:1293-1302, Box 6 (jadwal) dan
+# Box 7 (penilaian): ukur 7 hari (minimal 3 hari), pagi dan malam, 2 kali tiap sesi berjarak 1 menit; nilai 7 hari
+# (minimal 3 hari dengan minimal 12 bacaan), buang hari pertama, rata-ratakan sisanya; rata-rata >=135/85 mmHg = rentang hipertensi.
+# ASUMSI KIRA: "minimal 12 bacaan" dihitung SETELAH hari pertama dibuang (tafsir yang lebih ketat dari Box 7).
+HBPM_HOME_THRESHOLD = (135, 85)  # (sistolik, diastolik): salah satu terpenuhi
+HBPM_PROTOCOL_DAYS = 7
+HBPM_MIN_DAYS = 3
+HBPM_MIN_READINGS = 12
+
 # Tanda bahaya.
 # BP: hipertensi derajat 3 (>=180 dan/atau >=110) = kandidat krisis hipertensi, KMK 303/2026 (primer).
 # Gula darah rendah: hipoglikemia < 70 mg/dL, PERKENI 2021 hlm. 53 (mengikuti ADA); < 54 = level 2.

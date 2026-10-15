@@ -11,6 +11,7 @@ from app.core_calc.constants import (
     GLUCOSE_HIGH_HBA1C,
     GLUCOSE_HIGH_RANDOM,
     HBA1C_DIABETES,
+    HBPM_HOME_THRESHOLD,
     TREND_NOISE,
 )
 
@@ -49,6 +50,15 @@ def _flag(level: str, kind: str, text: str) -> dict:
 def triage_flags(latest: dict, diabetes_category_high: str | None) -> list[dict]:
     """Penanda dari hasil pemeriksaan terakhir tiap jenis. level: perhatian | pantau | info (diurutkan begitu)."""
     flags: list[dict] = []
+    home = latest.get("home_bp_average")  # (sistolik, diastolik, jumlah bacaan) dari protokol 7 hari
+    if home is not None:
+        sys_avg, dia_avg, n = home
+        t = HBPM_HOME_THRESHOLD
+        if sys_avg >= t[0] or dia_avg >= t[1]:
+            flags.append(_flag("perhatian", "blood_pressure",
+                               f"Rata-rata tensi di rumah {sys_avg:g}/{dia_avg:g} mmHg ({n} bacaan, 7 hari) berada di rentang hipertensi "
+                               f"(>={t[0]}/{t[1]} untuk tensi rumah, ESH 2021). Rata-rata beberapa hari lebih dapat dipercaya daripada satu "
+                               "bacaan, tetapi tetap perlu konfirmasi dan penilaian dokter."))
     bp = latest.get("blood_pressure")
     if bp is not None:
         sys, dia = bp
@@ -79,7 +89,7 @@ def triage_flags(latest: dict, diabetes_category_high: str | None) -> list[dict]
             flags.append(_flag("pantau", "hba1c", f"HbA1c terakhir {pct:g}% berada di rentang prediabetes (5,7-6,4%, PERKENI 2021): pantau."))
     if diabetes_category_high in {"high", "very_high"}:
         flags.append(_flag("pantau", "findrisc", "Skrining FINDRISC (perkiraan 10 tahun) berada di kategori tinggi pada batas atas rentang: pertimbangkan pemeriksaan gula darah."))
-    if not any(latest.get(k) is not None for k in ("blood_pressure", "fasting_glucose", "random_glucose", "hba1c")):
+    if not any(latest.get(k) is not None for k in ("blood_pressure", "home_bp_average", "fasting_glucose", "random_glucose", "hba1c")):
         flags.append(_flag("info", "no_results", "Belum ada hasil pemeriksaan yang dicatat di KIRA; proyeksi memakai perkiraan dari kebiasaan."))
     order = {"perhatian": 0, "pantau": 1, "info": 2}
     return sorted(flags, key=lambda f: order[f["level"]])

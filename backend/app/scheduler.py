@@ -4,7 +4,7 @@ import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from app.services import jobs
+from app.services import check_followup, jobs
 
 log = logging.getLogger("kira.scheduler")
 TIMEZONE = "Asia/Jakarta"
@@ -38,6 +38,11 @@ def build_scheduler(session_factory) -> AsyncIOScheduler:
         _wrap(session_factory, jobs.enqueue_reminders),
         CronTrigger(hour=19, minute=0, timezone=TIMEZONE),
         id="daily_reminders",
+    )
+    scheduler.add_job(
+        _wrap(session_factory, check_followup.enqueue_followups),
+        CronTrigger(hour=10, minute=0, timezone=TIMEZONE),
+        id="check_followups",
     )
     scheduler.add_job(
         _wrap(session_factory, jobs.enqueue_family_nudges),

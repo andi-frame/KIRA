@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/providers.dart';
@@ -8,6 +9,7 @@ import '../../shared/app_shell.dart';
 import '../../shared/models.dart';
 import '../../shared/widgets.dart';
 import 'chat_controller.dart';
+import 'frequent_foods.dart';
 import 'media.dart';
 import 'tool_trace.dart';
 
@@ -49,6 +51,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       builder: (_) => const _KindSheet(),
     );
     if (kind == null || !mounted) return;
+    if (kind == 'barcode') {
+      await context.push('/barcode');
+      return;
+    }
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       showDragHandle: true,
@@ -136,6 +142,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ),
                 ),
               ),
+            if (!chat.isFresh && !hasText) const FrequentFoodChips(),
             _InputBar(
               controller: _input,
               hasText: hasText,
@@ -265,6 +272,22 @@ class _ItemView extends ConsumerWidget {
     switch (item.kind) {
       case ChatKind.user:
         return ChatBubble(text: item.text, mine: true);
+      case ChatKind.pending:
+        return Column(
+          key: Key('pending_${item.id}'),
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            ChatBubble(text: item.text, mine: true),
+            Padding(
+              padding: const EdgeInsets.only(top: KiraSpace.xs, right: KiraSpace.sm),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.schedule, size: 14, color: context.scheme.onSurfaceVariant),
+                const SizedBox(width: KiraSpace.xs),
+                Text('Menunggu sinyal, dikirim otomatis', style: context.text.bodySmall),
+              ]),
+            ),
+          ],
+        );
       case ChatKind.kira:
         if (item.calls.isEmpty) return ChatBubble(text: item.text, mine: false);
         return Column(
@@ -483,13 +506,17 @@ class _KindSheet extends StatelessWidget {
           onTap: () => Navigator.pop(context, kind),
         );
     return SafeArea(
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
+      child: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
         tile('photo_kind_food', 'food', Icons.restaurant_outlined, 'Foto makanan', 'KIRA mengenali menu dan porsinya'),
         tile('photo_kind_receipt', 'receipt', Icons.receipt_long_outlined, 'Foto struk belanja', 'Daftar item dibaca dari struk'),
         tile('photo_kind_label', 'label', Icons.fact_check_outlined, 'Foto label gizi kemasan',
             'Gula dan natrium dibaca dari tabel informasi nilai gizi'),
+        tile('photo_kind_barcode', 'barcode', Icons.qr_code_scanner, 'Pindai kode batang kemasan',
+            'Gizi produk dicari di Open Food Facts, tinggal pilih porsinya'),
         tile('photo_kind_result', 'result', Icons.biotech_outlined, 'Foto hasil cek', 'Hasil lab, CKG, atau layar tensimeter'),
-      ]),
+        ]),
+      ),
     );
   }
 }
