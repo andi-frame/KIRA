@@ -12,7 +12,7 @@ from app.models import ClinicalResult, Log, LogItem, User, WeeklySummary
 from app.repos import profiles
 from app.security import current_user_id
 from app.services import risk
-from app.services.jobs import _metrics
+from app.services.jobs import _metrics, _summary_text, week_bounds, weekly_changes
 from app.services.projection_view import hypertension_payload
 from app.timeutil import local_date, utcnow
 
@@ -182,3 +182,22 @@ async def food_glucose(
         "disclaimer": "Ini pola dari catatanmu sendiri, bukan sebab pasti. Pembahasan hasilnya sebaiknya bersama dokter.",
     }
 
+
+
+@router.get("/summary/weekly")
+async def weekly_recap(
+    user_id: uuid.UUID = Depends(current_user_id), session: AsyncSession = Depends(get_session)
+) -> dict:
+    """Rekap minggu lalu (Senin-Minggu) beserta perubahan dari minggu sebelumnya. Dihitung langsung dari catatan,
+    jadi tidak bergantung pada penjadwal sudah jalan atau belum."""
+    start, end = week_bounds(local_date(utcnow()))
+    metrics = await _metrics(session, user_id, start, end)
+    if metrics is None:
+        return {"week": None}
+    prev = await _metrics(session, user_id, start - timedelta(days=7), start - timedelta(days=1))
+    return {
+        "week": {
+            "start": start.isoformat(), "end": end.isoformat(), "metrics": metrics,
+            "text": _summary_text(start, end, metrics), "changes": weekly_changes(metrics, prev),
+        }
+    }

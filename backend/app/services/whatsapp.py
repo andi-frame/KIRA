@@ -39,6 +39,9 @@ def photo_kind(caption: str | None) -> str:
     lowered = (caption or "").lower()
     if "struk" in lowered or "nota" in lowered:
         return "receipt"
+    # "label" memuat "lab": periksa dulu sebelum kata kunci hasil pemeriksaan.
+    if any(w in lowered for w in ("label", "kemasan", "info gizi", "nilai gizi")):
+        return "label"
     if any(w in lowered for w in ("hasil", "lab", "tensi", "tensimeter", "ckg")):
         return "result"
     return "food"

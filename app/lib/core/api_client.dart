@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
 import '../shared/family_models.dart';
+import '../shared/insight_models.dart';
 import '../shared/models.dart';
 
 const String kApiUrl = String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8000');
@@ -42,6 +43,9 @@ abstract class KiraApi {
   Future<DoctorSummary> getDoctorSummary(int days);
   Future<FoodGlucose> getFoodGlucose();
   Future<String> whatsappLinkCode();
+  Future<WeeklyRecap?> getWeeklyRecap();
+  Future<PassiveSyncResult> syncPassive(PassiveBatch batch);
+  Future<int> deletePassive();
 }
 
 class DioKiraApi implements KiraApi {
@@ -191,4 +195,19 @@ class DioKiraApi implements KiraApi {
 
   @override
   Future<String> whatsappLinkCode() => _run(() => _dio.post('/whatsapp/link-code'), (d) => d['code'] as String);
+
+  @override
+  Future<WeeklyRecap?> getWeeklyRecap() => _run(
+        () => _dio.get('/summary/weekly'),
+        (d) => (d as Map<String, dynamic>)['week'] == null ? null : WeeklyRecap.fromJson(d['week'] as Map<String, dynamic>),
+      );
+
+  @override
+  Future<PassiveSyncResult> syncPassive(PassiveBatch batch) => _run(
+        () => _dio.post('/sync/passive', data: batch.toJson()),
+        (d) => PassiveSyncResult.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<int> deletePassive() => _run(() => _dio.delete('/sync/passive'), (d) => (d['deleted'] as num).toInt());
 }

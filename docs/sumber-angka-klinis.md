@@ -21,6 +21,9 @@ Status: **Primer** = dibaca langsung dari dokumen resmi; **Sekunder** = dikutip 
 | Mode pengelolaan: gula 25 g | `DAILY_LIMITS_MANAGEMENT` | WHO 2015: gula bebas <10% energi; <5% (~25 g) rekomendasi bersyarat untuk manfaat tambahan ([siaran WHO](https://www.who.int/news/item/04-03-2015-who-calls-on-countries-to-reduce-sugars-intake-among-adults-and-children)) | Sekunder; angka mode pengelolaan = **asumsi KIRA** (tidak ada angka resmi Indonesia yang lebih ketat) |
 | Energi, lemak, karbohidrat, natrium per 100 g untuk 38 makanan | `seed/tkpi_2017.json` | TKPI 2017 Kemenkes ([panganku.org](https://www.panganku.org)), kode pangan disimpan per baris | Primer |
 
+| Ambang jalan intensitas sedang 100 langkah/menit (untuk menit aktif dari Health Connect) | `MODERATE_CADENCE` di `core_calc/steps.py` | Tudor-Locke dkk., *Int J Behav Nutr Phys Act* 2019;16:8, CADENCE-adults, usia 21-40 tahun (nilai heuristik; model regresi 102, ROC 96) | Sekunder (abstrak dan ringkasan; makalah penuh tidak dibaca); pemakaian di luar 21-40 tahun adalah perkiraan KIRA |
+| Gula, natrium, lemak, kalori dari foto label kemasan | `core_calc/label.py` | Angka tercetak di kemasan, dibaca model visi dan divalidasi (gula/lemak tidak boleh melebihi berat sajian; kalori maks. 9 kkal/g; natrium maks. 400 mg/g) | Primer dari label produk; kesalahan baca foto mungkin, jadi nilai mustahil ditolak dan koreksi porsi tersedia |
+
 ## Yang BELUM bersumber (jujur)
 
 - **Gula** semua makanan: TKPI tidak memuat gula. Semua nilai gula adalah estimasi KIRA dan ditandai "gula: estimasi" di `foods.source_note`.
@@ -29,6 +32,8 @@ Status: **Primer** = dibaca langsung dari dokumen resmi; **Sekunder** = dikutip 
 - **~60 makanan lain** (nasi goreng, es teh manis, kopi susu gula aren, boba, dsb.) tidak punya padanan langsung di TKPI: semua nilainya estimasi KIRA dan ditandai.
 - **Kosakata gejala tanda bahaya** (`RED_FLAG_KEYWORDS` dan aturan di `red_flags.py`): daftar gejala dari praktik umum, bukan dari dokumen. Tanda bahayanya sendiri (nyeri dada, sesak, tanda stroke, pingsan, kejang) sejalan dengan pedoman, tetapi ejaan dan frasa adalah keputusan KIRA.
 - **Interpolasi p10**: lihat tabel.
+- **Menit aktif dari langkah**: dihitung dari segmen dengan kadensi rata-rata >= 100 langkah/menit; jalan santai yang panjang tidak dihitung, jadi cenderung konservatif. Batas kadensi mustahil (250 langkah/menit) dan pemilihan satu sumber data adalah keputusan KIRA.
+- **Ambang perubahan rekap mingguan** (gula 2 g, minuman manis 0,2, aktif 3 menit dianggap "hampir sama"): keputusan KIRA untuk meredam derau harian, bukan angka klinis.
 
 Aplikasi menampilkan sumber ini kepada pengguna di "Bagaimana angka ini dihitung?", dan tool `cari_gizi` mengembalikan field `sumber` per makanan.
 

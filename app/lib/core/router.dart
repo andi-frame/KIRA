@@ -7,6 +7,7 @@ import '../features/check/check_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../features/doctor/doctor_summary_screen.dart';
 import '../features/family/family_screen.dart';
+import '../features/health/health_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/projection/projection_screen.dart';
@@ -43,6 +44,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
       GoRoute(path: '/family', builder: (_, _) => const FamilyScreen()),
       GoRoute(path: '/doctor', builder: (_, _) => const DoctorSummaryScreen()),
+      GoRoute(path: '/health', builder: (_, _) => const HealthScreen()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AppShell(shell: shell),
         branches: [

@@ -35,6 +35,36 @@ class MemoryTokenStore implements TokenStore {
 
 final tokenStoreProvider = Provider<TokenStore>((ref) => SecureTokenStore());
 
+/// Pengaturan kecil di perangkat (bukan data kesehatan), mis. apakah sinkronisasi Health Connect dinyalakan.
+abstract class PrefsStore {
+  Future<String?> read(String key);
+  Future<void> write(String key, String? value);
+}
+
+class SecurePrefsStore implements PrefsStore {
+  final _storage = const FlutterSecureStorage();
+
+  @override
+  Future<String?> read(String key) => _storage.read(key: 'pref_$key');
+
+  @override
+  Future<void> write(String key, String? value) =>
+      value == null ? _storage.delete(key: 'pref_$key') : _storage.write(key: 'pref_$key', value: value);
+}
+
+class MemoryPrefsStore implements PrefsStore {
+  final Map<String, String> _values = {};
+
+  @override
+  Future<String?> read(String key) async => _values[key];
+
+  @override
+  Future<void> write(String key, String? value) async =>
+      value == null ? _values.remove(key) : _values[key] = value;
+}
+
+final prefsStoreProvider = Provider<PrefsStore>((ref) => SecurePrefsStore());
+
 class AuthState {
   const AuthState({this.loaded = false, this.token});
   final bool loaded;

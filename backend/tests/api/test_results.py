@@ -98,3 +98,23 @@ async def test_logs_filter_by_date(client, auth_headers):
         reset_models()
     assert (await client.get("/logs?date=2001-01-01", headers=auth_headers)).json()["logs"] == []
     assert (await client.get("/logs?date=not-a-date", headers=auth_headers)).status_code == 422
+
+
+async def test_koreksi_porsi_log_dari_label_menskalakan_angka_tercetak(client, auth_headers):
+    label = {"items": [], "drinks": [], "intent": "log",
+             "label": {"product_name": "Teh Kotak", "is_drink": True, "basis": "per_serving", "serving_g": 250,
+                       "servings_consumed": 1, "sugar_g": 24, "sodium_mg": 50, "fat_g": 0, "kcal": 100}}
+    install_models(extract=label)
+    png = b"\x89PNG\r\n\x1a\n" + b"0" * 32
+    try:
+        await client.post("/chat/photo?kind=label", files={"image": ("l.png", png, "image/png")}, headers=auth_headers)
+    finally:
+        reset_models()
+    drink = next(lg for lg in (await client.get("/logs", headers=auth_headers)).json()["logs"] if lg["kind"] == "drink")
+    assert drink["source"] == "photo_label" and drink["items"][0]["sugar_g"] == 24
+
+    r = await client.patch(f"/logs/{drink['id']}", json={"items": [{"name": "Teh Kotak", "portion_g": 125}]},
+                           headers=auth_headers)
+    assert r.status_code == 200
+    item = r.json()["items"][0]
+    assert item["sugar_g"] == pytest.approx(12) and item["kcal"] == pytest.approx(50) and item["portion_g"] == 125

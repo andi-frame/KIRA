@@ -68,6 +68,36 @@ async def _metrics(session: AsyncSession, user_id: uuid.UUID, start: date, end: 
     }
 
 
+# Selisih lebih kecil dari ini dianggap "sama" (derau harian). Arah baik: turun untuk gula dan minuman manis, naik untuk aktif.
+_TREND_RULES = {
+    "sweet_drinks_per_day": (0.2, -1),
+    "sugar_g_per_day": (2.0, -1),
+    "active_minutes_per_day": (3.0, +1),
+    "sleep_hours_avg": (None, 0),  # hanya selisih; KIRA tidak menilai jam tidur di sini
+}
+
+
+def weekly_changes(this: dict, prev: dict | None) -> dict | None:
+    """Selisih tiap kebiasaan terhadap minggu sebelumnya, dengan arah (better/worse/same) bila bisa dinilai."""
+    if prev is None:
+        return None
+    out: dict[str, dict | None] = {}
+    for key, (noise, good_sign) in _TREND_RULES.items():
+        a, b = this.get(key), prev.get(key)
+        if a is None or b is None:
+            out[key] = None
+            continue
+        delta = round(a - b, 1)
+        if noise is None:
+            trend = None
+        elif abs(delta) < noise:
+            trend = "same"
+        else:
+            trend = "better" if delta * good_sign > 0 else "worse"
+        out[key] = {"delta": delta, "trend": trend}
+    return out
+
+
 def _summary_text(start: date, end: date, m: dict) -> str:
     parts = [
         f"Minggu {_fmt(start)} sampai {_fmt(end)}: tercatat {m['days_logged']} hari",

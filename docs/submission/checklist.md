@@ -10,7 +10,7 @@ Batas pengumpulan: **16 Oktober 2026, 23.50 WIB**. Targetkan submit beberapa jam
 - [x] Naskah video 2 menit: [`video-script.md`](video-script.md)
 - [x] Latihan pitching dan tanya jawab (jawaban jujur sesuai kode): [`latihan-pitch.md`](latihan-pitch.md)
 - [x] Angka bersumber: [`../sumber-angka-klinis.md`](../sumber-angka-klinis.md)
-- [x] APK rilis dibangun (`app/build/app/outputs/flutter-apk/app-release.apk`, tidak ikut git). Dibangun dengan `API_URL=http://10.0.2.2:8000` (alamat emulator); untuk HP sungguhan bangun ulang dengan URL server kamu.
+- [x] APK rilis dibangun (`app/build/app/outputs/flutter-apk/app-release.apk`, tidak ikut git). Dibangun dengan `API_URL=http://10.0.2.2:8000` (alamat emulator); untuk HP sungguhan bangun ulang dengan URL server kamu. APK yang dibangun sebelum 15 Okt 2026 sore tidak punya izin INTERNET (build rilis tidak mewarisinya dari manifest debug), jadi **bangun ulang** sebelum dipakai.
 
 ## Perlu dikerjakan tim (tidak bisa dikerjakan dari repo)
 

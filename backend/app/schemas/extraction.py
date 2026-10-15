@@ -34,11 +34,26 @@ class ClinicalResultExtract(BaseModel):
     value: dict[str, float]
 
 
+class LabelExtract(BaseModel):
+    """Isi tabel informasi nilai gizi di kemasan, persis seperti tercetak (tanpa menebak)."""
+
+    product_name: str = Field(min_length=1)
+    is_drink: bool = False
+    basis: Literal["per_serving", "per_100g"] = "per_serving"
+    serving_g: float | None = Field(default=None, gt=0, le=5000)  # takaran saji (g atau ml)
+    servings_consumed: float = Field(default=1, gt=0, le=50)
+    sugar_g: float | None = Field(default=None, ge=0)
+    sodium_mg: float | None = Field(default=None, ge=0)
+    fat_g: float | None = Field(default=None, ge=0)
+    kcal: float | None = Field(default=None, ge=0)
+
+
 class Extraction(BaseModel):
     items: list[FoodItem] = []
     drinks: list[DrinkItem] = []
     sleep: SleepInfo | None = None
     activity: list[ActivityItem] = []
     clinical_result: ClinicalResultExtract | None = None
+    label: LabelExtract | None = None
     intent: Literal["log", "question_portion", "question_general", "result_input"] = "log"
     summary: str | None = None

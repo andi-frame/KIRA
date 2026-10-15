@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
 import '../../core/providers.dart';
+import '../../shared/insight_models.dart';
 import '../../shared/models.dart';
 
 final projectionProvider = FutureProvider<Projection>((ref) {
@@ -66,3 +67,13 @@ class WhatIfController extends Notifier<WhatIfState> {
 }
 
 final whatIfProvider = NotifierProvider<WhatIfController, WhatIfState>(WhatIfController.new);
+
+/// Rekap minggu lalu. Kegagalan memuat tidak boleh mengganggu layar proyeksi, jadi error diperlakukan sebagai "tidak ada".
+final weeklyRecapProvider = FutureProvider<WeeklyRecap?>((ref) async {
+  ref.watch(authProvider.select((s) => s.token));
+  try {
+    return await ref.read(apiProvider).getWeeklyRecap();
+  } on ApiException {
+    return null;
+  }
+});
