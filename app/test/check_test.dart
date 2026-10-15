@@ -162,6 +162,7 @@ void main() {
   });
 
   followUpTests();
+  mapTests();
 }
 
 const agedRec = CheckRecommendation(
@@ -223,5 +224,34 @@ void followUpTests() {
     await tester.tap(find.byKey(const Key('followup_snooze')));
     await tester.pumpAndSettle();
     expect(find.text('Tidak bisa terhubung ke server.'), findsOneWidget);
+  });
+}
+
+void mapTests() {
+  testWidgets('tempat cek terdekat bisa dibuka di peta dengan koordinatnya', (tester) async {
+    tester.view.physicalSize = const Size(900, 2600);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    final links = FakeLinks();
+    await tester.pumpWidget(testApp(const CheckScreen(),
+        api: FakeApi()..recommendation = glucoseRec, overrides: [locationOverride((lat: -6.893, lng: 107.613)), linksOverride(links)]));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('map_Puskesmas Coblong')));
+    await tester.pumpAndSettle();
+    expect(links.opened.single.host, 'www.google.com');
+    expect(links.opened.single.queryParameters['query'], 'Puskesmas Coblong @-6.893,107.613');
+    expect(find.byKey(const Key('map_Posyandu Melati')), findsNothing); // tanpa koordinat: tidak ada tombol
+  });
+
+  testWidgets('tidak ada aplikasi peta: pesan ramah', (tester) async {
+    tester.view.physicalSize = const Size(900, 2600);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(testApp(const CheckScreen(),
+        api: FakeApi()..recommendation = glucoseRec, overrides: [locationOverride(), linksOverride(FakeLinks(canOpen: false))]));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('map_Puskesmas Coblong')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Aplikasi peta belum bisa dibuka'), findsOneWidget);
   });
 }

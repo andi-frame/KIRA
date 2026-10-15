@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:kira/core/api_client.dart';
+import 'package:kira/core/link_opener.dart';
 import 'package:kira/core/share_service.dart';
 import 'package:kira/core/providers.dart';
 import 'package:kira/core/theme.dart';
@@ -12,6 +13,8 @@ import 'package:kira/features/barcode/barcode_scanner.dart';
 import 'package:kira/features/chat/media.dart';
 import 'package:kira/features/check/location.dart';
 import 'package:kira/features/health/health_source.dart';
+import 'package:kira/features/reminders/notification_service.dart';
+import 'package:kira/features/reminders/reminder_plan.dart';
 import 'package:kira/features/health/health_sync.dart';
 import 'package:image_picker/image_picker.dart' show ImageSource;
 import 'package:kira/shared/account_models.dart';
@@ -94,7 +97,7 @@ class FakeApi implements KiraApi {
   WhatIfResult Function(WhatIfChange)? onWhatIf;
   CheckRecommendation? recommendation;
   List<Faskes> faskes = const [
-    Faskes(name: 'Puskesmas Coblong', kind: 'puskesmas', distanceKm: 0.4, address: 'Jl. Contoh No. 1'),
+    Faskes(name: 'Puskesmas Coblong', kind: 'puskesmas', distanceKm: 0.4, address: 'Jl. Contoh No. 1', lat: -6.893, lng: 107.613),
     Faskes(name: 'Posyandu Melati', kind: 'posyandu', distanceKm: 1.2),
   ];
   Future<ChatReply> Function(String text)? onMessage;
@@ -331,6 +334,49 @@ class FakeApi implements KiraApi {
             resultNeeded: a == 'done',
             testKind: 'fasting_glucose'))(id, action);
   }
+
+  bool loggedToday = false;
+  BpProtocolView bpView = const BpProtocolView();
+  Object? bpError;
+  final List<({int sys, int dia, String session})> bpReadings = [];
+  int bpStarts = 0, bpFinishes = 0, bpCancels = 0;
+  BpProtocolView Function(int sys, int dia, String session)? onBpReading;
+
+  @override
+  Future<BpProtocolView> getBpProtocol() async {
+    if (bpError != null) throw bpError!;
+    return bpView;
+  }
+
+  @override
+  Future<BpProtocolView> startBpProtocol() async {
+    if (bpError != null) throw bpError!;
+    bpStarts++;
+    return bpView = BpProtocolView(protocol: sampleBpState());
+  }
+
+  @override
+  Future<BpProtocolView> addBpReading(int sys, int dia, String session) async {
+    if (bpError != null) throw bpError!;
+    bpReadings.add((sys: sys, dia: dia, session: session));
+    return bpView = (onBpReading ?? (a, b, c) => bpView)(sys, dia, session);
+  }
+
+  @override
+  Future<BpProtocolView> finishBpProtocol() async {
+    if (bpError != null) throw bpError!;
+    bpFinishes++;
+    return bpView;
+  }
+
+  @override
+  Future<void> cancelBpProtocol() async {
+    bpCancels++;
+    bpView = const BpProtocolView();
+  }
+
+  @override
+  Future<bool> hasLoggedToday() async => loggedToday;
 
   @override
   Future<List<FrequentFood>> getFrequentFoods() async => frequentFoods;
@@ -644,3 +690,77 @@ ProductInfo sampleProduct({bool complete = true, double? servingG = 85, bool dri
       fatG: 18.8,
       kcal: complete ? 470.6 : null,
     );
+
+
+/// Notifikasi palsu: mencatat jadwal terakhir yang diterapkan.
+class FakeNotifications implements NotificationService {
+  FakeNotifications({this.grant = true});
+  bool grant;
+  int permissionRequests = 0, cancels = 0;
+  List<PlannedReminder> scheduled = [];
+
+  @override
+  Future<bool> ensurePermission() async {
+    permissionRequests++;
+    return grant;
+  }
+
+  @override
+  Future<void> apply(List<PlannedReminder> reminders) async => scheduled = reminders;
+
+  @override
+  Future<void> cancelAll() async {
+    cancels++;
+    scheduled = [];
+  }
+}
+
+Override notificationsOverride(FakeNotifications n) => notificationServiceProvider.overrideWithValue(n);
+
+
+BpProtocolState sampleBpState({
+  int dayIndex = 1,
+  int morning = 0,
+  int evening = 0,
+  bool canFinish = false,
+  bool over = false,
+  String status = 'active',
+  BpSummary? summary,
+}) =>
+    BpProtocolState(
+      id: 'p1',
+      status: status,
+      dayIndex: dayIndex,
+      days: [
+        for (var i = 0; i < 7; i++)
+          BpDay(
+            date: DateTime(2026, 10, 12).add(Duration(days: i)),
+            morning: i == 0 ? morning : 0,
+            evening: i == 0 ? evening : 0,
+            discarded: i == 0 && (morning + evening) > 0,
+            isToday: i == dayIndex - 1,
+          ),
+      ],
+      summary: summary ??
+          const BpSummary(
+            valid: false, readingsUsed: 0, daysUsed: 0,
+            missing: 'Belum cukup untuk dihitung: butuh 3 hari lagi dan 12 bacaan lagi (hari pertama dibuang; minimal 3 hari dan 12 bacaan).',
+          ),
+      canFinish: canFinish,
+      over: over,
+    );
+
+
+class FakeLinks implements LinkOpener {
+  FakeLinks({this.canOpen = true});
+  final bool canOpen;
+  final List<Uri> opened = [];
+
+  @override
+  Future<bool> open(Uri uri) async {
+    opened.add(uri);
+    return canOpen;
+  }
+}
+
+Override linksOverride(FakeLinks links) => linkOpenerProvider.overrideWithValue(links);

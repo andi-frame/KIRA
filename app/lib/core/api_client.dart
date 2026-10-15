@@ -16,6 +16,9 @@ class ApiException implements Exception {
   final String message;
   final int? status;
   bool get isUnauthorized => status == 401;
+
+  /// Tidak ada jawaban dari server sama sekali (tanpa sinyal, atau waktu habis).
+  bool get isNetwork => status == null;
   @override
   String toString() => message;
 }
@@ -48,6 +51,12 @@ abstract class KiraApi {
   Future<ResultOutcome> postResult(String kind, Map<String, num> value, {String source = 'self', String? idempotencyKey});
   Future<CheckRespondResult> respondCheck(String id, String action);
   Future<List<FrequentFood>> getFrequentFoods();
+  Future<bool> hasLoggedToday();
+  Future<BpProtocolView> getBpProtocol();
+  Future<BpProtocolView> startBpProtocol();
+  Future<BpProtocolView> addBpReading(int sys, int dia, String session);
+  Future<BpProtocolView> finishBpProtocol();
+  Future<void> cancelBpProtocol();
   Future<ProductInfo> getProduct(String barcode);
   Future<BarcodeLogResult> logBarcode(String barcode, {double? grams, double? servings});
   Future<void> postDiagnosis(String condition);
@@ -294,6 +303,30 @@ class DioKiraApi implements KiraApi {
         () => _dio.post('/recommendations/$id/respond', data: {'action': action}),
         (d) => CheckRespondResult.fromJson(d as Map<String, dynamic>),
       );
+
+  @override
+  Future<BpProtocolView> getBpProtocol() =>
+      _run(() => _dio.get('/bp-protocol'), (d) => BpProtocolView.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<BpProtocolView> startBpProtocol() =>
+      _run(() => _dio.post('/bp-protocol'), (d) => BpProtocolView.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<BpProtocolView> addBpReading(int sys, int dia, String session) => _run(
+        () => _dio.post('/bp-protocol/readings', data: {'sys': sys, 'dia': dia, 'session': session}),
+        (d) => BpProtocolView.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<BpProtocolView> finishBpProtocol() =>
+      _run(() => _dio.post('/bp-protocol/finish'), (d) => BpProtocolView.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<void> cancelBpProtocol() => _run(() => _dio.delete('/bp-protocol'), (_) {});
+
+  @override
+  Future<bool> hasLoggedToday() => _run(() => _dio.get('/logs'), (d) => (d['logs'] as List).isNotEmpty);
 
   @override
   Future<List<FrequentFood>> getFrequentFoods() => _run(

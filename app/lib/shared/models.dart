@@ -339,16 +339,19 @@ class CheckRecommendation {
 }
 
 class Faskes {
-  const Faskes({required this.name, required this.kind, required this.distanceKm, this.address});
+  const Faskes({required this.name, required this.kind, required this.distanceKm, this.address, this.lat, this.lng});
   final String name, kind;
   final double distanceKm;
   final String? address;
+  final double? lat, lng;
 
   factory Faskes.fromJson(Map<String, dynamic> j) => Faskes(
         name: j['name'] as String,
         kind: j['kind'] as String,
         distanceKm: (j['distance_km'] as num).toDouble(),
         address: j['address'] as String?,
+        lat: (j['lat'] as num?)?.toDouble(),
+        lng: (j['lng'] as num?)?.toDouble(),
       );
 }
 
