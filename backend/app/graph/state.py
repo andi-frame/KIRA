@@ -17,3 +17,4 @@ class KiraState(TypedDict, total=False):
     log_ids: list[str]
     messages: Annotated[list, add_messages]
     reply: str | None
+    guard_retries: int  # berapa kali balasan ditulis ulang karena melanggar guardrail

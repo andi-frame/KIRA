@@ -251,3 +251,42 @@ async def test_clinical_numbers_in_a_question_are_not_saved_as_results(session_m
     install([ai("Itu sebaiknya dikonfirmasi lewat pemeriksaan ya.")], hypothetical)
     await run(uid, session_maker, input_text="kalau gula puasaku 130 itu gimana?")
     assert await count(session_maker, "clinical_results") == 0
+
+
+async def test_balasan_melanggar_ditulis_ulang_sekali_bukan_langsung_diganti_kalimat_baku(session_maker, make_user):
+    uid = await make_user()
+    chat, _ = install([ai("Porsi segitu aman kok, makan saja."), ai("Porsi segitu masih sesuai targetmu hari ini.")], RAKA)
+    result = await run(uid, session_maker, input_text="boleh makan rendang?")
+    assert result.reply == "Porsi segitu masih sesuai targetmu hari ini."
+    assert chat.call_count == 2
+
+
+async def test_tetap_melanggar_setelah_ditulis_ulang_diganti_kalimat_baku(session_maker, make_user):
+    uid = await make_user()
+    chat, _ = install([ai("Aman kok."), ai("Pokoknya aman, makan sepuasnya.")], RAKA)
+    result = await run(uid, session_maker, input_text="boleh makan rendang?")
+    assert "dokter" in result.reply.lower() and "aman kok" not in result.reply.lower()
+    assert chat.call_count == 2  # tepat satu kali kesempatan menulis ulang, tidak berputar terus
+
+
+async def test_balasan_bersih_tidak_memicu_penulisan_ulang(session_maker, make_user):
+    uid = await make_user()
+    chat, _ = install([ai("Masih sesuai targetmu hari ini.")], RAKA)
+    result = await run(uid, session_maker, input_text="boleh makan rendang?")
+    assert result.reply == "Masih sesuai targetmu hari ini." and chat.call_count == 1
+
+
+def test_markdown_dibersihkan_agar_tidak_tampil_sebagai_tanda_bintang_mentah():
+    from app.graph.nodes.output_guardrail import strip_markdown
+
+    raw = "## Ringkasan\nSudah dicatat, **cukup 1 porsi** ya.\n\n* Kalori: *sekitar* 135 kkal\n* Lemak: `5,5` g\n\n\n\nSemoga membantu."
+    assert strip_markdown(raw) == "Ringkasan\nSudah dicatat, cukup 1 porsi ya.\n\n- Kalori: sekitar 135 kkal\n- Lemak: 5,5 g\n\nSemoga membantu."
+    assert strip_markdown("Teks biasa 2 * 3 = 6 dan snake_case tetap utuh.") == "Teks biasa 2 * 3 = 6 dan snake_case tetap utuh."
+    assert strip_markdown("") == ""
+
+
+async def test_balasan_akhir_sudah_bersih_dari_markdown(session_maker, make_user):
+    uid = await make_user()
+    install([ai("Boleh, **1 potong** saja ya.")], RAKA)
+    result = await run(uid, session_maker, input_text="boleh makan rendang?")
+    assert result.reply == "Boleh, 1 potong saja ya."
