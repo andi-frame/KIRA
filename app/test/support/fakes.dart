@@ -10,6 +10,7 @@ import 'package:kira/features/chat/media.dart';
 import 'package:kira/features/check/location.dart';
 import 'package:image_picker/image_picker.dart' show ImageSource;
 import 'package:kira/shared/family_models.dart';
+import 'package:kira/shared/insight_models.dart';
 import 'package:kira/shared/models.dart';
 
 List<double> _curve(double p10) => [for (var t = 0; t <= 10; t++) 1 - _pow(1 - p10, t / 10)];
@@ -234,6 +235,24 @@ class FakeApi implements KiraApi {
 
   @override
   Future<String> whatsappLinkCode() async => linkCode;
+
+  WeeklyRecap? weeklyRecap;
+  Object? weeklyError;
+  final List<PassiveBatch> passiveBatches = [];
+  Object? passiveError;
+
+  @override
+  Future<WeeklyRecap?> getWeeklyRecap() async {
+    if (weeklyError != null) throw weeklyError!;
+    return weeklyRecap;
+  }
+
+  @override
+  Future<PassiveSyncResult> syncPassive(PassiveBatch batch) async {
+    if (passiveError != null) throw passiveError!;
+    passiveBatches.add(batch);
+    return PassiveSyncResult(activityDays: batch.steps.length, sleepNights: batch.sleep.length);
+  }
 }
 
 /// Membungkus widget dengan tema, lokal, dan provider palsu.

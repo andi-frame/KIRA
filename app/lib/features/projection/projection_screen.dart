@@ -10,6 +10,7 @@ import '../../shared/models.dart';
 import '../../shared/widgets.dart';
 import 'projection_providers.dart';
 import 'risk_chart.dart';
+import 'weekly_recap_card.dart';
 
 class ProjectionScreen extends ConsumerWidget {
   const ProjectionScreen({super.key});
@@ -114,6 +115,10 @@ class _Content extends ConsumerWidget {
         _HypertensionCard(risk: p.hypertension),
         const SizedBox(height: KiraSpace.lg),
         _ImpactCard(projection: p, whatIf: whatIf),
+        if (ref.watch(weeklyRecapProvider).value case final recap?) ...[
+          const SizedBox(height: KiraSpace.lg),
+          WeeklyRecapCard(recap: recap),
+        ],
         const SizedBox(height: KiraSpace.lg),
         _Controls(whatIf: whatIf),
         const SizedBox(height: KiraSpace.sm),
