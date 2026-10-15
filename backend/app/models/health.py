@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, Text, func
+from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -119,4 +119,16 @@ class WhatIfScenario(Base):
     params: Mapped[dict] = mapped_column(JSONB, nullable=False)
     saved_before: Mapped[dict] = mapped_column(JSONB, nullable=False)  # {"low","high"} rentang skor saat disimpan
     saved_after: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = created_at()
+
+
+class Goal(Base):
+    """Target mingguan pribadi (satu per jenis). Kemajuannya selalu dihitung dari catatan, tidak disimpan."""
+
+    __tablename__ = "goals"
+    __table_args__ = (UniqueConstraint("user_id", "kind", name="ux_goals_user_kind"),)
+    id: Mapped[uuid.UUID] = uuid_pk()
+    user_id: Mapped[uuid.UUID] = _user_fk()
+    kind: Mapped[str] = mapped_column(Text, nullable=False)
+    target: Mapped[float] = mapped_column(Float, nullable=False)
     created_at: Mapped[datetime] = created_at()

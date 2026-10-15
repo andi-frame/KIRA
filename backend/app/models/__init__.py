@@ -4,6 +4,7 @@ from app.models.family import FamilyLink
 from app.models.health import (
     BpProtocol,
     BpReading,
+    Goal,
     WhatIfScenario,
     CheckRecommendation,
     ClinicalResult,
@@ -19,5 +20,5 @@ from app.models.whatsapp import WaLink, WaLinkCode, WaOutbox
 __all__ = [
     "Base", "User", "HealthProfile", "Diagnosis", "Food", "Log", "LogItem", "Product",
     "ClinicalResult", "RiskSnapshot", "CheckRecommendation", "WeeklySummary", "Message", "Faskes",
-    "BpProtocol", "BpReading", "WhatIfScenario", "WaLink", "WaLinkCode", "WaOutbox", "FamilyLink", "AuthSession", "PinResetCode", "AccessLog", "ShareLink", "IdempotencyKey",
+    "BpProtocol", "BpReading", "Goal", "WhatIfScenario", "WaLink", "WaLinkCode", "WaOutbox", "FamilyLink", "AuthSession", "PinResetCode", "AccessLog", "ShareLink", "IdempotencyKey",
 ]
