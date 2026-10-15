@@ -90,6 +90,15 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 const Divider(),
                 ListTile(
+                  key: const Key('tile_privacy'),
+                  leading: const Icon(Icons.privacy_tip_outlined),
+                  title: const Text('Data dan privasi'),
+                  subtitle: const Text('Siapa yang membuka datamu, unduh data, ganti PIN, hapus akun'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/privacy'),
+                ),
+                const Divider(),
+                ListTile(
                   key: const Key('tile_whatsapp'),
                   leading: const Icon(Icons.chat_outlined),
                   title: const Text('Tautkan WhatsApp'),
