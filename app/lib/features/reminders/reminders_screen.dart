@@ -47,7 +47,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
         children: [
           Text(
             'Pengingat lembut di ponselmu, hanya yang kamu nyalakan. Isi notifikasinya tidak memuat data kesehatan, '
-            'jadi aman terlihat di layar kunci.',
+            'jadi tidak membocorkan apa pun di layar kunci.',
             style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurfaceVariant),
           ),
           const SizedBox(height: KiraSpace.lg),

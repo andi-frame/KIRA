@@ -42,7 +42,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
             'kira-data-$stamp.json',
             'application/json',
             subject: 'Salinan data KIRA',
-            message: 'Salinan data KIRA milikku. Berisi data kesehatan, simpan di tempat yang aman.',
+            message: 'Salinan data KIRA milikku. Berisi data kesehatan, simpan dengan hati-hati.',
           );
     } on ApiException catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
