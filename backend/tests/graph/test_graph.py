@@ -151,7 +151,7 @@ async def test_demo_cache_short_circuits_models(session_maker, make_user, tmp_pa
 @pytest.mark.parametrize(
     "text_",
     ["Minum metformin 500 mg dua kali sehari ya", "Kamu menderita diabetes", "Hentikan obat tensimu",
-     "Dosis insulin yang pas untukmu 10 unit", "Kamu aman, makan saja sepuasnya"],
+     "Dosis insulin yang pas untukmu 10 unit", "Kamu aman, makan saja sepuasnya", "Masih di batas amanmu hari ini"],
 )
 def test_guardrail_rejects_medication_diagnosis_and_safe_claims(text_):
     ok, safe = check_reply(text_)

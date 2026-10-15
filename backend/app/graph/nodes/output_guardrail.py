@@ -30,7 +30,7 @@ _PATTERNS = [
     rf"\b(tergolong|termasuk|positif)\b.{{0,12}}\b{_DISEASE}",
     r"\bkamu (sudah )?didiagnosis\b",
     # "aman" apa pun dilarang oleh prompt; kecuali dinegasikan ("belum tentu aman", "tidak aman").
-    r"(?<!tidak )(?<!belum tentu )(?<!kurang )(?<!bukan )(?<!belum )\baman\b",
+    r"(?<!tidak )(?<!belum tentu )(?<!kurang )(?<!bukan )(?<!belum )\baman(?:mu|nya)?\b",
 ]
 _COMPILED = [re.compile(p, re.IGNORECASE) for p in _PATTERNS]
 
