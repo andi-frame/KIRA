@@ -53,7 +53,7 @@ cp ../.env.example ../.env                    # isi ANTHROPIC_API_KEY dan STT_AP
 uv sync                                       # membuat .venv dari pyproject.toml + uv.lock
 uv run alembic upgrade head
 uv run python -m seed.load                    # ~100 makanan lokal + faskes dummy
-uv run python -m seed.raka --reset            # persona demo Raka (081234567890 / PIN 123456), ulang dari awal
+uv run python -m seed.raka --reset            # persona demo Raka (raka atau 081234567890 / PIN 123456), ulang dari awal
 uv run uvicorn app.main:app --port 8000
 
 # 3. Aplikasi
@@ -121,6 +121,7 @@ mustahil ditolak sebelum disimpan.
   dan sesi tidur; menit aktif dihitung server (`core_calc/steps.py`: kadensi >= 100 langkah/menit, Tudor-Locke dkk. 2019). Sinkron ulang hanya mengganti
   hari yang dikirim; `DELETE /sync/passive` menghapus semua data perangkat. Langkah ganda dari beberapa aplikasi dibuang (hanya sumber terbanyak dipakai).
 - **Rekap minggu lalu:** `GET /summary/weekly` (dihitung langsung dari catatan) dan kartu di layar 10 Tahun, dengan perubahan dari minggu sebelumnya.
+- **Masuk dengan nama pengguna:** akun baru mendaftar dengan nama pengguna + nomor HP (nomor tetap wajib untuk WhatsApp dan undangan keluarga); masuk memakai nama pengguna ATAU nomor. Nama pengguna 3-20 karakter, diawali huruf (jadi tidak ambigu dengan nomor), tidak membedakan huruf besar/kecil. Batas percobaan masuk dibagi per akun, bukan per ketikan. Akun lama bisa membuatnya dari Profil (`PUT /auth/username`).
 - Perbaikan build: manifest Android sekarang mendeklarasikan `INTERNET` dan izin lokasi (sebelumnya APK rilis tidak bisa memanggil API).
 
 ## Batasan yang disengaja

@@ -9,6 +9,10 @@ import '../../core/theme.dart';
 final _phonePattern = RegExp(r'^\+?\d{8,15}$');
 final _pinPattern = RegExp(r'^\d{4,6}$');
 
+/// Nama pengguna selalu diawali huruf, jadi tidak pernah bisa menyerupai nomor HP.
+final usernamePattern = RegExp(r'^[a-z][a-z0-9_.]{2,19}$');
+const usernameRule = 'Nama pengguna 3-20 karakter: huruf kecil, angka, titik, atau garis bawah, diawali huruf.';
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -17,7 +21,9 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _phone = TextEditingController();
+  final _identifier = TextEditingController(); // masuk: nama pengguna atau nomor HP
+  final _username = TextEditingController(); // daftar
+  final _phone = TextEditingController(); // daftar
   final _pin = TextEditingController();
   bool _register = false;
   bool _busy = false;
@@ -25,20 +31,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   void dispose() {
+    _identifier.dispose();
+    _username.dispose();
     _phone.dispose();
     _pin.dispose();
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    final phone = _phone.text.trim();
-    final pin = _pin.text.trim();
-    if (!_phonePattern.hasMatch(phone)) {
-      setState(() => _error = 'Nomor HP belum sesuai. Pakai angka saja, 8 sampai 15 digit.');
-      return;
+  String? _validate(String pin) {
+    if (_register) {
+      if (!usernamePattern.hasMatch(_username.text.trim().toLowerCase())) return usernameRule;
+      if (!_phonePattern.hasMatch(_phone.text.trim())) {
+        return 'Nomor HP belum sesuai. Pakai angka saja, 8 sampai 15 digit.';
+      }
+    } else if (_identifier.text.trim().isEmpty) {
+      return 'Isi nama pengguna atau nomor HP-mu.';
     }
-    if (!_pinPattern.hasMatch(pin)) {
-      setState(() => _error = 'PIN harus 4 sampai 6 angka.');
+    if (!_pinPattern.hasMatch(pin)) return 'PIN harus 4 sampai 6 angka.';
+    return null;
+  }
+
+  Future<void> _submit() async {
+    final pin = _pin.text.trim();
+    final problem = _validate(pin);
+    if (problem != null) {
+      setState(() => _error = problem);
       return;
     }
     setState(() {
@@ -47,7 +64,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
     try {
       final api = ref.read(apiProvider);
-      final token = _register ? await api.register(phone, pin) : await api.login(phone, pin);
+      final token = _register
+          ? await api.register(_phone.text.trim(), _username.text.trim().toLowerCase(), pin)
+          : await api.login(_identifier.text.trim().toLowerCase(), pin);
       await ref.read(authProvider.notifier).setToken(token);
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
@@ -70,7 +89,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   Text('KIRA', style: context.text.labelLarge?.copyWith(color: context.scheme.primary, letterSpacing: 2)),
                   const SizedBox(height: KiraSpace.sm),
-                  Text('Masuk ke KIRA', style: context.text.headlineMedium),
+                  Text(_register ? 'Daftar ke KIRA' : 'Masuk ke KIRA', style: context.text.headlineMedium),
                   const SizedBox(height: KiraSpace.sm),
                   Text(
                     'Kira-kira kesehatanmu 10 tahun lagi seperti apa? Ceritakan satu menit sehari, KIRA bantu menghitungnya.',
@@ -89,15 +108,48 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     }),
                   ),
                   const SizedBox(height: KiraSpace.xl),
-                  TextField(
-                    controller: _phone,
-                    keyboardType: TextInputType.phone,
-                    textInputAction: TextInputAction.next,
-                    autofillHints: const [AutofillHints.telephoneNumber],
-                    decoration: const InputDecoration(labelText: 'Nomor HP', helperText: 'Contoh: 081234567890'),
-                  ),
+                  if (_register) ...[
+                    TextField(
+                      key: const Key('register_username'),
+                      controller: _username,
+                      textInputAction: TextInputAction.next,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      autofillHints: const [AutofillHints.newUsername],
+                      decoration: const InputDecoration(
+                        labelText: 'Nama pengguna',
+                        helperText: 'Untuk masuk. Contoh: raka_dev',
+                      ),
+                    ),
+                    const SizedBox(height: KiraSpace.lg),
+                    TextField(
+                      key: const Key('register_phone'),
+                      controller: _phone,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.telephoneNumber],
+                      decoration: const InputDecoration(
+                        labelText: 'Nomor HP',
+                        helperText: 'Wajib: dipakai untuk menautkan WhatsApp dan undangan keluarga',
+                        helperMaxLines: 2,
+                      ),
+                    ),
+                  ] else
+                    TextField(
+                      key: const Key('login_identifier'),
+                      controller: _identifier,
+                      textInputAction: TextInputAction.next,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      autofillHints: const [AutofillHints.username],
+                      decoration: const InputDecoration(
+                        labelText: 'Nama pengguna atau nomor HP',
+                        helperText: 'Contoh: raka_dev atau 081234567890',
+                      ),
+                    ),
                   const SizedBox(height: KiraSpace.lg),
                   TextField(
+                    key: const Key('login_pin'),
                     controller: _pin,
                     obscureText: true,
                     keyboardType: TextInputType.number,
@@ -116,6 +168,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
+                      key: const Key('auth_submit'),
                       onPressed: _busy ? null : _submit,
                       child: _busy
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5))

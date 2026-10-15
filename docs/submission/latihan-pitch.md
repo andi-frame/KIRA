@@ -9,7 +9,7 @@ cd app; flutter build web --release --dart-define=API_URL=http://localhost:8000
 powershell -File scripts\run_demo_stack.ps1     # Postgres, API (DEMO_CACHE=true), web di :8080; Raka di-reset
 ```
 
-- Login Raka: `081234567890` / PIN `123456` (data dummy, 3 minggu catatan).
+- Login Raka: `raka` (atau `081234567890`) / PIN `123456` (data dummy, 3 minggu catatan).
 - `DEMO_CACHE=true` melayani dua kalimat skrip demo tanpa memanggil LLM. Kalimat lain tetap memanggil model (butuh `ANTHROPIC_API_KEY`); tanda bahaya tidak pernah dari cache.
 - Ulang demo dari awal: `cd backend; uv run python -m seed.raka --reset`.
 - Cadangan: rekaman layar penuh di HP, hotspot dari HP lain, nomor WhatsApp cadangan atau tunjukkan alur yang sama di aplikasi.

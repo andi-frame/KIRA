@@ -107,16 +107,39 @@ class FakeApi implements KiraApi {
   final List<({String id, List<Map<String, dynamic>> items})> patches = [];
   int projectionCalls = 0;
 
+  final List<({String phone, String username, String pin})> registrations = [];
+  final List<({String identifier, String pin})> logins = [];
+  final List<String> usernameChanges = [];
+  Object? usernameError;
+
   @override
-  Future<String> register(String phone, String pin) async {
+  Future<String> register(String phone, String username, String pin) async {
+    registrations.add((phone: phone, username: username, pin: pin));
     if (loginError != null) throw loginError!;
     return 'token-baru';
   }
 
   @override
-  Future<String> login(String phone, String pin) async {
+  Future<String> login(String identifier, String pin) async {
+    logins.add((identifier: identifier, pin: pin));
     if (loginError != null) throw loginError!;
     return 'token';
+  }
+
+  @override
+  Future<String> setUsername(String username) async {
+    if (usernameError != null) throw usernameError!;
+    usernameChanges.add(username);
+    profile = Profile(
+      displayName: profile.displayName,
+      username: username,
+      birthDate: profile.birthDate,
+      sex: profile.sex,
+      heightCm: profile.heightCm,
+      weightKg: profile.weightKg,
+      mode: profile.mode,
+    );
+    return username;
   }
 
   @override
@@ -127,6 +150,7 @@ class FakeApi implements KiraApi {
     profileUpdates.add(fields);
     profile = Profile(
       displayName: fields['display_name'] as String? ?? profile.displayName,
+      username: profile.username,
       birthDate: fields['birth_date'] as String? ?? profile.birthDate,
       sex: fields['sex'] as String? ?? profile.sex,
       heightCm: (fields['height_cm'] as num?)?.toDouble() ?? profile.heightCm,

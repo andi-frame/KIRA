@@ -21,4 +21,4 @@ Start-Process -FilePath "uv" -ArgumentList "run", "python", "-m", "http.server",
   -WorkingDirectory (Join-Path $root "backend") -WindowStyle Hidden
 
 Write-Output "API:  http://localhost:8000/health"
-Write-Output "Web:  http://localhost:8080   (login Raka: 081234567890 / PIN 123456, data dummy)"
+Write-Output "Web:  http://localhost:8080   (login Raka: raka atau 081234567890 / PIN 123456, data dummy)"

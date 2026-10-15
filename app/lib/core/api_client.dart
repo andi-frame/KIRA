@@ -20,8 +20,9 @@ class ApiException implements Exception {
 
 /// Kontrak API KIRA. Layar hanya bergantung pada antarmuka ini sehingga mudah diuji dengan fake.
 abstract class KiraApi {
-  Future<String> register(String phone, String pin);
-  Future<String> login(String phone, String pin);
+  Future<String> register(String phone, String username, String pin);
+  Future<String> login(String identifier, String pin);
+  Future<String> setUsername(String username);
   Future<Profile> getProfile();
   Future<Profile> putProfile(Map<String, dynamic> fields);
   Future<ChatReply> sendMessage(String text);
@@ -90,12 +91,20 @@ class DioKiraApi implements KiraApi {
   }
 
   @override
-  Future<String> register(String phone, String pin) =>
-      _run(() => _dio.post('/auth/register', data: {'phone': phone, 'pin': pin}), (d) => d['access_token'] as String);
+  Future<String> register(String phone, String username, String pin) => _run(
+        () => _dio.post('/auth/register', data: {'phone': phone, 'username': username, 'pin': pin}),
+        (d) => d['access_token'] as String,
+      );
 
   @override
-  Future<String> login(String phone, String pin) =>
-      _run(() => _dio.post('/auth/login', data: {'phone': phone, 'pin': pin}), (d) => d['access_token'] as String);
+  Future<String> login(String identifier, String pin) => _run(
+        () => _dio.post('/auth/login', data: {'identifier': identifier, 'pin': pin}),
+        (d) => d['access_token'] as String,
+      );
+
+  @override
+  Future<String> setUsername(String username) =>
+      _run(() => _dio.put('/auth/username', data: {'username': username}), (d) => d['username'] as String);
 
   @override
   Future<Profile> getProfile() => _run(() => _dio.get('/profile'), (d) => Profile.fromJson(d as Map<String, dynamic>));
