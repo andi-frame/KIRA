@@ -110,9 +110,23 @@ mustahil ditolak sebelum disimpan.
 - **WhatsApp (prototype):** endpoint tautan dan webhook di backend, jembatan Baileys di [`wa-bot/`](wa-bot/README.md). Tidak resmi; lihat peringatannya.
 - **Dokumen submission:** [`docs/submission/`](docs/submission/) (naskah video, pitch deck, proposal, checklist).
 
+## Fase 3
+
+- **Label gizi kemasan:** foto tabel informasi nilai gizi (`POST /chat/photo?kind=label`, atau keterangan "label" di WhatsApp). Angka gula, natrium, lemak,
+  dan kalori yang tercetak dibaca model, lalu dihitung per sajian oleh `core_calc/label.py` (nilai mustahil seperti gula melebihi berat sajian ditolak).
+  Hasilnya bersumber label, bukan estimasi tim, dan koreksi porsi menskalakan angka itu secara proporsional.
+- **Jejak perhitungan:** tiap balasan yang memakai tool menawarkan "Lihat cara KIRA menghitung": tool apa yang dipanggil, angka masuknya, dan sumbernya
+  (TKPI atau estimasi). Tool yang belum dikenal tetap tampil dengan nama aslinya.
+- **Langkah dan tidur dari Health Connect (Android):** opsional, dinyalakan sendiri oleh pengguna dari Profil. `POST /sync/passive` menerima segmen langkah
+  dan sesi tidur; menit aktif dihitung server (`core_calc/steps.py`: kadensi >= 100 langkah/menit, Tudor-Locke dkk. 2019). Sinkron ulang hanya mengganti
+  hari yang dikirim; `DELETE /sync/passive` menghapus semua data perangkat. Langkah ganda dari beberapa aplikasi dibuang (hanya sumber terbanyak dipakai).
+- **Rekap minggu lalu:** `GET /summary/weekly` (dihitung langsung dari catatan) dan kartu di layar 10 Tahun, dengan perubahan dari minggu sebelumnya.
+- Perbaikan build: manifest Android sekarang mendeklarasikan `INTERNET` dan izin lokasi (sebelumnya APK rilis tidak bisa memanggil API).
+
 ## Batasan yang disengaja
 
 - Proyeksi 10 tahun untuk diabetes memakai FINDRISC; hipertensi memakai Framingham 4 tahun dan hanya untuk usia dan kondisi yang memenuhi syarat kelayakannya.
+- Health Connect belum diuji di perangkat sungguhan (logikanya dites dengan sumber palsu; build APK berhasil). Satu ponsel berarti satu sumber utama; tidur terputus-putus dihitung per sesi.
 - Koneksi WhatsApp sungguhan belum diuji (butuh nomor khusus dan pemindaian QR); logikanya dites otomatis.
 - Integrasi SATUSEHAT belum diimplementasikan (roadmap).
 - Pengguna sungguhan di produksi memerlukan WhatsApp Business Platform resmi, OTP asli, dan persetujuan data sesuai UU PDP.
