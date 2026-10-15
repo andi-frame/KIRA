@@ -21,6 +21,7 @@ from app.repos import logs as logs_repo
 from app.repos import profiles, users
 from app.schemas.profile import ProfileIn
 from app.security import hash_pin
+from app.services import account
 from app.services.nutrition_items import item_data
 from app.timeutil import WIB, utcnow
 
@@ -64,6 +65,7 @@ async def create_raka(session: AsyncSession) -> uuid.UUID:
     if existing is not None:
         return existing.id
     user = await users.create(session, RAKA_PHONE, hash_pin(RAKA_PIN), RAKA_USERNAME)
+    await account.record_consent(session, user.id)
     await profiles.update(
         session,
         user.id,

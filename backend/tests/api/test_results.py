@@ -84,7 +84,7 @@ async def test_other_users_logs_are_invisible(client, auth_headers):
         reset_models()
     meal = next(lg for lg in (await client.get("/logs", headers=auth_headers)).json()["logs"] if lg["kind"] == "meal")
 
-    other = await client.post("/auth/register", json={"phone": "081200000099", "username": "u081200000099", "pin": "654321"})
+    other = await client.post("/auth/register", json={"phone": "081200000099", "username": "u081200000099", "consent": True, "pin": "654321"})
     other_headers = {"Authorization": f"Bearer {other.json()['access_token']}"}
     assert (await client.patch(f"/logs/{meal['id']}", json={"items": []}, headers=other_headers)).status_code == 404
     assert (await client.get("/logs", headers=other_headers)).json()["logs"] == []
