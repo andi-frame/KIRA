@@ -2,13 +2,14 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core_calc.red_flags import RedFlag
 from app.db import get_session
-from app.models import Diagnosis, User
+from app.models import Diagnosis, User, WhatIfScenario
 from app.repos import faskes as faskes_repo
-from app.schemas.api import CheckRespondIn, DiagnosisIn, ResultIn, WhatIfIn
+from app.schemas.api import CheckRespondIn, DiagnosisIn, ResultIn, ScenarioIn, WhatIfIn
 from app.security import current_user_id
 from app.services import check_followup, idempotency, risk
 from app.services.projection_view import projection_payload, whatif_payload
@@ -42,6 +43,78 @@ async def projection_whatif(
 ) -> dict:
     state = await risk.compute_risk_state(session, user_id)
     return whatif_payload(state, WhatIfChange(**body.model_dump(exclude_none=True)))
+
+
+MAX_SCENARIOS = 10
+
+
+def _params(body: WhatIfIn) -> dict:
+    return body.model_dump(exclude_none=True)
+
+
+def _scenario_out(row: WhatIfScenario, state) -> dict:
+    now = whatif_payload(state, WhatIfChange(**row.params))
+    return {
+        "id": str(row.id), "name": row.name, "params": row.params, "saved_at": row.created_at.isoformat(),
+        "saved": {"before": row.saved_before, "after": row.saved_after},
+        # Dihitung ulang dengan data terkini: skenario yang sama bisa berubah hasilnya saat datamu berubah.
+        "now": {"before": now["before"], "after": now["after"], "category_after_low": now["category_after_low"],
+                "category_after_high": now["category_after_high"]},
+    }
+
+
+@router.get("/projection/scenarios")
+async def list_scenarios(
+    user_id: uuid.UUID = Depends(current_user_id), session: AsyncSession = Depends(get_session)
+) -> dict:
+    rows = (
+        await session.execute(
+            select(WhatIfScenario).where(WhatIfScenario.user_id == user_id).order_by(WhatIfScenario.created_at.desc())
+        )
+    ).scalars().all()
+    state = await risk.compute_risk_state(session, user_id)
+    return {"scenarios": [_scenario_out(r, state) for r in rows], "max": MAX_SCENARIOS}
+
+
+@router.post("/projection/scenarios")
+async def save_scenario(
+    body: ScenarioIn, user_id: uuid.UUID = Depends(current_user_id), session: AsyncSession = Depends(get_session)
+) -> dict:
+    count = (
+        await session.execute(select(func.count()).select_from(WhatIfScenario).where(WhatIfScenario.user_id == user_id))
+    ).scalar_one()
+    if count >= MAX_SCENARIOS:
+        raise HTTPException(409, f"Sudah ada {MAX_SCENARIOS} skenario tersimpan. Hapus satu dulu.")
+    params = _params(WhatIfIn(**body.model_dump(exclude={"name"})))
+    meaningful = (
+        params.get("active_30min") is not None
+        or params.get("daily_veg_fruit") is not None
+        or bool(params.get("weight_delta_kg"))
+        or bool(params.get("sweet_drinks_delta_per_day"))
+    )
+    if not meaningful:
+        raise HTTPException(422, "Skenario kosong. Geser setidaknya satu kebiasaan dulu.")
+    state = await risk.compute_risk_state(session, user_id)
+    result = whatif_payload(state, WhatIfChange(**params))
+    row = WhatIfScenario(
+        user_id=user_id, name=body.name, params=params, saved_before=result["before"], saved_after=result["after"]
+    )
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return _scenario_out(row, state)
+
+
+@router.delete("/projection/scenarios/{scenario_id}")
+async def delete_scenario(
+    scenario_id: uuid.UUID, user_id: uuid.UUID = Depends(current_user_id), session: AsyncSession = Depends(get_session)
+) -> dict:
+    row = await session.get(WhatIfScenario, scenario_id)
+    if row is None or row.user_id != user_id:
+        raise HTTPException(404, "Skenario tidak ditemukan")
+    await session.delete(row)
+    await session.commit()
+    return {"ok": True}
 
 
 @router.get("/recommendations/check")

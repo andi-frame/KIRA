@@ -19,8 +19,10 @@ from app.core_calc.constants import (
     GLUCOSE_HIGH_RANDOM,
     HBA1C_DIABETES,
 )
+from app.core_calc.constants import FINDRISC_CATEGORIES
+from app.core_calc.patterns import SHORT_SLEEP_HOURS, compare_by_sleep
 from app.core_calc.triage import glucose_range, hba1c_range, trend_label, triage_flags
-from app.models import ClinicalResult, Log, LogItem
+from app.models import ClinicalResult, Log, LogItem, RiskSnapshot
 from app.services import risk
 from app.timeutil import WIB, local_date, utcnow
 
@@ -147,6 +149,78 @@ def latest_for_triage(clinical: dict) -> dict:
         if point:
             latest[kind] = point["value"]
     return latest
+
+
+PATTERN_DISCLAIMER = (
+    "Ini pola dari catatanmu sendiri, bukan sebab pasti. Selisih bisa kebetulan, terutama kalau datanya baru sedikit. "
+    "Bahas bersama dokter sebelum mengambil kesimpulan."
+)
+
+
+async def sleep_patterns(session: AsyncSession, user_id: uuid.UUID, days: int) -> dict:
+    """Bandingkan hari tidur pendek dengan hari lain (gula, minuman manis, menit aktif, dan sistolik di hari yang sama)."""
+    today = local_date(utcnow())
+    series = await daily_series(session, user_id, today - timedelta(days=days - 1), today)
+    cutoff = utcnow() - timedelta(days=days)
+    bp_rows = (
+        await session.execute(
+            select(ClinicalResult).where(
+                ClinicalResult.user_id == user_id, ClinicalResult.kind == "blood_pressure", ClinicalResult.measured_at >= cutoff
+            )
+        )
+    ).scalars().all()
+    by_day: dict[str, list[float]] = defaultdict(list)
+    for r in bp_rows:
+        if r.value.get("protocol"):
+            continue  # rata-rata protokol mewakili beberapa hari, bukan satu hari
+        try:
+            by_day[local_date(r.measured_at).isoformat()].append(float(r.value["sys"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+    result = compare_by_sleep(series, dict(by_day))
+    return {
+        "period_days": days,
+        "sleep": {
+            "threshold_hours": result["threshold_hours"],
+            "short_days": result["short_days"],
+            "other_days": result["other_days"],
+            "min_per_group": result["min_per_group"],
+            "needs_more_data": result["needs_more_data"],
+            "comparisons": [
+                {"key": c.key, "label": c.label, "unit": c.unit, "short_avg": c.short_avg, "other_avg": c.other_avg,
+                 "diff": round(c.diff, 1), "n_short": c.n_short, "n_other": c.n_other}
+                for c in result["comparisons"]
+            ],
+        },
+        "disclaimer": PATTERN_DISCLAIMER,
+    }
+
+
+async def risk_history(session: AsyncSession, user_id: uuid.UUID, days: int) -> dict:
+    """Skor FINDRISC dari waktu ke waktu (satu titik per hari: yang terakhir), beserta batas kategori."""
+    cutoff = utcnow() - timedelta(days=days)
+    rows = (
+        await session.execute(
+            select(RiskSnapshot)
+            .where(RiskSnapshot.user_id == user_id, RiskSnapshot.model == "findrisc", RiskSnapshot.computed_at >= cutoff)
+            .order_by(RiskSnapshot.computed_at)
+        )
+    ).scalars().all()
+    per_day: dict[date, RiskSnapshot] = {}
+    for r in rows:
+        if r.score_low is not None and r.score_high is not None:
+            per_day[local_date(r.computed_at)] = r  # yang terakhir pada hari itu menimpa
+    points = [
+        {"date": d.isoformat(), "score_low": r.score_low, "score_high": r.score_high,
+         "category_low": r.category_low, "category_high": r.category_high}
+        for d, r in sorted(per_day.items())
+    ]
+    return {
+        "period_days": days,
+        "points": points,
+        "categories": [{"min": lo, "max": hi, "category": cat} for lo, hi, cat in FINDRISC_CATEGORIES],
+        "note": "Rentang melebar saat data profil atau hasil cek belum ada, dan menyempit seiring data nyata masuk.",
+    }
 
 
 async def build_trends(session: AsyncSession, user_id: uuid.UUID, days: int) -> dict:

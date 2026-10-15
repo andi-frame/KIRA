@@ -15,7 +15,7 @@ from app.services import risk
 from app.services.jobs import _metrics, _summary_text, week_bounds, weekly_changes
 from app.services.projection_view import hypertension_payload
 from app.services.doctor_pdf import build_doctor_pdf
-from app.services.trends import build_trends
+from app.services.trends import build_trends, risk_history, sleep_patterns
 from app.timeutil import local_date, utcnow
 
 router = APIRouter(tags=["summary"])
@@ -231,6 +231,26 @@ async def trends(
 ) -> dict:
     """Grafik tren: hasil pemeriksaan (180 hari), kebiasaan harian (`days`), dan penanda triase untuk dokter."""
     return await build_trends(session, user_id, days)
+
+
+@router.get("/insights/patterns")
+async def patterns(
+    days: int = Query(default=60, ge=14, le=90),
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Pola deskriptif: hari tidur pendek (< 6 jam) dibanding hari lain. Butuh minimal 3 hari di tiap kelompok."""
+    return await sleep_patterns(session, user_id, days)
+
+
+@router.get("/insights/risk-history")
+async def risk_history_endpoint(
+    days: int = Query(default=180, ge=7, le=730),
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Skor FINDRISC dari waktu ke waktu: bagaimana rentang risikomu berubah seiring data masuk."""
+    return await risk_history(session, user_id, days)
 
 
 @router.get("/summary/doctor.pdf")

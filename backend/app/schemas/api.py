@@ -33,6 +33,18 @@ class WhatIfIn(BaseModel):
     sweet_drinks_delta_per_day: float = Field(default=0.0, ge=-20, le=20)
 
 
+class ScenarioIn(WhatIfIn):
+    name: str = Field(min_length=1, max_length=40)
+
+    @field_validator("name")
+    @classmethod
+    def _clean(cls, v: str) -> str:
+        v = " ".join(v.split())
+        if not v:
+            raise ValueError("nama tidak boleh kosong")
+        return v
+
+
 class ResultIn(BaseModel):
     kind: Literal["fasting_glucose", "random_glucose", "blood_pressure", "hba1c", "waist"]
     value: dict[str, float]

@@ -107,3 +107,16 @@ class BpReading(Base):
     sys: Mapped[int] = mapped_column(Integer, nullable=False)
     dia: Mapped[int] = mapped_column(Integer, nullable=False)
     session: Mapped[str] = mapped_column(Text, nullable=False)  # morning | evening
+
+
+class WhatIfScenario(Base):
+    """Skenario "bagaimana kalau" yang disimpan pengguna, dengan hasil saat disimpan untuk dibandingkan dengan sekarang."""
+
+    __tablename__ = "whatif_scenarios"
+    id: Mapped[uuid.UUID] = uuid_pk()
+    user_id: Mapped[uuid.UUID] = _user_fk()
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    params: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    saved_before: Mapped[dict] = mapped_column(JSONB, nullable=False)  # {"low","high"} rentang skor saat disimpan
+    saved_after: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = created_at()
