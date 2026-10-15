@@ -10,10 +10,10 @@ import '../projection/projection_providers.dart';
 enum ChatKind { user, kira, extraction, emergency, error }
 
 class ChatItem {
-  const ChatItem._(this.kind, {this.text = '', this.data, this.logIds = const [], this.retry});
+  const ChatItem._(this.kind, {this.text = '', this.data, this.logIds = const [], this.retry, this.calls = const []});
 
   const ChatItem.user(String text) : this._(ChatKind.user, text: text);
-  const ChatItem.kira(String text) : this._(ChatKind.kira, text: text);
+  const ChatItem.kira(String text, {List<ToolCall> calls = const []}) : this._(ChatKind.kira, text: text, calls: calls);
   const ChatItem.emergency(String text) : this._(ChatKind.emergency, text: text);
   const ChatItem.extraction(ExtractionData data, List<String> logIds)
       : this._(ChatKind.extraction, data: data, logIds: logIds);
@@ -24,6 +24,7 @@ class ChatItem {
   final ExtractionData? data;
   final List<String> logIds;
   final Future<void> Function()? retry;
+  final List<ToolCall> calls;
 }
 
 class ChatState {
@@ -55,7 +56,12 @@ class ChatController extends Notifier<ChatState> {
 
   Future<void> sendPhoto(String kind, Uint8List bytes, String name) async {
     if (state.busy) return;
-    const labels = {'food': 'Foto makanan', 'receipt': 'Foto struk belanja', 'result': 'Foto hasil pemeriksaan'};
+    const labels = {
+      'food': 'Foto makanan',
+      'receipt': 'Foto struk belanja',
+      'label': 'Foto label gizi kemasan',
+      'result': 'Foto hasil pemeriksaan',
+    };
     _add(ChatItem.user(labels[kind] ?? 'Foto'));
     await _run(() => ref.read(apiProvider).sendPhoto(kind, bytes, name));
   }
@@ -81,7 +87,7 @@ class ChatController extends Notifier<ChatState> {
 
   void _apply(ChatReply reply) {
     if (reply.transcript != null && reply.transcript!.trim().isNotEmpty) _add(ChatItem.user(reply.transcript!));
-    _add(reply.redFlag != null ? ChatItem.emergency(reply.reply) : ChatItem.kira(reply.reply));
+    _add(reply.redFlag != null ? ChatItem.emergency(reply.reply) : ChatItem.kira(reply.reply, calls: reply.toolCalls));
     if (reply.logIds.isNotEmpty) ref.invalidate(projectionProvider); // catatan baru mengubah proyeksi
     final data = reply.extraction;
     if (data != null && !data.isEmpty && reply.logIds.isNotEmpty && reply.redFlag == null) {

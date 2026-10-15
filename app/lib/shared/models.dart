@@ -47,6 +47,38 @@ class FoodEntry {
   final double? portionG;
 }
 
+/// Isi tabel informasi nilai gizi di kemasan, sebagaimana terbaca dari foto (angka tercetak, bukan estimasi).
+class LabelEntry {
+  const LabelEntry({
+    required this.productName,
+    this.isDrink = false,
+    this.perServing = true,
+    this.servingG,
+    this.servings = 1,
+    this.sugarG,
+    this.sodiumMg,
+    this.fatG,
+    this.kcal,
+  });
+
+  final String productName;
+  final bool isDrink, perServing;
+  final double? servingG, sugarG, sodiumMg, fatG, kcal;
+  final double servings;
+
+  factory LabelEntry.fromJson(Map<String, dynamic> j) => LabelEntry(
+        productName: j['product_name'] as String,
+        isDrink: j['is_drink'] as bool? ?? false,
+        perServing: (j['basis'] as String?) != 'per_100g',
+        servingG: _d(j['serving_g']),
+        servings: _d(j['servings_consumed']) ?? 1,
+        sugarG: _d(j['sugar_g']),
+        sodiumMg: _d(j['sodium_mg']),
+        fatG: _d(j['fat_g']),
+        kcal: _d(j['kcal']),
+      );
+}
+
 /// Hasil ekstraksi yang ditampilkan sebagai kartu yang bisa dikoreksi.
 class ExtractionData {
   const ExtractionData({
@@ -55,9 +87,11 @@ class ExtractionData {
     this.sleepBed,
     this.sleepWake,
     this.activities = const [],
+    this.label,
     this.intent = 'log',
   });
 
+  final LabelEntry? label;
   final List<FoodEntry> items;
   final List<String> drinks;
   final String? sleepBed;
@@ -65,7 +99,8 @@ class ExtractionData {
   final List<String> activities;
   final String intent;
 
-  bool get isEmpty => items.isEmpty && drinks.isEmpty && sleepBed == null && sleepWake == null && activities.isEmpty;
+  bool get isEmpty =>
+      items.isEmpty && drinks.isEmpty && sleepBed == null && sleepWake == null && activities.isEmpty && label == null;
 
   factory ExtractionData.fromJson(Map<String, dynamic> j) {
     final sleep = j['sleep'] as Map<String, dynamic>?;
@@ -81,9 +116,26 @@ class ExtractionData {
       sleepBed: sleep?['bed_time'] as String?,
       sleepWake: sleep?['wake_time'] as String?,
       activities: (j['activity'] as List? ?? const []).map((e) => '${e['kind']} ${e['minutes']} menit').toList(),
+      label: j['label'] == null ? null : LabelEntry.fromJson(j['label'] as Map<String, dynamic>),
       intent: (j['intent'] as String?) ?? 'log',
     );
   }
+}
+
+/// Satu pemanggilan tool oleh KIRA: nama, argumen, dan hasil yang dikembalikan fungsi deterministik.
+class ToolCall {
+  const ToolCall({required this.name, this.args = const {}, this.result});
+  final String name;
+  final Map<String, dynamic> args;
+  final Object? result;
+
+  Map<String, dynamic> get resultMap => result is Map ? Map<String, dynamic>.from(result as Map) : const {};
+
+  factory ToolCall.fromJson(Map<String, dynamic> j) => ToolCall(
+        name: j['name'] as String,
+        args: Map<String, dynamic>.from(j['args'] as Map? ?? const {}),
+        result: j['result'],
+      );
 }
 
 class ChatReply {
@@ -92,7 +144,7 @@ class ChatReply {
     this.extraction,
     this.redFlag,
     this.logIds = const [],
-    this.toolNames = const [],
+    this.toolCalls = const [],
     this.transcript,
   });
 
@@ -100,7 +152,7 @@ class ChatReply {
   final ExtractionData? extraction;
   final String? redFlag;
   final List<String> logIds;
-  final List<String> toolNames;
+  final List<ToolCall> toolCalls;
   final String? transcript;
 
   factory ChatReply.fromJson(Map<String, dynamic> j) => ChatReply(
@@ -108,7 +160,7 @@ class ChatReply {
         extraction: j['extraction'] == null ? null : ExtractionData.fromJson(j['extraction'] as Map<String, dynamic>),
         redFlag: j['red_flag'] as String?,
         logIds: (j['log_ids'] as List? ?? const []).cast<String>(),
-        toolNames: (j['tool_calls'] as List? ?? const []).map((e) => e['name'] as String).toList(),
+        toolCalls: (j['tool_calls'] as List? ?? const []).map((e) => ToolCall.fromJson(e as Map<String, dynamic>)).toList(),
         transcript: j['transcript'] as String?,
       );
 }

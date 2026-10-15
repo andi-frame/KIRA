@@ -9,6 +9,7 @@ import '../../shared/models.dart';
 import '../../shared/widgets.dart';
 import 'chat_controller.dart';
 import 'media.dart';
+import 'tool_trace.dart';
 
 const _suggestions = [
   'Tadi siang nasi padang rendang, es teh manis',
@@ -194,7 +195,7 @@ class _InputBar extends StatelessWidget {
                 IconButton(
                   key: const Key('camera_button'),
                   style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
-                  tooltip: 'Kirim foto makanan, struk, atau hasil cek',
+                  tooltip: 'Kirim foto makanan, struk, label gizi, atau hasil cek',
                   icon: const Icon(Icons.photo_camera_outlined),
                   onPressed: onCamera,
                 ),
@@ -265,7 +266,11 @@ class _ItemView extends ConsumerWidget {
       case ChatKind.user:
         return ChatBubble(text: item.text, mine: true);
       case ChatKind.kira:
-        return ChatBubble(text: item.text, mine: false);
+        if (item.calls.isEmpty) return ChatBubble(text: item.text, mine: false);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [ChatBubble(text: item.text, mine: false), ToolTrace(calls: item.calls)],
+        );
       case ChatKind.emergency:
         return EmergencyCard(message: item.text);
       case ChatKind.extraction:
@@ -383,6 +388,7 @@ class ExtractionCard extends StatelessWidget {
                 ),
               ],
             ),
+          if (data.label != null) _LabelRows(label: data.label!),
           for (final d in data.drinks)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: KiraSpace.xs),
@@ -422,6 +428,48 @@ class ExtractionCard extends StatelessWidget {
   }
 }
 
+String _num(double v) => v == v.roundToDouble() ? v.round().toString() : v.toStringAsFixed(1);
+
+/// Angka dari tabel informasi nilai gizi di kemasan: tercetak, bukan estimasi. Yang tidak tertera tidak ditampilkan.
+class _LabelRows extends StatelessWidget {
+  const _LabelRows({required this.label});
+  final LabelEntry label;
+
+  @override
+  Widget build(BuildContext context) {
+    final values = [
+      if (label.sugarG != null) 'gula ${_num(label.sugarG!)} g',
+      if (label.sodiumMg != null) 'natrium ${_num(label.sodiumMg!)} mg',
+      if (label.fatG != null) 'lemak ${_num(label.fatG!)} g',
+      if (label.kcal != null) '${_num(label.kcal!)} kkal',
+    ].join(', ');
+    final basis = label.perServing
+        ? 'per sajian${label.servingG != null ? ' (${_num(label.servingG!)} g)' : ''}'
+        : 'per 100 g';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: KiraSpace.xs),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(label.isDrink ? Icons.local_cafe_outlined : Icons.fact_check_outlined,
+                size: 18, color: context.scheme.onSurfaceVariant),
+            const SizedBox(width: KiraSpace.sm),
+            Expanded(
+              child: Text(label.productName, style: context.text.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),
+            ),
+          ]),
+          Text(
+            'Dari label kemasan${label.servings != 1 ? ' · ${_num(label.servings)} sajian' : ''}',
+            style: context.text.bodySmall,
+          ),
+          if (values.isNotEmpty) Text('$values $basis', style: context.text.bodyMedium),
+        ],
+      ),
+    );
+  }
+}
+
 class _KindSheet extends StatelessWidget {
   const _KindSheet();
 
@@ -438,6 +486,8 @@ class _KindSheet extends StatelessWidget {
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         tile('photo_kind_food', 'food', Icons.restaurant_outlined, 'Foto makanan', 'KIRA mengenali menu dan porsinya'),
         tile('photo_kind_receipt', 'receipt', Icons.receipt_long_outlined, 'Foto struk belanja', 'Daftar item dibaca dari struk'),
+        tile('photo_kind_label', 'label', Icons.fact_check_outlined, 'Foto label gizi kemasan',
+            'Gula dan natrium dibaca dari tabel informasi nilai gizi'),
         tile('photo_kind_result', 'result', Icons.biotech_outlined, 'Foto hasil cek', 'Hasil lab, CKG, atau layar tensimeter'),
       ]),
     );
