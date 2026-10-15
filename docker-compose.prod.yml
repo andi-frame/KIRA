@@ -1,0 +1,82 @@
+# Produksi satu mesin: Postgres + API + Caddy (HTTPS otomatis dari Let's Encrypt).
+#
+#   cp .env.production.example .env.production   # isi semua nilai
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# Rincian, cadangan, dan daftar periksa keamanan: docs/deploy.md
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kira
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?isi POSTGRES_PASSWORD}
+      POSTGRES_DB: kira
+    volumes:
+      - kira_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kira"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # Sengaja tanpa "ports": basis data hanya terjangkau dari jaringan internal Compose.
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+asyncpg://kira:${POSTGRES_PASSWORD}@db:5432/kira
+      JWT_SECRET: ${JWT_SECRET:?isi JWT_SECRET (acak, minimal 32 karakter)}
+      PUBLIC_BASE_URL: https://${KIRA_DOMAIN:?isi KIRA_DOMAIN}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL_CHAT: ${LLM_MODEL_CHAT:-claude-sonnet-5-5}
+      LLM_MODEL_EXTRACT: ${LLM_MODEL_EXTRACT:-claude-haiku-5-5}
+      STT_BASE_URL: ${STT_BASE_URL:-https://api.groq.com/openai/v1}
+      STT_API_KEY: ${STT_API_KEY:-}
+      STT_MODEL: ${STT_MODEL:-whisper-large-v3-turbo}
+      BOT_SECRET: ${BOT_SECRET:-}
+      SCHEDULER_ENABLED: "true"
+    expose:
+      - "8000"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      KIRA_DOMAIN: ${KIRA_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  # Jembatan WhatsApp (prototype, tidak resmi): docker compose -f docker-compose.prod.yml --profile whatsapp up -d
+  wa-bot:
+    profiles: ["whatsapp"]
+    build: ./wa-bot
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      API_URL: http://backend:8000
+      AUTH_DIR: /app/auth
+      BOT_SECRET: ${BOT_SECRET:-}
+    volumes:
+      - wa_auth:/app/auth
+
+volumes:
+  kira_pg:
+  caddy_data:
+  caddy_config:
+  wa_auth:

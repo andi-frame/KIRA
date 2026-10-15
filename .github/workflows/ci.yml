@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kira
+          POSTGRES_PASSWORD: kira
+          POSTGRES_DB: kira
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U kira" --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+asyncpg://kira:kira@localhost:5432/kira
+      TEST_DATABASE_URL: postgresql+asyncpg://kira:kira@localhost:5432/kira_test
+      JWT_SECRET: ci-only-secret-that-is-long-enough-for-validation-0000
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Buat basis data uji
+        run: PGPASSWORD=kira psql -h localhost -U kira -d kira -c "create database kira_test"
+      - run: uv run pytest -q
+
+  app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  wa-bot:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: wa-bot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: wa-bot/package-lock.json
+      - run: npm ci
+      - run: npm test

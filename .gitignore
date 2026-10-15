@@ -10,3 +10,5 @@ app/.dart_tool/
 graphify-out/cache/
 graphify-out/
 .playwright-mcp/
+.env.production
+backups/
