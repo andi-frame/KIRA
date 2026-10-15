@@ -47,6 +47,8 @@ dependencies:
   intl: ^0.20.3
   health: ^13.3.2
   share_plus: ^13.3.1
+  mobile_scanner: ^7.4.2
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:

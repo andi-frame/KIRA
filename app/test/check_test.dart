@@ -160,4 +160,68 @@ void main() {
     expect(api.results.single.kind, 'random_glucose');
     expect(api.results.single.value, {'mg_dl': 160});
   });
+
+  followUpTests();
+}
+
+const agedRec = CheckRecommendation(
+  id: 'r1',
+  testKind: 'fasting_glucose',
+  reason: 'Proyeksimu masih punya rentang lebar karena gula darahmu belum pernah diukur.',
+  followUp: true,
+  ageDays: 4,
+);
+
+void followUpTests() {
+  testWidgets('rekomendasi baru tidak menanyakan "sudah dicek?"', (tester) async {
+    await pumpCheck(tester, FakeApi()..recommendation = glucoseRec);
+    expect(find.byKey(const Key('followup_question')), findsNothing);
+  });
+
+  testWidgets('setelah beberapa hari KIRA bertanya dengan tiga jawaban yang sama-sama sopan', (tester) async {
+    await pumpCheck(tester, FakeApi()..recommendation = agedRec);
+    expect(find.textContaining('Sudah sempat cek? Saran ini muncul 4 hari lalu.'), findsOneWidget);
+    expect(find.byKey(const Key('followup_done')), findsOneWidget);
+    expect(find.byKey(const Key('followup_snooze')), findsOneWidget);
+    expect(find.byKey(const Key('followup_dismiss')), findsOneWidget);
+  });
+
+  testWidgets('"Sudah" membuka isian hasil supaya proyeksi terbarui', (tester) async {
+    final api = FakeApi()..recommendation = agedRec;
+    await pumpCheck(tester, api);
+    await tester.tap(find.byKey(const Key('followup_done')));
+    await tester.pumpAndSettle();
+    expect(api.checkResponses, [(id: 'r1', action: 'done')]);
+    expect(find.text('Gula darah puasa'), findsWidgets); // lembar isian hasil terbuka
+    expect(find.byKey(const Key('result_save')), findsOneWidget);
+  });
+
+  testWidgets('"Nanti" menunda tanpa membuka apa pun dan memberi tahu kapan ditanya lagi', (tester) async {
+    final api = FakeApi()..recommendation = agedRec;
+    await pumpCheck(tester, api);
+    await tester.tap(find.byKey(const Key('followup_snooze')));
+    await tester.pumpAndSettle();
+    expect(api.checkResponses, [(id: 'r1', action: 'snooze')]);
+    expect(find.textContaining('tanya lagi dalam 3 hari'), findsOneWidget);
+    expect(find.byKey(const Key('result_save')), findsNothing);
+  });
+
+  testWidgets('"Tidak perlu" dihormati dan dijelaskan', (tester) async {
+    final api = FakeApi()..recommendation = agedRec;
+    await pumpCheck(tester, api);
+    await tester.tap(find.byKey(const Key('followup_dismiss')));
+    await tester.pumpAndSettle();
+    expect(api.checkResponses, [(id: 'r1', action: 'dismiss')]);
+    expect(find.textContaining('tidak menyarankan ini lagi'), findsOneWidget);
+  });
+
+  testWidgets('gagal menjawab: pesan ramah, tidak crash', (tester) async {
+    final api = FakeApi()
+      ..recommendation = agedRec
+      ..onRespondCheck = (_, _) => throw ApiException('Tidak bisa terhubung ke server.');
+    await pumpCheck(tester, api);
+    await tester.tap(find.byKey(const Key('followup_snooze')));
+    await tester.pumpAndSettle();
+    expect(find.text('Tidak bisa terhubung ke server.'), findsOneWidget);
+  });
 }

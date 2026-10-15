@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
 import '../shared/account_models.dart';
+import '../shared/engagement_models.dart';
 import '../shared/family_models.dart';
 import '../shared/insight_models.dart';
 import '../shared/models.dart';
@@ -37,14 +38,18 @@ abstract class KiraApi {
   Future<String> setUsername(String username);
   Future<Profile> getProfile();
   Future<Profile> putProfile(Map<String, dynamic> fields);
-  Future<ChatReply> sendMessage(String text);
+  Future<ChatReply> sendMessage(String text, {String? idempotencyKey});
   Future<ChatReply> sendVoice(Uint8List audio, String filename);
   Future<ChatReply> sendPhoto(String kind, Uint8List image, String filename);
   Future<void> patchLog(String logId, List<Map<String, dynamic>> items);
   Future<Projection> getProjection();
   Future<WhatIfResult> whatIf(WhatIfChange change);
   Future<CheckRecommendation?> getCheck();
-  Future<ResultOutcome> postResult(String kind, Map<String, num> value, {String source = 'self'});
+  Future<ResultOutcome> postResult(String kind, Map<String, num> value, {String source = 'self', String? idempotencyKey});
+  Future<CheckRespondResult> respondCheck(String id, String action);
+  Future<List<FrequentFood>> getFrequentFoods();
+  Future<ProductInfo> getProduct(String barcode);
+  Future<BarcodeLogResult> logBarcode(String barcode, {double? grams, double? servings});
   Future<void> postDiagnosis(String condition);
   Future<List<Faskes>> nearbyFaskes(double lat, double lng);
   Future<FamilyOverview> getFamily();
@@ -232,8 +237,13 @@ class DioKiraApi implements KiraApi {
       _run(() => _dio.put('/profile', data: fields), (d) => Profile.fromJson(d as Map<String, dynamic>));
 
   @override
-  Future<ChatReply> sendMessage(String text) =>
-      _run(() => _dio.post('/chat/message', data: {'text': text}), (d) => ChatReply.fromJson(d as Map<String, dynamic>));
+  Future<ChatReply> sendMessage(String text, {String? idempotencyKey}) => _run(
+        () => _dio.post('/chat/message', data: {'text': text}, options: _idempotent(idempotencyKey)),
+        (d) => ChatReply.fromJson(d as Map<String, dynamic>),
+      );
+
+  /// Kunci unik per kiriman: bila jaringan putus setelah server mencatat, kiriman ulang tidak tercatat dua kali.
+  Options? _idempotent(String? key) => key == null ? null : Options(headers: {'Idempotency-Key': key});
 
   @override
   Future<ChatReply> sendVoice(Uint8List audio, String filename) => _run(
@@ -271,9 +281,38 @@ class DioKiraApi implements KiraApi {
       );
 
   @override
-  Future<ResultOutcome> postResult(String kind, Map<String, num> value, {String source = 'self'}) => _run(
-        () => _dio.post('/results', data: {'kind': kind, 'value': value, 'source': source}),
+  Future<ResultOutcome> postResult(String kind, Map<String, num> value,
+          {String source = 'self', String? idempotencyKey}) =>
+      _run(
+        () => _dio.post('/results',
+            data: {'kind': kind, 'value': value, 'source': source}, options: _idempotent(idempotencyKey)),
         (d) => ResultOutcome.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<CheckRespondResult> respondCheck(String id, String action) => _run(
+        () => _dio.post('/recommendations/$id/respond', data: {'action': action}),
+        (d) => CheckRespondResult.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<List<FrequentFood>> getFrequentFoods() => _run(
+        () => _dio.get('/logs/frequent'),
+        (d) => (d['foods'] as List).map((e) => FrequentFood.fromJson(e as Map<String, dynamic>)).toList(),
+      );
+
+  @override
+  Future<ProductInfo> getProduct(String barcode) =>
+      _run(() => _dio.get('/products/$barcode'), (d) => ProductInfo.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<BarcodeLogResult> logBarcode(String barcode, {double? grams, double? servings}) => _run(
+        () => _dio.post('/logs/barcode', data: {
+          'barcode': barcode,
+          'grams': ?grams,
+          'servings': ?servings,
+        }),
+        (d) => BarcodeLogResult.fromJson(d as Map<String, dynamic>),
       );
 
   @override

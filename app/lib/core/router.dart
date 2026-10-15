@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/login_screen.dart';
+import '../features/barcode/barcode_screen.dart';
 import '../features/auth/reset_pin_screen.dart';
 import '../features/privacy/privacy_screen.dart';
 import '../features/check/check_screen.dart';
@@ -44,6 +45,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (_, _) => const _Splash()),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
+      GoRoute(path: '/barcode', builder: (_, _) => const BarcodeScreen()),
       GoRoute(path: '/reset-pin', builder: (_, _) => const ResetPinScreen()),
       GoRoute(path: '/privacy', builder: (_, _) => const PrivacyScreen()),
       GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),

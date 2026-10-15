@@ -8,12 +8,14 @@ import 'package:kira/core/api_client.dart';
 import 'package:kira/core/share_service.dart';
 import 'package:kira/core/providers.dart';
 import 'package:kira/core/theme.dart';
+import 'package:kira/features/barcode/barcode_scanner.dart';
 import 'package:kira/features/chat/media.dart';
 import 'package:kira/features/check/location.dart';
 import 'package:kira/features/health/health_source.dart';
 import 'package:kira/features/health/health_sync.dart';
 import 'package:image_picker/image_picker.dart' show ImageSource;
 import 'package:kira/shared/account_models.dart';
+import 'package:kira/shared/engagement_models.dart';
 import 'package:kira/shared/family_models.dart';
 import 'package:kira/shared/insight_models.dart';
 import 'package:kira/shared/models.dart';
@@ -256,9 +258,14 @@ class FakeApi implements KiraApi {
     return profile;
   }
 
+  final List<String?> messageKeys = [];
+  Object? networkError; // bila diisi, kiriman teks dan hasil gagal seolah tanpa sinyal
+
   @override
-  Future<ChatReply> sendMessage(String text) {
+  Future<ChatReply> sendMessage(String text, {String? idempotencyKey}) {
+    if (networkError != null) throw networkError!;
     messages.add(text);
+    messageKeys.add(idempotencyKey);
     return (onMessage ?? (t) async => const ChatReply(reply: 'Sip, sudah kucatat.'))(text);
   }
 
@@ -294,11 +301,52 @@ class FakeApi implements KiraApi {
     return recommendation;
   }
 
+  final List<String?> resultKeys = [];
+
   @override
-  Future<ResultOutcome> postResult(String kind, Map<String, num> value, {String source = 'self'}) {
+  Future<ResultOutcome> postResult(String kind, Map<String, num> value,
+      {String source = 'self', String? idempotencyKey}) {
+    if (networkError != null) throw networkError!;
     results.add((kind: kind, value: value));
+    resultKeys.add(idempotencyKey);
     return (onResult ??
         (k, v) async => ResultOutcome(saved: true, projection: sampleProjection(low: 13, high: 17)))(kind, value);
+  }
+
+  final List<({String id, String action})> checkResponses = [];
+  CheckRespondResult Function(String id, String action)? onRespondCheck;
+  List<FrequentFood> frequentFoods = const [];
+  Object? productError;
+  ProductInfo? product;
+  final List<String> productLookups = [];
+  final List<({String barcode, double? grams, double? servings})> barcodeLogs = [];
+  Object? barcodeLogError;
+
+  @override
+  Future<CheckRespondResult> respondCheck(String id, String action) async {
+    checkResponses.add((id: id, action: action));
+    return (onRespondCheck ??
+        (i, a) => CheckRespondResult(
+            status: a == 'done' ? 'done' : (a == 'dismiss' ? 'dismissed' : 'open'),
+            resultNeeded: a == 'done',
+            testKind: 'fasting_glucose'))(id, action);
+  }
+
+  @override
+  Future<List<FrequentFood>> getFrequentFoods() async => frequentFoods;
+
+  @override
+  Future<ProductInfo> getProduct(String barcode) async {
+    productLookups.add(barcode);
+    if (productError != null) throw productError!;
+    return product!;
+  }
+
+  @override
+  Future<BarcodeLogResult> logBarcode(String barcode, {double? grams, double? servings}) async {
+    if (barcodeLogError != null) throw barcodeLogError!;
+    barcodeLogs.add((barcode: barcode, grams: grams, servings: servings));
+    return BarcodeLogResult(logId: 'log-1', name: product?.name ?? 'Produk', portionG: grams, sugarG: 7);
   }
 
   @override
@@ -568,4 +616,31 @@ TrendsData sampleTrends({bool withClinical = true, List<TriageFlag>? triage}) =>
             TriageFlag(level: 'perhatian', kind: 'blood_pressure', text: 'Tekanan darah terakhir 146/94 mmHg berada di rentang hipertensi. Satu pembacaan bukan diagnosis.'),
             TriageFlag(level: 'pantau', kind: 'findrisc', text: 'Skrining FINDRISC berada di kategori tinggi pada batas atas rentang.'),
           ],
+    );
+
+
+/// Pemindai palsu: tombol "pindai" menyerahkan kode yang sudah ditentukan, seolah kamera membacanya.
+class FakeScanner implements BarcodeScanner {
+  FakeScanner(this.code);
+  final String code;
+
+  @override
+  Widget view(BuildContext context, void Function(String code) onCode) =>
+      Center(child: ElevatedButton(key: const Key('fake_scan'), onPressed: () => onCode(code), child: const Text('pindai')));
+}
+
+Override scannerOverride(String code) => barcodeScannerProvider.overrideWithValue(FakeScanner(code));
+
+ProductInfo sampleProduct({bool complete = true, double? servingG = 85, bool drink = false}) => ProductInfo(
+      barcode: '089686010947',
+      name: 'Indomie Mi Goreng Original',
+      brand: 'Indofood',
+      servingG: servingG,
+      isDrink: drink,
+      complete: complete,
+      source: 'Open Food Facts (ODbL)',
+      sugarG: complete ? 7.06 : null,
+      sodiumMg: 397.6,
+      fatG: 18.8,
+      kcal: complete ? 470.6 : null,
     );

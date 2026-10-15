@@ -127,12 +127,30 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _RecommendationCard extends StatelessWidget {
+class _RecommendationCard extends ConsumerWidget {
   const _RecommendationCard({required this.rec});
   final CheckRecommendation rec;
 
+  /// Jawaban atas "sudah dicek?". Nadanya bertanya, bukan menagih: menunda dan "tidak perlu" selalu tersedia.
+  Future<void> _respond(BuildContext context, WidgetRef ref, String action) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final out = await ref.read(apiProvider).respondCheck(rec.id, action);
+      ref.invalidate(checkProvider);
+      if (action == 'snooze') {
+        messenger.showSnackBar(const SnackBar(content: Text('Oke, KIRA tanya lagi dalam 3 hari.')));
+      } else if (action == 'dismiss') {
+        messenger.showSnackBar(const SnackBar(content: Text('Baik, KIRA tidak menyarankan ini lagi dalam waktu dekat.')));
+      } else if (out.resultNeeded && context.mounted) {
+        await showResultSheet(context); // sudah dicek: langsung masukkan angkanya supaya proyeksi terbarui
+      }
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final kira = context.kira;
     final prep = rec.testKind == 'fasting_glucose'
         ? 'Puasa sekitar 8 jam sebelum cek (air putih boleh).'
@@ -161,6 +179,40 @@ class _RecommendationCard extends StatelessWidget {
             label: const Text('Masukkan hasil'),
             onPressed: () => showResultSheet(context),
           ),
+          if (rec.followUp) ...[
+            const SizedBox(height: KiraSpace.lg),
+            Divider(color: kira.onAttentionContainer.withValues(alpha: 0.25)),
+            const SizedBox(height: KiraSpace.sm),
+            Semantics(
+              container: true,
+              label: 'Tindak lanjut',
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  'Sudah sempat cek? Saran ini muncul ${rec.ageDays} hari lalu.',
+                  key: const Key('followup_question'),
+                  style: context.text.titleSmall?.copyWith(color: kira.onAttentionContainer),
+                ),
+                const SizedBox(height: KiraSpace.sm),
+                Wrap(spacing: KiraSpace.sm, runSpacing: KiraSpace.xs, children: [
+                  OutlinedButton(
+                    key: const Key('followup_done'),
+                    onPressed: () => _respond(context, ref, 'done'),
+                    child: const Text('Sudah'),
+                  ),
+                  OutlinedButton(
+                    key: const Key('followup_snooze'),
+                    onPressed: () => _respond(context, ref, 'snooze'),
+                    child: const Text('Nanti'),
+                  ),
+                  TextButton(
+                    key: const Key('followup_dismiss'),
+                    onPressed: () => _respond(context, ref, 'dismiss'),
+                    child: const Text('Tidak perlu'),
+                  ),
+                ]),
+              ]),
+            ),
+          ],
         ],
       ),
     );
