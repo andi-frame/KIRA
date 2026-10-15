@@ -32,14 +32,22 @@ KIND_ID = {
 }
 
 
+def _n(v) -> str:
+    """Angka tanpa ekor ".0" (146.0 -> 146, 5.9 -> 5.9)."""
+    try:
+        return f"{float(v):g}"
+    except (TypeError, ValueError):
+        return str(v)
+
+
 def _value_text(kind: str, value: dict) -> str:
     if kind == "blood_pressure" and value.get("protocol"):
-        return f"{value.get('avg_sys', value.get('sys')):g}/{value.get('avg_dia', value.get('dia')):g} mmHg ({value.get('readings')} bacaan)"
+        return f"{_n(value.get('avg_sys', value.get('sys')))}/{_n(value.get('avg_dia', value.get('dia')))} mmHg ({value.get('readings')} bacaan)"
     if kind == "blood_pressure":
-        return f"{value.get('sys')}/{value.get('dia')} mmHg"
+        return f"{_n(value.get('sys'))}/{_n(value.get('dia'))} mmHg"
     unit = {"fasting_glucose": "mg/dL", "random_glucose": "mg/dL", "hba1c": "%", "waist": "cm"}.get(kind, "")
     number = next(iter(value.values()), "")
-    return f"{number} {unit}".strip()
+    return f"{_n(number)} {unit}".strip()
 
 
 def _result_label(kind: str, value: dict) -> str:
