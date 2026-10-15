@@ -13,6 +13,7 @@ class Profile {
     this.familyHistoryDiabetes,
     this.mode = 'prevention',
     this.age,
+    this.consented = true,
   });
 
   final String? displayName;
@@ -25,6 +26,7 @@ class Profile {
   final String? familyHistoryDiabetes;
   final String mode;
   final int? age;
+  final bool consented; // sudah menyetujui teks persetujuan versi yang berlaku
 
   bool get isComplete => birthDate != null && sex != null && heightCm != null && weightKg != null;
   bool get isManagement => mode == 'management';
@@ -40,6 +42,7 @@ class Profile {
         familyHistoryDiabetes: j['family_history_diabetes'] as String?,
         mode: (j['mode'] as String?) ?? 'prevention',
         age: (j['age'] as num?)?.toInt(),
+        consented: j['consented'] as bool? ?? true,
       );
 }
 

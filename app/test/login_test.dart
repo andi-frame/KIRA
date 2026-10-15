@@ -18,6 +18,12 @@ Future<void> submit(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// Mencentang persetujuan lewat kotaknya (bukan bagian tengah baris, yang membuka teks persetujuan).
+Future<void> tickConsent(WidgetTester tester) async {
+  await tester.tap(find.descendant(of: find.byKey(const Key('register_consent')), matching: find.byType(Checkbox)));
+  await tester.pumpAndSettle();
+}
+
 Future<void> openRegister(WidgetTester tester) async {
   await tester.tap(find.text('Daftar').first);
   await tester.pumpAndSettle();
@@ -63,8 +69,9 @@ void main() {
     await tester.enterText(find.byKey(const Key('register_username')), 'Raka.Dev');
     await tester.enterText(find.byKey(const Key('register_phone')), '081234567890');
     await tester.enterText(find.byKey(const Key('login_pin')), '123456');
+    await tickConsent(tester);
     await submit(tester);
-    expect(api.registrations, [(phone: '081234567890', username: 'raka.dev', pin: '123456')]);
+    expect(api.registrations, [(phone: '081234567890', username: 'raka.dev', pin: '123456', consent: true)]);
   });
 
   testWidgets('daftar tanpa nomor HP ditolak walau nama pengguna benar', (tester) async {
@@ -99,6 +106,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('register_username')), 'raka_dev');
     await tester.enterText(find.byKey(const Key('register_phone')), '081234567890');
     await tester.enterText(find.byKey(const Key('login_pin')), '123456');
+    await tickConsent(tester);
     await submit(tester);
     expect(find.text('Nama pengguna sudah dipakai'), findsOneWidget);
   });
