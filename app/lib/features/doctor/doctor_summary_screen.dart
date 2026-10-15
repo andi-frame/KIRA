@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
 import '../../core/providers.dart';
+import '../../core/share_service.dart';
 import '../../core/theme.dart';
 import '../../shared/family_models.dart';
 import '../../shared/widgets.dart';
+import '../trends/trends_screen.dart';
+import '../trends/trends_widgets.dart';
 
 final doctorSummaryProvider = FutureProvider.family<DoctorSummary, int>((ref, days) {
   ref.watch(authProvider.select((s) => s.token));
@@ -27,6 +30,30 @@ class DoctorSummaryScreen extends ConsumerStatefulWidget {
 
 class _DoctorSummaryScreenState extends ConsumerState<DoctorSummaryScreen> {
   int _days = 30;
+  bool _sharing = false;
+
+  /// PDF dibuat server dari angka yang sama dengan layar ini, lalu dibagikan lewat menu bagikan sistem (mis. WhatsApp).
+  Future<void> _sharePdf() async {
+    if (_sharing) return;
+    setState(() => _sharing = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final bytes = await ref.read(apiProvider).getDoctorPdf(_days);
+      final now = DateTime.now();
+      final stamp = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+      await ref.read(shareServiceProvider).sharePdf(
+            bytes,
+            'kira-ringkasan-$stamp.pdf',
+            message: 'Ringkasan KIRA untuk dokter ($_days hari). Dibuat otomatis dari catatan pengguna; bukan diagnosis.',
+          );
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(content: Text('PDF belum bisa dibagikan. Coba lagi, atau salin ringkasannya.')));
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
+  }
 
   Future<void> _copy(String text) async {
     await Clipboard.setData(ClipboardData(text: text));
@@ -82,14 +109,30 @@ class _DoctorSummaryScreenState extends ConsumerState<DoctorSummaryScreen> {
                 ),
               ),
               const SizedBox(height: KiraSpace.md),
-              FilledButton.icon(
-                key: const Key('copy_summary'),
-                icon: const Icon(Icons.copy_outlined),
-                label: const Text('Salin ringkasan'),
-                onPressed: () => _copy(s.text),
-              ),
+              Wrap(spacing: KiraSpace.sm, runSpacing: KiraSpace.sm, children: [
+                FilledButton.icon(
+                  key: const Key('share_pdf'),
+                  icon: _sharing
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.picture_as_pdf_outlined),
+                  label: const Text('Bagikan PDF'),
+                  onPressed: _sharing ? null : _sharePdf,
+                ),
+                OutlinedButton.icon(
+                  key: const Key('copy_summary'),
+                  icon: const Icon(Icons.copy_outlined),
+                  label: const Text('Salin ringkasan'),
+                  onPressed: () => _copy(s.text),
+                ),
+              ]),
             ]),
           ),
+          const SizedBox(height: KiraSpace.xl),
+          ref.watch(trendsProvider(_days)).when(
+                loading: () => const Padding(padding: EdgeInsets.all(KiraSpace.lg), child: Center(child: CircularProgressIndicator.adaptive())),
+                error: (_, _) => Text('Grafik tren belum bisa dimuat.', style: context.text.bodyMedium),
+                data: (t) => TrendsSection(data: t),
+              ),
           const SizedBox(height: KiraSpace.xl),
           const _FoodGlucoseCard(),
         ],

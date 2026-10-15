@@ -47,6 +47,8 @@ abstract class KiraApi {
   Future<WeeklyRecap?> getWeeklyRecap();
   Future<PassiveSyncResult> syncPassive(PassiveBatch batch);
   Future<int> deletePassive();
+  Future<TrendsData> getTrends(int days);
+  Future<Uint8List> getDoctorPdf(int days);
 }
 
 class DioKiraApi implements KiraApi {
@@ -219,4 +221,17 @@ class DioKiraApi implements KiraApi {
 
   @override
   Future<int> deletePassive() => _run(() => _dio.delete('/sync/passive'), (d) => (d['deleted'] as num).toInt());
+
+  @override
+  Future<TrendsData> getTrends(int days) => _run(
+        () => _dio.get('/insights/trends', queryParameters: {'days': days}),
+        (d) => TrendsData.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<Uint8List> getDoctorPdf(int days) => _run(
+        () => _dio.get('/summary/doctor.pdf',
+            queryParameters: {'days': days}, options: Options(responseType: ResponseType.bytes)),
+        (d) => Uint8List.fromList((d as List).cast<int>()),
+      );
 }

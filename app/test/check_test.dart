@@ -119,6 +119,11 @@ void main() {
     expect(find.byKey(const Key('outcome_saved')), findsNothing);
   });
 
+  testWidgets('layar Cek menyediakan jalan ke tren hasil cek dan penanda', (tester) async {
+    await pumpCheck(tester, FakeApi());
+    expect(find.byKey(const Key('trends_button')), findsOneWidget);
+  });
+
   testWidgets('menandai diagnosis dokter memanggil API dan menutup dialog', (tester) async {
     final api = FakeApi();
     await pumpCheck(tester, api);

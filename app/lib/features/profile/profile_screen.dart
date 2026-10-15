@@ -63,6 +63,15 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 const Divider(),
                 ListTile(
+                  key: const Key('tile_trends'),
+                  leading: const Icon(Icons.show_chart),
+                  title: const Text('Tren dan penanda'),
+                  subtitle: const Text('Grafik tensi, gula darah, dan kebiasaan harian'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/trends'),
+                ),
+                const Divider(),
+                ListTile(
                   key: const Key('tile_family'),
                   leading: const Icon(Icons.group_outlined),
                   title: const Text('Keluarga'),

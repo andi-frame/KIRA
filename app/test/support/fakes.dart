@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:kira/core/api_client.dart';
+import 'package:kira/core/share_service.dart';
 import 'package:kira/core/providers.dart';
 import 'package:kira/core/theme.dart';
 import 'package:kira/features/chat/media.dart';
@@ -274,6 +275,25 @@ class FakeApi implements KiraApi {
   }
 
   int deletedPassive = 0;
+  TrendsData trends = const TrendsData();
+  Object? trendsError;
+  final List<int> trendsDays = [];
+  final List<int> pdfDays = [];
+  Object? pdfError;
+
+  @override
+  Future<TrendsData> getTrends(int days) async {
+    trendsDays.add(days);
+    if (trendsError != null) throw trendsError!;
+    return trends;
+  }
+
+  @override
+  Future<Uint8List> getDoctorPdf(int days) async {
+    pdfDays.add(days);
+    if (pdfError != null) throw pdfError!;
+    return Uint8List.fromList([0x25, 0x50, 0x44, 0x46]); // %PDF
+  }
 
   @override
   Future<int> deletePassive() async {
@@ -370,3 +390,59 @@ class FakeHealthSource implements HealthSource {
 }
 
 Override healthOverride(FakeHealthSource source) => healthSourceProvider.overrideWithValue(source);
+
+
+class FakeShare implements ShareService {
+  final List<({int bytes, String filename, String? message})> shared = [];
+  Object? error;
+
+  @override
+  Future<void> sharePdf(Uint8List bytes, String filename, {String? message}) async {
+    if (error != null) throw error!;
+    shared.add((bytes: bytes.length, filename: filename, message: message));
+  }
+}
+
+Override shareOverride(FakeShare share) => shareServiceProvider.overrideWithValue(share);
+
+DailyPoint day(int offset, {bool logged = true, double? sugar, double? sleep, double? active}) => DailyPoint(
+      date: DateTime(2026, 10, 1).add(Duration(days: offset)).toIso8601String().substring(0, 10),
+      logged: logged,
+      sugarG: logged ? (sugar ?? 40) : null,
+      sleepHours: logged ? sleep : null,
+      activeMinutes: logged ? (active ?? 0) : null,
+    );
+
+TrendsData sampleTrends({bool withClinical = true, List<TriageFlag>? triage}) => TrendsData(
+      periodDays: 30,
+      clinical: withClinical
+          ? {
+              'blood_pressure': const ClinicalSeries(
+                points: [
+                  ClinicalPoint(date: '2026-09-20', source: 'self', sys: 132, dia: 86, band: 'prehypertension'),
+                  ClinicalPoint(date: '2026-10-12', source: 'lab', sys: 146, dia: 94, band: 'hypertension'),
+                ],
+                trend: 'naik',
+                references: [RefLine('Hipertensi (sistolik)', 140), RefLine('Hipertensi (diastolik)', 90)],
+              ),
+              'fasting_glucose': const ClinicalSeries(
+                points: [
+                  ClinicalPoint(date: '2026-09-15', source: 'lab', value: 104, band: 'prediabetes'),
+                  ClinicalPoint(date: '2026-10-13', source: 'lab', value: 128, band: 'diabetes_range'),
+                ],
+                trend: 'naik',
+                references: [RefLine('Prediabetes mulai', 100), RefLine('Rentang diabetes mulai', 126)],
+              ),
+            }
+          : const {},
+      daily: [
+        day(0, sugar: 38, sleep: 5, active: 0),
+        day(1, logged: false),
+        day(2, sugar: 72, sleep: 6.5, active: 35),
+      ],
+      triage: triage ??
+          const [
+            TriageFlag(level: 'perhatian', kind: 'blood_pressure', text: 'Tekanan darah terakhir 146/94 mmHg berada di rentang hipertensi. Satu pembacaan bukan diagnosis.'),
+            TriageFlag(level: 'pantau', kind: 'findrisc', text: 'Skrining FINDRISC berada di kategori tinggi pada batas atas rentang.'),
+          ],
+    );

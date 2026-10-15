@@ -14,6 +14,7 @@ void main() {
     expect(find.byKey(const Key('tile_doctor')), findsOneWidget);
     expect(find.byKey(const Key('tile_whatsapp')), findsOneWidget);
     expect(find.byKey(const Key('tile_health')), findsOneWidget);
+    expect(find.byKey(const Key('tile_trends')), findsOneWidget);
   });
 
   testWidgets('menautkan WhatsApp menampilkan kode dan peringatan prototype', (tester) async {
