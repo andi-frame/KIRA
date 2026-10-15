@@ -3,7 +3,7 @@ import uuid
 from collections import defaultdict
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,6 +14,8 @@ from app.security import current_user_id
 from app.services import risk
 from app.services.jobs import _metrics, _summary_text, week_bounds, weekly_changes
 from app.services.projection_view import hypertension_payload
+from app.services.doctor_pdf import build_doctor_pdf
+from app.services.trends import build_trends
 from app.timeutil import local_date, utcnow
 
 router = APIRouter(tags=["summary"])
@@ -61,6 +63,11 @@ def _render_text(s: dict) -> str:
     lines.append(
         f"Skrining diabetes (FINDRISC, perkiraan 10 tahun): kategori {low}" + (f" sampai {high}" if high != low else "") + "."
     )
+    flagged = [f for f in s["triage"] if f["level"] != "info"]
+    if flagged:
+        lines.append("Penanda untuk perhatian (aturan terhadap ambang pedoman, bukan diagnosis):")
+        for f in flagged:
+            lines.append(f"- [{'PERLU PERHATIAN' if f['level'] == 'perhatian' else 'PANTAU'}] {f['text']}")
     if s["clinical_results"]:
         lines.append("Hasil pemeriksaan yang dicatat:")
         for r in s["clinical_results"]:
@@ -70,12 +77,7 @@ def _render_text(s: dict) -> str:
     return "\n".join(lines)
 
 
-@router.get("/summary/doctor")
-async def doctor_summary(
-    days: int = Query(default=30, ge=1, le=90),
-    user_id: uuid.UUID = Depends(current_user_id),
-    session: AsyncSession = Depends(get_session),
-) -> dict:
+async def compute_doctor_summary(session: AsyncSession, user_id: uuid.UUID, days: int, trends: dict) -> dict:
     today = local_date(utcnow())
     start = today - timedelta(days=days - 1)
     profile = await profiles.get(session, user_id)
@@ -134,9 +136,19 @@ async def doctor_summary(
             for r in results
         ],
         "weekly_summaries": [w.summary_text for w in weekly if w.summary_text],
+        "triage": trends["triage"],
     }
     summary["text"] = _render_text(summary)
     return summary
+
+
+@router.get("/summary/doctor")
+async def doctor_summary(
+    days: int = Query(default=30, ge=1, le=90),
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    return await compute_doctor_summary(session, user_id, days, await build_trends(session, user_id, days))
 
 
 @router.get("/insights/food-glucose")
@@ -201,3 +213,30 @@ async def weekly_recap(
             "text": _summary_text(start, end, metrics), "changes": weekly_changes(metrics, prev),
         }
     }
+
+
+@router.get("/insights/trends")
+async def trends(
+    days: int = Query(default=30, ge=1, le=90),
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Grafik tren: hasil pemeriksaan (180 hari), kebiasaan harian (`days`), dan penanda triase untuk dokter."""
+    return await build_trends(session, user_id, days)
+
+
+@router.get("/summary/doctor.pdf")
+async def doctor_summary_pdf(
+    days: int = Query(default=30, ge=1, le=90),
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> Response:
+    """PDF satu sampai tiga halaman untuk dibawa atau dikirim ke dokter: penanda, tabel hasil, dan grafik tren."""
+    trends_data = await build_trends(session, user_id, days)
+    summary = await compute_doctor_summary(session, user_id, days, trends_data)
+    filename = f"kira-ringkasan-{local_date(utcnow()).strftime('%Y%m%d')}.pdf"
+    return Response(
+        build_doctor_pdf(summary, trends_data),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

@@ -9,7 +9,7 @@ cd app; flutter build web --release --dart-define=API_URL=http://localhost:8000
 powershell -File scripts\run_demo_stack.ps1     # Postgres, API (DEMO_CACHE=true), web di :8080; Raka di-reset
 ```
 
-- Login Raka: `081234567890` / PIN `123456` (data dummy, 3 minggu catatan).
+- Login Raka: `raka` (atau `081234567890`) / PIN `123456` (data dummy, 3 minggu catatan).
 - `DEMO_CACHE=true` melayani dua kalimat skrip demo tanpa memanggil LLM. Kalimat lain tetap memanggil model (butuh `ANTHROPIC_API_KEY`); tanda bahaya tidak pernah dari cache.
 - Ulang demo dari awal: `cd backend; uv run python -m seed.raka --reset`.
 - Cadangan: rekaman layar penuh di HP, hotspot dari HP lain, nomor WhatsApp cadangan atau tunjukkan alur yang sama di aplikasi.
@@ -23,6 +23,11 @@ powershell -File scripts\run_demo_stack.ps1     # Postgres, API (DEMO_CACHE=true
 4. Saatnya cek → faskes terdekat.
 5. Masukkan hasil gula darah puasa → rentang menyempit.
 6. Tandai diagnosis → mode pengelolaan. Opsional: Profil → Ringkasan untuk dokter, Keluarga.
+
+## Untuk dokter dan juri klinis
+
+- Layar **Tren dan penanda** (Profil atau tab Cek): grafik tensi, gula darah puasa/sewaktu, dan HbA1c dengan garis ambang, plus kebiasaan harian. Penanda "Perlu perhatian" dan "Pantau" adalah aturan terhadap ambang pedoman, bukan diagnosis.
+- **Ringkasan untuk dokter, Bagikan PDF:** PDF 1-3 halaman berisi penanda, tabel hasil terakhir, grafik, dan sumber; dibagikan lewat WhatsApp atau surel.
 
 ## Pertanyaan yang pasti muncul, dan jawaban jujur
 
@@ -40,6 +45,7 @@ powershell -File scripts\run_demo_stack.ps1     # Postgres, API (DEMO_CACHE=true
 | UU PDP? | Belum dipenuhi penuh (persetujuan, hak subjek data, retensi). Itu ada di roadmap; prototype memakai data dummy. |
 | SATUSEHAT? | Belum diimplementasikan; roadmap. |
 | Sudah ada pengguna? | Belum ada uji pengguna. Metrik di deck adalah target yang akan diukur. |
+| Apakah "penanda" itu diagnosis? | Bukan. Aturan sederhana membandingkan pembacaan terakhir dengan ambang KMK 303/2026 dan PERKENI 2021, dan setiap penanda menyatakan satu pembacaan tidak cukup untuk diagnosis. Dokter yang menilai. |
 | Fitur keluarga tidak invasif? | Atas undangan, izin per jenis data (status check-in, pengingat cek), bisa dicabut kapan saja; keluarga tidak pernah melihat detail makanan, hasil lab, atau skor risiko; nadanya mengajak mendukung. |
 | Korelasi makanan dan gula darah itu klaim kausal? | Bukan. Hanya muncul bila ada minimal 3 pasangan data dari catatan pengguna sendiri, dengan penegasan bahwa itu pola, bukan sebab pasti. |
 | Siapa yang membayar? | Rencana: freemium individu, wellness kantor (B2B), kemitraan Dinkes/Puskesmas (B2G). Belum diuji pasar. |

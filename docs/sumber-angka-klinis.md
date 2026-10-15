@@ -22,6 +22,7 @@ Status: **Primer** = dibaca langsung dari dokumen resmi; **Sekunder** = dikutip 
 | Energi, lemak, karbohidrat, natrium per 100 g untuk 38 makanan | `seed/tkpi_2017.json` | TKPI 2017 Kemenkes ([panganku.org](https://www.panganku.org)), kode pangan disimpan per baris | Primer |
 
 | Ambang jalan intensitas sedang 100 langkah/menit (untuk menit aktif dari Health Connect) | `MODERATE_CADENCE` di `core_calc/steps.py` | Tudor-Locke dkk., *Int J Behav Nutr Phys Act* 2019;16:8, CADENCE-adults, usia 21-40 tahun (nilai heuristik; model regresi 102, ROC 96) | Sekunder (abstrak dan ringkasan; makalah penuh tidak dibaca); pemakaian di luar 21-40 tahun adalah perkiraan KIRA |
+| Penanda triase: rentang diabetes GDP >=126, sewaktu >=200, HbA1c >=6,5; prediabetes GDP 100-125, HbA1c 5,7-6,4; tensi >=140/90 hipertensi, 130-139/85-89 normal-tinggi | `core_calc/triage.py`, `constants.py` | PERKENI 2021 Tabel 3-4; KMK 303/2026 | Primer; kata-kata penanda dan urutan tingkat adalah keputusan KIRA, bukan diagnosis |
 | Gula, natrium, lemak, kalori dari foto label kemasan | `core_calc/label.py` | Angka tercetak di kemasan, dibaca model visi dan divalidasi (gula/lemak tidak boleh melebihi berat sajian; kalori maks. 9 kkal/g; natrium maks. 400 mg/g) | Primer dari label produk; kesalahan baca foto mungkin, jadi nilai mustahil ditolak dan koreksi porsi tersedia |
 
 ## Yang BELUM bersumber (jujur)
@@ -32,6 +33,7 @@ Status: **Primer** = dibaca langsung dari dokumen resmi; **Sekunder** = dikutip 
 - **~60 makanan lain** (nasi goreng, es teh manis, kopi susu gula aren, boba, dsb.) tidak punya padanan langsung di TKPI: semua nilainya estimasi KIRA dan ditandai.
 - **Kosakata gejala tanda bahaya** (`RED_FLAG_KEYWORDS` dan aturan di `red_flags.py`): daftar gejala dari praktik umum, bukan dari dokumen. Tanda bahayanya sendiri (nyeri dada, sesak, tanda stroke, pingsan, kejang) sejalan dengan pedoman, tetapi ejaan dan frasa adalah keputusan KIRA.
 - **Interpolasi p10**: lihat tabel.
+- **Arah tren hasil pemeriksaan** (naik/turun/stabil): selisih pengukuran pertama dan terakhir dibandingkan ambang derau KIRA (tensi sistolik 5 mmHg, diastolik 3, gula puasa 10 mg/dL, sewaktu 20, HbA1c 0,3 poin). Bukan ambang klinis; hanya untuk meredam variasi pengukuran biasa.
 - **Menit aktif dari langkah**: dihitung dari segmen dengan kadensi rata-rata >= 100 langkah/menit; jalan santai yang panjang tidak dihitung, jadi cenderung konservatif. Batas kadensi mustahil (250 langkah/menit) dan pemilihan satu sumber data adalah keputusan KIRA.
 - **Ambang perubahan rekap mingguan** (gula 2 g, minuman manis 0,2, aktif 3 menit dianggap "hampir sama"): keputusan KIRA untuk meredam derau harian, bukan angka klinis.
 

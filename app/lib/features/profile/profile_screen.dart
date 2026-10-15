@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/api_client.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../shared/diagnosis_dialog.dart';
+import '../auth/login_screen.dart' show usernamePattern, usernameRule;
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -25,6 +27,16 @@ class ProfileScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(KiraSpace.xl),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(p.displayName ?? 'Kamu', style: context.text.headlineSmall),
+                  if (p.username != null)
+                    Text('@${p.username}', style: context.text.bodyMedium?.copyWith(color: context.scheme.onSurfaceVariant))
+                  else
+                    TextButton.icon(
+                      key: const Key('tile_username'),
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero, alignment: Alignment.centerLeft),
+                      icon: const Icon(Icons.alternate_email, size: 18),
+                      label: const Text('Buat nama pengguna untuk masuk'),
+                      onPressed: () => showDialog<void>(context: context, builder: (_) => const _UsernameDialog()),
+                    ),
                   const SizedBox(height: KiraSpace.sm),
                   Chip(
                     avatar: Icon(p.isManagement ? Icons.favorite_outline : Icons.shield_outlined, size: 18),
@@ -48,6 +60,15 @@ class ProfileScreen extends ConsumerWidget {
                   subtitle: const Text('Pola makan, tidur, dan hasil cek dalam satu halaman'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/doctor'),
+                ),
+                const Divider(),
+                ListTile(
+                  key: const Key('tile_trends'),
+                  leading: const Icon(Icons.show_chart),
+                  title: const Text('Tren dan penanda'),
+                  subtitle: const Text('Grafik tensi, gula darah, dan kebiasaan harian'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/trends'),
                 ),
                 const Divider(),
                 ListTile(
@@ -148,3 +169,70 @@ class _Row extends StatelessWidget {
       );
 }
 
+
+
+class _UsernameDialog extends ConsumerStatefulWidget {
+  const _UsernameDialog();
+
+  @override
+  ConsumerState<_UsernameDialog> createState() => _UsernameDialogState();
+}
+
+class _UsernameDialogState extends ConsumerState<_UsernameDialog> {
+  final _controller = TextEditingController();
+  String? _error;
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final name = _controller.text.trim().toLowerCase();
+    if (!usernamePattern.hasMatch(name)) {
+      setState(() => _error = usernameRule);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(apiProvider).setUsername(name);
+      ref.invalidate(profileProvider);
+      if (mounted) Navigator.pop(context);
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Nama pengguna'),
+      content: TextField(
+        key: const Key('username_input'),
+        controller: _controller,
+        autofocus: true,
+        autocorrect: false,
+        enableSuggestions: false,
+        onSubmitted: (_) => _save(),
+        decoration: InputDecoration(
+          labelText: 'Nama pengguna',
+          helperText: 'Dipakai untuk masuk, bersama atau sebagai pengganti nomor HP',
+          helperMaxLines: 2,
+          errorText: _error,
+          errorMaxLines: 3,
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+        FilledButton(key: const Key('username_save'), onPressed: _busy ? null : _save, child: const Text('Simpan')),
+      ],
+    );
+  }
+}

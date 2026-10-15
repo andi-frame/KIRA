@@ -4,6 +4,7 @@ List<double> _dl(Object? v) => (v as List? ?? const []).map((e) => (e as num).to
 class Profile {
   const Profile({
     this.displayName,
+    this.username,
     this.birthDate,
     this.sex,
     this.heightCm,
@@ -15,6 +16,7 @@ class Profile {
   });
 
   final String? displayName;
+  final String? username;
   final String? birthDate;
   final String? sex;
   final double? heightCm;
@@ -29,6 +31,7 @@ class Profile {
 
   factory Profile.fromJson(Map<String, dynamic> j) => Profile(
         displayName: j['display_name'] as String?,
+        username: j['username'] as String?,
         birthDate: j['birth_date'] as String?,
         sex: j['sex'] as String?,
         heightCm: _d(j['height_cm']),

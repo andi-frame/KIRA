@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/api_client.dart';
@@ -59,6 +60,15 @@ class CheckScreen extends ConsumerWidget {
               const SizedBox(height: KiraSpace.xl),
               const _FaskesSection(),
               const SizedBox(height: KiraSpace.lg),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const Key('trends_button'),
+                  icon: const Icon(Icons.show_chart),
+                  label: const Text('Lihat tren hasil cek dan penanda'),
+                  onPressed: () => context.push('/trends'),
+                ),
+              ),
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(

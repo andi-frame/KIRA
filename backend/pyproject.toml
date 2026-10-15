@@ -18,10 +18,12 @@ dependencies = [
     "langchain-core==1.6.10",
     "langchain-anthropic==1.7.6",
     "apscheduler>=3.11.3",
+    "reportlab>=5.0.1",
 ]
 
 [dependency-groups]
 dev = [
+    "pypdf>=6.20.1",
     "pytest==9.1.1",
     "pytest-asyncio==1.4.0",
 ]

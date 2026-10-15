@@ -53,7 +53,7 @@ cp ../.env.example ../.env                    # isi ANTHROPIC_API_KEY dan STT_AP
 uv sync                                       # membuat .venv dari pyproject.toml + uv.lock
 uv run alembic upgrade head
 uv run python -m seed.load                    # ~100 makanan lokal + faskes dummy
-uv run python -m seed.raka --reset            # persona demo Raka (081234567890 / PIN 123456), ulang dari awal
+uv run python -m seed.raka --reset            # persona demo Raka (raka atau 081234567890 / PIN 123456), ulang dari awal
 uv run uvicorn app.main:app --port 8000
 
 # 3. Aplikasi
@@ -121,6 +121,12 @@ mustahil ditolak sebelum disimpan.
   dan sesi tidur; menit aktif dihitung server (`core_calc/steps.py`: kadensi >= 100 langkah/menit, Tudor-Locke dkk. 2019). Sinkron ulang hanya mengganti
   hari yang dikirim; `DELETE /sync/passive` menghapus semua data perangkat. Langkah ganda dari beberapa aplikasi dibuang (hanya sumber terbanyak dipakai).
 - **Rekap minggu lalu:** `GET /summary/weekly` (dihitung langsung dari catatan) dan kartu di layar 10 Tahun, dengan perubahan dari minggu sebelumnya.
+- **Masuk dengan nama pengguna:** akun baru mendaftar dengan nama pengguna + nomor HP (nomor tetap wajib untuk WhatsApp dan undangan keluarga); masuk memakai nama pengguna ATAU nomor. Nama pengguna 3-20 karakter, diawali huruf (jadi tidak ambigu dengan nomor), tidak membedakan huruf besar/kecil. Batas percobaan masuk dibagi per akun, bukan per ketikan. Akun lama bisa membuatnya dari Profil (`PUT /auth/username`).
+- **Tren dan penanda triase:** `GET /insights/trends?days=7..90` menghasilkan deret tensi, gula darah puasa/sewaktu, HbA1c (180 hari), deret harian gula, tidur, dan menit aktif, plus penanda
+  (`perhatian`, `pantau`, `info`) dari aturan murni `core_calc/triage.py` terhadap ambang KMK 303/2026 dan PERKENI 2021. Layar "Tren dan penanda" menampilkan grafik dengan garis ambang;
+  kata tingkat penanda dan arah tren selalu tertulis, bukan hanya warna, dan tiap grafik punya alternatif teks untuk pembaca layar.
+- **PDF untuk dokter:** `GET /summary/doctor.pdf?days=1..90` (reportlab, grafik vektor, 1-3 halaman): penanda, tabel hasil terakhir, grafik tren, kebiasaan harian, skrining, dan sumber. Tombol "Bagikan PDF" di layar
+  Ringkasan untuk dokter membuka menu bagikan sistem (mis. WhatsApp). PDF tidak memuat nomor HP.
 - Perbaikan build: manifest Android sekarang mendeklarasikan `INTERNET` dan izin lokasi (sebelumnya APK rilis tidak bisa memanggil API).
 
 ## Batasan yang disengaja

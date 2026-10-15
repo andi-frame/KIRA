@@ -11,7 +11,7 @@ MEMBER_PHONE = "081200000077"
 
 
 async def register(client, phone, pin="123456"):
-    r = await client.post("/auth/register", json={"phone": phone, "pin": pin})
+    r = await client.post("/auth/register", json={"phone": phone, "username": f"u{phone}", "pin": pin})
     assert r.status_code == 200, r.text
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 

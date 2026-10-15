@@ -32,6 +32,6 @@ async def client(engine):
 
 @pytest.fixture
 async def auth_headers(client):
-    resp = await client.post("/auth/register", json={"phone": "081200000001", "pin": "123456"})
+    resp = await client.post("/auth/register", json={"phone": "081200000001", "username": "pengguna_uji", "pin": "123456"})
     assert resp.status_code == 200, resp.text
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}
