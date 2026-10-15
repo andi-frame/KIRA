@@ -25,6 +25,7 @@ from app.services.nutrition_items import item_data
 from app.timeutil import WIB, utcnow
 
 RAKA_PHONE = "081234567890"  # dummy
+RAKA_USERNAME = "raka"
 RAKA_PIN = "123456"
 HISTORY_DAYS = 21
 
@@ -62,7 +63,7 @@ async def create_raka(session: AsyncSession) -> uuid.UUID:
     existing = await users.get_by_phone(session, RAKA_PHONE)
     if existing is not None:
         return existing.id
-    user = await users.create(session, RAKA_PHONE, hash_pin(RAKA_PIN))
+    user = await users.create(session, RAKA_PHONE, hash_pin(RAKA_PIN), RAKA_USERNAME)
     await profiles.update(
         session,
         user.id,
@@ -119,7 +120,7 @@ async def _main() -> None:
             if "--reset" in sys.argv:
                 await reset_raka(session)
             uid = await create_raka(session)
-        print(f"Raka siap: user {uid}, login {RAKA_PHONE} / PIN {RAKA_PIN} (data dummy)")
+        print(f"Raka siap: user {uid}, login {RAKA_USERNAME} atau {RAKA_PHONE} / PIN {RAKA_PIN} (data dummy)")
     finally:
         await engine.dispose()
 

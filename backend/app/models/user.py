@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Numeric, Text, func, text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Numeric, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -12,7 +12,11 @@ FLOAT = Numeric(asdecimal=False)
 
 class User(Base):
     __tablename__ = "users"
+    # Nama pengguna unik tanpa membedakan huruf besar/kecil. Boleh kosong hanya untuk akun lama; akun baru wajib punya.
+    __table_args__ = (Index("ux_users_username_lower", func.lower(text("username")), unique=True),)
     id: Mapped[uuid.UUID] = uuid_pk()
+    username: Mapped[str | None] = mapped_column(Text)
+    # Nomor tetap wajib: dipakai untuk tautan WhatsApp dan undangan keluarga.
     phone: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
     pin_hash: Mapped[str] = mapped_column(Text, nullable=False)
     display_name: Mapped[str | None] = mapped_column(Text)

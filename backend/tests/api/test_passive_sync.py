@@ -83,7 +83,7 @@ async def test_langkah_aktif_beberapa_hari_menurunkan_skor_risiko(client, auth_h
 
 async def test_data_pengguna_lain_tidak_tersentuh(client, auth_headers, engine):
     await client.post("/sync/passive", json={"steps": [steps(1, 40, 4400)]}, headers=auth_headers)
-    other = await client.post("/auth/register", json={"phone": "081200000077", "pin": "654321"})
+    other = await client.post("/auth/register", json={"phone": "081200000077", "username": "u081200000077", "pin": "654321"})
     other_h = {"Authorization": f"Bearer {other.json()['access_token']}"}
     await client.post("/sync/passive", json={"steps": [steps(1, 10, 1200)]}, headers=other_h)
     assert len(await rows(engine, "activity")) == 2
@@ -104,7 +104,7 @@ async def test_hapus_data_pasif_hanya_menghapus_milik_sendiri_dan_hanya_health_c
             "insert into logs (id, user_id, occurred_at, kind, source, extracted) "
             "select gen_random_uuid(), id, now(), 'activity', 'text', '{\"minutes\": 10}' from users limit 1"
         ))
-    other = await client.post("/auth/register", json={"phone": "081200000066", "pin": "654321"})
+    other = await client.post("/auth/register", json={"phone": "081200000066", "username": "u081200000066", "pin": "654321"})
     other_h = {"Authorization": f"Bearer {other.json()['access_token']}"}
     await client.post("/sync/passive", json={"steps": [steps(1, 10, 1200)]}, headers=other_h)
 

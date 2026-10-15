@@ -22,6 +22,7 @@ async def get(session: AsyncSession, user_id: uuid.UUID) -> ProfileOut:
     data = {c: getattr(profile, c, None) for c in PROFILE_COLUMNS} if profile else {}
     return ProfileOut(
         display_name=user.display_name if user else None,
+        username=user.username if user else None,
         mode=user.mode if user else "prevention",
         age=age_from(data.get("birth_date")),
         **data,

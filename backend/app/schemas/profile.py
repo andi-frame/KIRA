@@ -25,5 +25,6 @@ class ProfileIn(BaseModel):
 
 
 class ProfileOut(ProfileIn):
+    username: str | None = None
     mode: str = "prevention"
     age: int | None = None
