@@ -8,6 +8,8 @@ import 'package:kira/core/providers.dart';
 import 'package:kira/core/theme.dart';
 import 'package:kira/features/chat/media.dart';
 import 'package:kira/features/check/location.dart';
+import 'package:kira/features/health/health_source.dart';
+import 'package:kira/features/health/health_sync.dart';
 import 'package:image_picker/image_picker.dart' show ImageSource;
 import 'package:kira/shared/family_models.dart';
 import 'package:kira/shared/insight_models.dart';
@@ -247,6 +249,14 @@ class FakeApi implements KiraApi {
     return weeklyRecap;
   }
 
+  int deletedPassive = 0;
+
+  @override
+  Future<int> deletePassive() async {
+    deletedPassive++;
+    return 3;
+  }
+
   @override
   Future<PassiveSyncResult> syncPassive(PassiveBatch batch) async {
     if (passiveError != null) throw passiveError!;
@@ -256,11 +266,13 @@ class FakeApi implements KiraApi {
 }
 
 /// Membungkus widget dengan tema, lokal, dan provider palsu.
-Widget testApp(Widget child, {FakeApi? api, bool dark = false, List<Override> overrides = const [], String? token}) {
+Widget testApp(Widget child,
+    {FakeApi? api, bool dark = false, List<Override> overrides = const [], String? token, PrefsStore? prefs}) {
   return ProviderScope(
     overrides: [
       apiProvider.overrideWithValue(api ?? FakeApi()),
       tokenStoreProvider.overrideWithValue(MemoryTokenStore(token)),
+      prefsStoreProvider.overrideWithValue(prefs ?? MemoryPrefsStore()),
       ...overrides,
     ],
     child: MaterialApp(
@@ -293,3 +305,44 @@ class FakeLocation implements LocationService {
 
 Override locationOverride([({double lat, double lng})? position]) =>
     locationProvider.overrideWithValue(FakeLocation(position));
+
+class FakeHealthSource implements HealthSource {
+  FakeHealthSource({
+    this.status = HealthAvailability.available,
+    this.grant = true,
+    List<RawStep>? steps,
+    List<RawSleep>? sleep,
+    this.readError,
+  })  : steps = steps ?? [RawStep(sourceId: 'ponsel', start: _t(1, 7), end: _t(1, 7).add(const Duration(minutes: 10)), count: 1100)],
+        sleep = sleep ?? [RawSleep(sourceId: 'ponsel', start: _t(1, 0), end: _t(1, 6))];
+
+  static DateTime _t(int daysAgo, int hour) {
+    final n = DateTime.now().subtract(Duration(days: daysAgo));
+    return DateTime(n.year, n.month, n.day, hour);
+  }
+
+  HealthAvailability status;
+  bool grant;
+  List<RawStep> steps;
+  List<RawSleep> sleep;
+  Object? readError;
+  int accessRequests = 0, reads = 0;
+
+  @override
+  Future<HealthAvailability> availability() async => status;
+
+  @override
+  Future<bool> requestAccess() async {
+    accessRequests++;
+    return grant;
+  }
+
+  @override
+  Future<({List<RawStep> steps, List<RawSleep> sleep})> read({int days = 14}) async {
+    reads++;
+    if (readError != null) throw readError!;
+    return (steps: steps, sleep: sleep);
+  }
+}
+
+Override healthOverride(FakeHealthSource source) => healthSourceProvider.overrideWithValue(source);

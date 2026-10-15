@@ -60,6 +60,15 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 const Divider(),
                 ListTile(
+                  key: const Key('tile_health'),
+                  leading: const Icon(Icons.monitor_heart_outlined),
+                  title: const Text('Langkah dan tidur'),
+                  subtitle: const Text('Isi otomatis dari Health Connect, bila kamu mau'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/health'),
+                ),
+                const Divider(),
+                ListTile(
                   key: const Key('tile_whatsapp'),
                   leading: const Icon(Icons.chat_outlined),
                   title: const Text('Tautkan WhatsApp'),

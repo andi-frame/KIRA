@@ -11,10 +11,13 @@ void main() {
     expect(find.byKey(const Key('tile_family')), findsOneWidget);
     expect(find.byKey(const Key('tile_doctor')), findsOneWidget);
     expect(find.byKey(const Key('tile_whatsapp')), findsOneWidget);
+    expect(find.byKey(const Key('tile_health')), findsOneWidget);
   });
 
   testWidgets('menautkan WhatsApp menampilkan kode dan peringatan prototype', (tester) async {
     await tester.pumpWidget(testApp(const ProfileScreen(), api: FakeApi()..linkCode = 'KIRA 4821', token: 'token'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('tile_whatsapp')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('tile_whatsapp')));
     await tester.pumpAndSettle();

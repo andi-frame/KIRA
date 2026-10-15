@@ -45,6 +45,7 @@ abstract class KiraApi {
   Future<String> whatsappLinkCode();
   Future<WeeklyRecap?> getWeeklyRecap();
   Future<PassiveSyncResult> syncPassive(PassiveBatch batch);
+  Future<int> deletePassive();
 }
 
 class DioKiraApi implements KiraApi {
@@ -206,4 +207,7 @@ class DioKiraApi implements KiraApi {
         () => _dio.post('/sync/passive', data: batch.toJson()),
         (d) => PassiveSyncResult.fromJson(d as Map<String, dynamic>),
       );
+
+  @override
+  Future<int> deletePassive() => _run(() => _dio.delete('/sync/passive'), (d) => (d['deleted'] as num).toInt());
 }

@@ -45,6 +45,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.3
+  health: ^13.3.2
 
 dev_dependencies:
   flutter_test:

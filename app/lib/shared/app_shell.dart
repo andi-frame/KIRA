@@ -1,13 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/health/health_sync.dart';
+
 /// Kerangka dengan bilah navigasi bawah (3 tujuan, Material 3). Profil dibuka dari bilah atas.
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, required this.shell});
   final StatefulNavigationShell shell;
 
   @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  @override
+  void initState() {
+    super.initState();
+    // Bila pengguna sudah menyalakan sinkronisasi Health Connect, perbarui saat aplikasi dibuka (paling sering tiap 6 jam).
+    Future.microtask(() => ref.read(healthSyncProvider.notifier).syncIfDue());
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final shell = widget.shell;
     return Scaffold(
       body: shell,
       bottomNavigationBar: NavigationBar(
