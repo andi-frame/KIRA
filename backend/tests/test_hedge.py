@@ -75,3 +75,30 @@ async def test_pembatalan_dari_luar_membatalkan_kedua_panggilan():
         await task
     await asyncio.sleep(0.05)
     assert c.calls == 2 and c.cancelled == 2
+
+
+async def test_ekstraksi_memakai_lindung_nilai_saat_panggilan_pertama_macet(monkeypatch):
+    from app.config import settings
+    from app.schemas.extraction import Extraction
+    from app.services import extraction, llm
+
+    monkeypatch.setattr(settings, "llm_hedge_after_seconds", 0.05)
+    calls = {"n": 0}
+
+    class Runnable:
+        async def ainvoke(self, messages):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                await asyncio.sleep(5)  # macet
+            return Extraction(intent="question_general")
+
+    class Model:
+        def with_structured_output(self, schema):
+            return Runnable()
+
+    llm.set_models_for_tests(None, Model())
+    try:
+        result = await asyncio.wait_for(extraction.extract_from_text("halo"), 2)
+    finally:
+        llm.set_models_for_tests(None, None)
+    assert result.intent == "question_general" and calls["n"] == 2

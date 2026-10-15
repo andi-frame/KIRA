@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     stt_api_key: str = ""
     stt_model: str = "whisper-large-v3-turbo"
     demo_cache: bool = False
+    # Panggilan model yang belum selesai setelah sekian detik didampingi satu salinan (0 = mati). Lihat services/hedge.py.
+    llm_hedge_after_seconds: float = 18.0
     # Origin yang boleh memanggil API dari browser (Flutter web). Pisahkan dengan koma; '*' untuk demo.
     cors_origins: str = "*"
     # Rahasia bersama dengan bot WhatsApp (Baileys, prototype). Kosong = kanal WhatsApp nonaktif.

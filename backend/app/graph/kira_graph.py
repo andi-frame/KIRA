@@ -22,6 +22,7 @@ from app.graph.prompts import FALLBACK_REPLY, LOGGED_BUT_NO_ANSWER_REPLY
 from app.graph.state import KiraState
 from app.repos import messages as messages_repo
 from app.schemas.extraction import Extraction
+from app.services.hedge import hedged
 from app.services.llm import get_chat_model
 from app.tools import TOOLS
 
@@ -37,7 +38,8 @@ def cache_key(text: str) -> str:
 
 async def agent(state: KiraState) -> dict:
     model = get_chat_model().bind_tools(TOOLS)
-    return {"messages": [await model.ainvoke(state["messages"])]}
+    reply = await hedged(lambda: model.ainvoke(state["messages"]), after=settings.llm_hedge_after_seconds)
+    return {"messages": [reply]}
 
 
 def _after_safety(state: KiraState) -> str:
