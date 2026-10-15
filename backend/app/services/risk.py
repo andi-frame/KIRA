@@ -79,6 +79,7 @@ class ResultOutcome:
     state: RiskState
     saved: bool
     bp_category: str | None = None
+    result_id: uuid.UUID | None = None
 
 
 def _glucose_flag(profile: HealthProfile | None, results: list[ClinicalResult]) -> bool | None:
@@ -323,8 +324,8 @@ async def record_result(
     if flag is not None:
         return ResultOutcome(flag, await compute_risk_state(session, user_id), saved=False, bp_category=bp_cat)
 
-    session.add(ClinicalResult(user_id=user_id, kind=kind, value=value, source=source,
-                               measured_at=measured_at or utcnow()))
+    result = ClinicalResult(user_id=user_id, kind=kind, value=value, source=source, measured_at=measured_at or utcnow())
+    session.add(result)
     await session.flush()
     satisfied = "blood_pressure" if kind == "blood_pressure" else "fasting_glucose"
     for row in await open_recommendations(session, user_id):
@@ -335,4 +336,4 @@ async def record_result(
     await refresh_check_recommendation(session, user_id, state, commit=False)
     if commit:
         await session.commit()
-    return ResultOutcome(None, state, saved=True, bp_category=bp_cat)
+    return ResultOutcome(None, state, saved=True, bp_category=bp_cat, result_id=result.id)

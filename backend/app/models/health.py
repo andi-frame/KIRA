@@ -79,3 +79,31 @@ class Faskes(Base):
     lat: Mapped[float] = mapped_column(Float, nullable=False)
     lng: Mapped[float] = mapped_column(Float, nullable=False)
     address: Mapped[str | None] = mapped_column(Text)
+
+
+class BpProtocol(Base):
+    """Satu putaran ukur tensi di rumah selama 7 hari (protokol ESH 2021). Hanya satu yang aktif per pengguna."""
+
+    __tablename__ = "bp_protocols"
+    id: Mapped[uuid.UUID] = uuid_pk()
+    user_id: Mapped[uuid.UUID] = _user_fk()
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    status: Mapped[str] = mapped_column(Text, nullable=False, server_default="active")  # active | completed | cancelled
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    avg_sys: Mapped[float | None] = mapped_column(Float)
+    avg_dia: Mapped[float | None] = mapped_column(Float)
+    readings_used: Mapped[int | None] = mapped_column(Integer)
+    result_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("clinical_results.id", ondelete="SET NULL"))
+
+
+class BpReading(Base):
+    __tablename__ = "bp_readings"
+    id: Mapped[uuid.UUID] = uuid_pk()
+    protocol_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("bp_protocols.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = _user_fk()
+    measured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    sys: Mapped[int] = mapped_column(Integer, nullable=False)
+    dia: Mapped[int] = mapped_column(Integer, nullable=False)
+    session: Mapped[str] = mapped_column(Text, nullable=False)  # morning | evening

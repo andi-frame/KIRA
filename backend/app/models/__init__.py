@@ -2,6 +2,8 @@ from app.models.account import AccessLog, AuthSession, IdempotencyKey, PinResetC
 from app.models.base import Base
 from app.models.family import FamilyLink
 from app.models.health import (
+    BpProtocol,
+    BpReading,
     CheckRecommendation,
     ClinicalResult,
     Faskes,
@@ -16,5 +18,5 @@ from app.models.whatsapp import WaLink, WaLinkCode, WaOutbox
 __all__ = [
     "Base", "User", "HealthProfile", "Diagnosis", "Food", "Log", "LogItem", "Product",
     "ClinicalResult", "RiskSnapshot", "CheckRecommendation", "WeeklySummary", "Message", "Faskes",
-    "WaLink", "WaLinkCode", "WaOutbox", "FamilyLink", "AuthSession", "PinResetCode", "AccessLog", "ShareLink", "IdempotencyKey",
+    "BpProtocol", "BpReading", "WaLink", "WaLinkCode", "WaOutbox", "FamilyLink", "AuthSession", "PinResetCode", "AccessLog", "ShareLink", "IdempotencyKey",
 ]

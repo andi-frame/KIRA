@@ -33,11 +33,19 @@ KIND_ID = {
 
 
 def _value_text(kind: str, value: dict) -> str:
+    if kind == "blood_pressure" and value.get("protocol"):
+        return f"{value.get('avg_sys', value.get('sys')):g}/{value.get('avg_dia', value.get('dia')):g} mmHg ({value.get('readings')} bacaan)"
     if kind == "blood_pressure":
         return f"{value.get('sys')}/{value.get('dia')} mmHg"
     unit = {"fasting_glucose": "mg/dL", "random_glucose": "mg/dL", "hba1c": "%", "waist": "cm"}.get(kind, "")
     number = next(iter(value.values()), "")
     return f"{number} {unit}".strip()
+
+
+def _result_label(kind: str, value: dict) -> str:
+    if kind == "blood_pressure" and value.get("protocol"):
+        return "Tensi rata-rata di rumah (7 hari)"
+    return KIND_ID.get(kind, kind)
 
 
 def _render_text(s: dict) -> str:
@@ -129,7 +137,7 @@ async def compute_doctor_summary(session: AsyncSession, user_id: uuid.UUID, days
         "top_foods": [{"name": n, "count": c} for n, c in top],
         "clinical_results": [
             {
-                "kind": r.kind, "label": KIND_ID.get(r.kind, r.kind), "value": r.value,
+                "kind": r.kind, "label": _result_label(r.kind, r.value), "value": r.value,
                 "display": _value_text(r.kind, r.value), "measured_on": local_date(r.measured_at).isoformat(),
                 "source": {"ckg": "CKG", "lab": "laboratorium", "self": "ukur sendiri"}.get(r.source, r.source),
             }

@@ -52,7 +52,10 @@ def _point(kind: str, r: ClinicalResult) -> dict:
     v = r.value
     if kind == "blood_pressure":
         sys, dia = int(v["sys"]), int(v["dia"])
-        return {**base, "sys": sys, "dia": dia, "category": bp_category(sys, dia)}
+        point = {**base, "sys": sys, "dia": dia, "category": bp_category(sys, dia)}
+        if v.get("protocol"):  # rata-rata protokol 7 hari di rumah, bukan satu bacaan
+            point.update(home_average=True, readings=v.get("readings"), avg_sys=v.get("avg_sys"), avg_dia=v.get("avg_dia"))
+        return point
     if kind in ("fasting_glucose", "random_glucose"):
         return {**base, "value": v["mg_dl"], "range": glucose_range(kind, v["mg_dl"])}
     if kind == "hba1c":
@@ -135,7 +138,9 @@ async def daily_series(session: AsyncSession, user_id: uuid.UUID, start: date, e
 def latest_for_triage(clinical: dict) -> dict:
     latest: dict = {}
     bp = clinical["blood_pressure"]["latest"]
-    if bp:
+    if bp and bp.get("home_average"):
+        latest["home_bp_average"] = (bp.get("avg_sys") or bp["sys"], bp.get("avg_dia") or bp["dia"], bp.get("readings") or 0)
+    elif bp:
         latest["blood_pressure"] = (bp["sys"], bp["dia"])
     for kind in ("fasting_glucose", "random_glucose", "hba1c"):
         point = clinical[kind]["latest"]
