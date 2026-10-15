@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     # Rahasia bersama dengan bot WhatsApp (Baileys, prototype). Kosong = kanal WhatsApp nonaktif.
     bot_secret: str = ""
     scheduler_enabled: bool = True
+    # Alamat publik API, dipakai membentuk tautan ringkasan untuk dokter (mis. https://api.kira.example).
+    public_base_url: str = "http://localhost:8000"
 
 
 def validate_settings(s: Settings) -> None:

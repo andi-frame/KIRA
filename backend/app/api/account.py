@@ -10,7 +10,7 @@ from app.models import User
 from app.ratelimit import login_limiter
 from app.schemas.auth import PIN_PATTERN
 from app.security import current_user_id, verify_pin
-from app.services import account
+from app.services import access_log, account
 
 router = APIRouter(prefix="/account", tags=["account"])
 
@@ -30,6 +30,20 @@ async def give_consent(
 @router.get("/export")
 async def export(user_id: uuid.UUID = Depends(current_user_id), session: AsyncSession = Depends(get_session)):
     return await account.export_account(session, user_id)
+
+
+@router.get("/access-log")
+async def access_log_list(
+    user_id: uuid.UUID = Depends(current_user_id), session: AsyncSession = Depends(get_session)
+) -> dict:
+    """Riwayat siapa yang membuka ringkasanmu (anggota keluarga atau penerima tautan dokter)."""
+    rows = await access_log.recent(session, user_id)
+    return {
+        "entries": [
+            {"id": str(r.id), "kind": r.kind, "viewer": r.viewer_name, "detail": r.detail, "at": r.created_at.isoformat()}
+            for r in rows
+        ]
+    }
 
 
 @router.post("/delete")

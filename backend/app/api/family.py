@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_session
 from app.models import FamilyLink, Log, User
 from app.security import current_user_id
-from app.services import risk
+from app.services import access_log, risk
 from app.timeutil import local_date, utcnow
 
 router = APIRouter(prefix="/family", tags=["family"])
@@ -145,6 +145,14 @@ async def shared_status(
     if link is None or link.status != "active" or link.member_id != user_id:
         raise HTTPException(404, "Tautan tidak ditemukan")
     perms = {**DEFAULT_PERMISSIONS, **link.permissions}
+    viewer = await session.get(User, user_id)
+    await access_log.record(
+        session,
+        link.owner_id,
+        kind="family_status",
+        viewer_id=user_id,
+        viewer_name=viewer.display_name or viewer.username or "Anggota keluarga",
+    )
     out: dict = {"owner_name": await _name(session, link.owner_id), "checkin_status": None, "check_reminders": None}
     if perms["checkin_status"]:
         last = (
