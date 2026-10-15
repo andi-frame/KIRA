@@ -74,3 +74,7 @@ class LogOut(BaseModel):
     extracted: dict
     corrected: bool
     items: list[LogItemOut]
+
+
+class CheckRespondIn(BaseModel):
+    action: Literal["done", "snooze", "dismiss"]

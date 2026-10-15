@@ -8,9 +8,9 @@ from app.core_calc.red_flags import RedFlag
 from app.db import get_session
 from app.models import Diagnosis, User
 from app.repos import faskes as faskes_repo
-from app.schemas.api import DiagnosisIn, ResultIn, WhatIfIn
+from app.schemas.api import CheckRespondIn, DiagnosisIn, ResultIn, WhatIfIn
 from app.security import current_user_id
-from app.services import risk
+from app.services import check_followup, idempotency, risk
 from app.services.projection_view import projection_payload, whatif_payload
 from app.services.targets_view import today_targets
 from app.core_calc.whatif import WhatIfChange
@@ -54,13 +54,35 @@ async def check_recommendation(
         return None
     row = rows[0]
     return {"id": str(row.id), "test_kind": row.test_kind, "reason": row.reason,
-            "created_at": row.created_at.isoformat()}
+            "created_at": row.created_at.isoformat(),
+            "age_days": check_followup.age_days(row),
+            "follow_up": check_followup.follow_up_due(row)}
+
+
+@router.post("/recommendations/{rec_id}/respond")
+async def respond_to_check(
+    rec_id: uuid.UUID,
+    body: CheckRespondIn,
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Jawaban atas 'sudah dicek?': done (sudah), snooze (nanti, tanya lagi 3 hari), dismiss (tidak perlu, ditahan 30 hari)."""
+    out = await check_followup.respond(session, user_id, rec_id, body.action)
+    if out is None:
+        raise HTTPException(404, "Rekomendasi tidak ditemukan atau sudah ditutup")
+    return out
 
 
 @router.post("/results")
 async def post_result(
-    body: ResultIn, user_id: uuid.UUID = Depends(current_user_id), session: AsyncSession = Depends(get_session)
+    body: ResultIn,
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+    key: str | None = Depends(idempotency.idempotency_key),
 ) -> dict:
+    stored = await idempotency.replay(session, user_id, key)
+    if stored is not None:
+        return stored
     try:
         outcome = await risk.record_result(
             session, user_id, body.kind, body.value, body.source, body.measured_at
@@ -68,12 +90,14 @@ async def post_result(
     except ValueError as exc:
         await session.rollback()
         raise HTTPException(422, str(exc)) from None
-    return {
+    out = {
         "saved": outcome.saved,
         "red_flag": _flag(outcome.red_flag),
         "bp_category": outcome.bp_category,
         "projection": projection_payload(outcome.state),
     }
+    await idempotency.remember(session, user_id, key, out)
+    return out
 
 
 @router.post("/diagnoses")

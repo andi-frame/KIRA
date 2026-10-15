@@ -44,6 +44,10 @@ class CheckRecommendation(Base):
     reason: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False, server_default="open")  # open | done | dismissed
     created_at: Mapped[datetime] = created_at()
+    # Sampai kapan tindak lanjut ditunda (open) atau rekomendasi sejenis ditahan (done/dismissed).
+    snoozed_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    followups_sent: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    last_followup_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class WeeklySummary(Base):

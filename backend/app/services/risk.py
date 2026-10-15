@@ -19,6 +19,7 @@ from app.core_calc.projection import projection_band
 from app.core_calc.red_flags import RedFlag, detect_red_flags
 from app.models import CheckRecommendation, ClinicalResult, Diagnosis, HealthProfile, RiskSnapshot, User
 from app.repos import logs as logs_repo
+from app.services import check_followup
 from app.repos.profiles import age_from
 from app.timeutil import local_date, utcnow
 
@@ -272,7 +273,10 @@ async def refresh_check_recommendation(
         else:
             row.status = "dismissed"
     if rec is not None and keep is None:
-        session.add(CheckRecommendation(user_id=user_id, test_kind=rec.test_kind, reason=rec.reason))
+        # Jangan menagih lagi tepat setelah pengguna menjawab "sudah dicek" atau "tidak perlu".
+        held = await check_followup.held_rows(session, user_id)
+        if not check_followup.is_held(held, rec.test_kind):
+            session.add(CheckRecommendation(user_id=user_id, test_kind=rec.test_kind, reason=rec.reason))
     if commit:
         await session.commit()
     return rec

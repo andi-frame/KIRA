@@ -27,7 +27,7 @@ async def engine(_schema):
     await load_seed(eng)
     yield eng
     async with eng.begin() as conn:
-        await conn.execute(text("truncate users cascade"))
+        await conn.execute(text("truncate users, products cascade"))
     await eng.dispose()
 
 

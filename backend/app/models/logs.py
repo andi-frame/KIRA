@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ARRAY, Boolean, DateTime, ForeignKey, Index, Text, text
+from sqlalchemy import ARRAY, Boolean, DateTime, ForeignKey, Index, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -48,3 +48,17 @@ class LogItem(Base):
     sodium_mg: Mapped[float | None] = mapped_column(FLOAT)
     fat_g: Mapped[float | None] = mapped_column(FLOAT)
     kcal: Mapped[float | None] = mapped_column(FLOAT)
+
+
+class Product(Base):
+    """Cache hasil Open Food Facts per kode batang (basis data luar membatasi 15 permintaan/menit per IP)."""
+
+    __tablename__ = "products"
+    barcode: Mapped[str] = mapped_column(Text, primary_key=True)
+    found: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    name: Mapped[str | None] = mapped_column(Text)
+    brand: Mapped[str | None] = mapped_column(Text)
+    serving_g: Mapped[float | None] = mapped_column(FLOAT)
+    is_drink: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    per100g: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
