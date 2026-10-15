@@ -32,3 +32,7 @@ class LoginLimiter:
 
 
 login_limiter = LoginLimiter()
+
+
+# Permintaan kode atur ulang PIN: dibatasi per akun/identitas agar tidak dipakai membanjiri WhatsApp pemilik.
+otp_limiter = LoginLimiter(max_failures=3, lock_seconds=60 * 60)

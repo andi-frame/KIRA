@@ -1,4 +1,4 @@
-from app.models.account import AuthSession
+from app.models.account import AuthSession, PinResetCode
 from app.models.base import Base
 from app.models.family import FamilyLink
 from app.models.health import (
@@ -16,5 +16,5 @@ from app.models.whatsapp import WaLink, WaLinkCode, WaOutbox
 __all__ = [
     "Base", "User", "HealthProfile", "Diagnosis", "Food", "Log", "LogItem",
     "ClinicalResult", "RiskSnapshot", "CheckRecommendation", "WeeklySummary", "Message", "Faskes",
-    "WaLink", "WaLinkCode", "WaOutbox", "FamilyLink", "AuthSession",
+    "WaLink", "WaLinkCode", "WaOutbox", "FamilyLink", "AuthSession", "PinResetCode",
 ]

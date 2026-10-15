@@ -61,3 +61,22 @@ class TokenOut(BaseModel):
 
 class RefreshIn(BaseModel):
     refresh_token: str = Field(min_length=20, max_length=200)
+
+
+class PinResetRequestIn(BaseModel):
+    identifier: str = Field(min_length=1, max_length=40)
+
+    @field_validator("identifier")
+    @classmethod
+    def _strip(cls, v: str) -> str:
+        return v.strip()
+
+
+class PinResetConfirmIn(PinResetRequestIn):
+    code: str = Field(pattern=r"^\d{6}$")
+    new_pin: str = Field(pattern=PIN_PATTERN)
+
+
+class PinChangeIn(BaseModel):
+    current_pin: str = Field(pattern=PIN_PATTERN)
+    new_pin: str = Field(pattern=PIN_PATTERN)

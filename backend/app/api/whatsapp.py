@@ -17,6 +17,7 @@ from app.db import get_session, get_session_factory
 from app.graph.kira_graph import run_kira_graph
 from app.models.whatsapp import WaOutbox
 from app.security import current_user_id
+from app.services import pin_reset
 from app.services import whatsapp as wa
 from app.services.stt import SttError, get_stt
 from app.timeutil import utcnow
@@ -108,6 +109,8 @@ async def ack(message_id: uuid.UUID, session: AsyncSession = Depends(get_session
     if row is None:
         raise HTTPException(404, "Pesan tidak ditemukan")
     row.sent_at = utcnow()
+    if row.kind == pin_reset.OTP_KIND:
+        row.text = pin_reset.SENT_PLACEHOLDER  # kode tidak perlu tersimpan sesudah terkirim
     await session.commit()
     return {"ok": True}
 
