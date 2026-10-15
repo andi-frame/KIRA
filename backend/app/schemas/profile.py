@@ -26,5 +26,6 @@ class ProfileIn(BaseModel):
 
 class ProfileOut(ProfileIn):
     username: str | None = None
+    consented: bool = False  # sudah menyetujui versi teks persetujuan yang berlaku
     mode: str = "prevention"
     age: int | None = None

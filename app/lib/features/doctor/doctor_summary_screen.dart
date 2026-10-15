@@ -9,6 +9,7 @@ import '../../core/theme.dart';
 import '../../shared/family_models.dart';
 import '../../shared/widgets.dart';
 import '../trends/trends_screen.dart';
+import 'share_links.dart';
 import '../trends/trends_widgets.dart';
 
 final doctorSummaryProvider = FutureProvider.family<DoctorSummary, int>((ref, days) {
@@ -127,6 +128,8 @@ class _DoctorSummaryScreenState extends ConsumerState<DoctorSummaryScreen> {
               ]),
             ]),
           ),
+          const SizedBox(height: KiraSpace.lg),
+          ShareLinksCard(days: _days),
           const SizedBox(height: KiraSpace.xl),
           ref.watch(trendsProvider(_days)).when(
                 loading: () => const Padding(padding: EdgeInsets.all(KiraSpace.lg), child: Center(child: CircularProgressIndicator.adaptive())),

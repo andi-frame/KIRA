@@ -85,6 +85,7 @@ Bangun ulang dengan `python -m seed.build_demo_cache` bila skrip demo berubah.
 | `CORS_ORIGINS` | Origin yang boleh memanggil API dari browser (pisahkan dengan koma) |
 | `ENVIRONMENT` | `production` membuat API menolak jalan dengan `JWT_SECRET` bawaan atau pendek |
 | `BOT_SECRET` | Rahasia bersama dengan bot WhatsApp; kosong berarti kanal WhatsApp nonaktif |
+| `PUBLIC_BASE_URL` | Alamat publik API, dipakai membentuk tautan ringkasan untuk dokter |
 | `SCHEDULER_ENABLED` | `true` menjalankan penjadwal (ringkasan mingguan, pemeriksaan malam, pengingat) di dalam API |
 
 ## Pengujian
@@ -128,6 +129,16 @@ mustahil ditolak sebelum disimpan.
 - **PDF untuk dokter:** `GET /summary/doctor.pdf?days=1..90` (reportlab, grafik vektor, 1-3 halaman): penanda, tabel hasil terakhir, grafik tren, kebiasaan harian, skrining, dan sumber. Tombol "Bagikan PDF" di layar
   Ringkasan untuk dokter membuka menu bagikan sistem (mis. WhatsApp). PDF tidak memuat nomor HP.
 - Perbaikan build: manifest Android sekarang mendeklarasikan `INTERNET` dan izin lokasi (sebelumnya APK rilis tidak bisa memanggil API).
+
+## Fase 4: akun dan privasi
+
+Rincian dan batasnya ada di [`docs/privasi-dan-keamanan.md`](docs/privasi-dan-keamanan.md).
+
+- **Sesi:** token akses 60 menit + token penyegar 30 hari yang berputar (`POST /auth/refresh`, `/auth/logout`). Aplikasi menukar token diam-diam saat 401 dan mengulang permintaan yang gagal; pengguna tidak terlempar keluar tiap beberapa jam.
+- **Persetujuan UU PDP:** kotak centang saat daftar (server menolak tanpa `consent`), dan dialog persetujuan ulang untuk akun lama atau saat teks berubah.
+- **Hak pemilik data:** unduh semua data (`GET /account/export`), hapus akun dengan PIN (`POST /account/delete`), riwayat siapa yang membuka ringkasanmu (`GET /account/access-log`). Layar Profil, Data dan privasi.
+- **Lupa PIN:** kode 6 angka lewat WhatsApp yang tertaut (`/auth/pin-reset/request`, `/confirm`); ganti PIN saat masuk (`PUT /auth/pin`) mengeluarkan perangkat lain.
+- **Tautan untuk dokter:** `POST /summary/share` membuat tautan sementara (1-30 hari, bisa dicabut) ke halaman ringkasan dan PDF tanpa perlu akun; pembukaannya tercatat.
 
 ## Batasan yang disengaja
 

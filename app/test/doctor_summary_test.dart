@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kira/core/api_client.dart';
 import 'package:kira/features/doctor/doctor_summary_screen.dart';
+import 'package:kira/shared/account_models.dart';
 import 'package:kira/shared/family_models.dart';
 
 import 'support/fakes.dart';
@@ -121,5 +122,70 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('belum bisa dibagikan'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  shareLinkTests();
+}
+
+void shareLinkTests() {
+  testWidgets('membuat tautan untuk dokter: URL tampil sekali, bisa dibagikan, dan masuk daftar aktif', (tester) async {
+    final api = FakeApi();
+    final share = FakeShare();
+    await pumpSummary(tester, api, share: share);
+    final card = find.byKey(const Key('share_links_card'));
+    await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).first);
+
+    await tester.tap(find.byKey(const Key('valid_30')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('create_share_link')));
+    await tester.pumpAndSettle();
+    expect(api.createdLinks, [(days: 30, validDays: 30)]);
+    expect(find.byKey(const Key('fresh_link')), findsOneWidget);
+    expect(find.textContaining('https://api.kira.example/s/token-rahasia-1'), findsWidgets);
+    expect(find.textContaining('hanya ditampilkan sekarang'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('share_link_send')));
+    await tester.pumpAndSettle();
+    expect(share.texts.single, allOf(contains('https://api.kira.example/s/token-rahasia-1'), contains('bukan diagnosis')));
+
+    expect(find.byKey(const Key('link_link-1')), findsOneWidget);
+    expect(find.text('Belum dibuka'), findsOneWidget);
+  });
+
+  testWidgets('mencabut tautan menghapusnya dari daftar aktif', (tester) async {
+    final api = FakeApi()
+      ..shareLinks = [ShareLinkData(id: 'a1', days: 30, expiresAt: DateTime.now().add(const Duration(days: 5)), openCount: 3)];
+    await pumpSummary(tester, api);
+    final row = find.byKey(const Key('link_a1'));
+    await tester.scrollUntilVisible(row, 300, scrollable: find.byType(Scrollable).first);
+    expect(find.text('Dibuka 3 kali'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('revoke_a1')));
+    await tester.pumpAndSettle();
+    expect(api.revokedLinks, ['a1']);
+    expect(find.byKey(const Key('link_a1')), findsNothing);
+    expect(find.textContaining('dicabut'), findsOneWidget);
+  });
+
+  testWidgets('tautan kedaluwarsa atau dicabut tidak muncul di daftar aktif', (tester) async {
+    final api = FakeApi()
+      ..shareLinks = [
+        ShareLinkData(id: 'old', days: 30, expiresAt: DateTime.now().subtract(const Duration(days: 1)), expired: true),
+        ShareLinkData(id: 'gone', days: 30, expiresAt: DateTime.now().add(const Duration(days: 1)), revoked: true),
+      ];
+    await pumpSummary(tester, api);
+    expect(find.byKey(const Key('link_old')), findsNothing);
+    expect(find.byKey(const Key('link_gone')), findsNothing);
+    expect(find.text('Tautan aktif'), findsNothing);
+  });
+
+  testWidgets('batas tautan aktif tercapai: pesan server ditampilkan', (tester) async {
+    final api = FakeApi()..shareLinkError = ApiException('Sudah ada 5 tautan aktif. Cabut salah satu dulu.', status: 409);
+    await pumpSummary(tester, api);
+    final button = find.byKey(const Key('create_share_link'));
+    await tester.scrollUntilVisible(button, 300, scrollable: find.byType(Scrollable).first);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Cabut salah satu'), findsOneWidget);
+    expect(find.byKey(const Key('fresh_link')), findsNothing);
   });
 }

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import HealthProfile, User
 from app.schemas.profile import ProfileIn, ProfileOut
+from app.services.account import has_current_consent
 
 PROFILE_COLUMNS = set(ProfileIn.model_fields) - {"display_name"}
 
@@ -24,6 +25,7 @@ async def get(session: AsyncSession, user_id: uuid.UUID) -> ProfileOut:
         display_name=user.display_name if user else None,
         username=user.username if user else None,
         mode=user.mode if user else "prevention",
+        consented=has_current_consent(user) if user else False,
         age=age_from(data.get("birth_date")),
         **data,
     )

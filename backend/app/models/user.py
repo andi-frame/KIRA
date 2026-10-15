@@ -21,6 +21,9 @@ class User(Base):
     pin_hash: Mapped[str] = mapped_column(Text, nullable=False)
     display_name: Mapped[str | None] = mapped_column(Text)
     mode: Mapped[str] = mapped_column(Text, nullable=False, server_default="prevention")
+    # Persetujuan pemrosesan data kesehatan: kapan dan versi teks yang disetujui. Kosong untuk akun lama sampai disetujui.
+    consented_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    consent_version: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = created_at()
 
 

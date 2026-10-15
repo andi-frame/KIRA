@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
+import '../shared/account_models.dart';
 import '../shared/family_models.dart';
 import '../shared/insight_models.dart';
 import '../shared/models.dart';
@@ -20,8 +21,19 @@ class ApiException implements Exception {
 
 /// Kontrak API KIRA. Layar hanya bergantung pada antarmuka ini sehingga mudah diuji dengan fake.
 abstract class KiraApi {
-  Future<String> register(String phone, String username, String pin);
-  Future<String> login(String identifier, String pin);
+  Future<AuthTokens> register(String phone, String username, String pin, {required bool consent});
+  Future<AuthTokens> login(String identifier, String pin);
+  Future<void> logout(String refreshToken);
+  Future<void> requestPinReset(String identifier);
+  Future<void> confirmPinReset(String identifier, String code, String newPin);
+  Future<AuthTokens> changePin(String currentPin, String newPin);
+  Future<void> giveConsent();
+  Future<Map<String, dynamic>> exportAccount();
+  Future<void> deleteAccount(String pin);
+  Future<List<AccessEntry>> getAccessLog();
+  Future<ShareLinkData> createShareLink({required int days, required int validDays});
+  Future<List<ShareLinkData>> listShareLinks();
+  Future<void> revokeShareLink(String id);
   Future<String> setUsername(String username);
   Future<Profile> getProfile();
   Future<Profile> putProfile(Map<String, dynamic> fields);
@@ -52,23 +64,74 @@ abstract class KiraApi {
 }
 
 class DioKiraApi implements KiraApi {
-  DioKiraApi({required String baseUrl, required String? Function() token, void Function()? onUnauthorized})
-      : _dio = Dio(BaseOptions(
+  DioKiraApi({
+    required String baseUrl,
+    required String? Function() token,
+    String? Function()? refreshToken,
+    Future<void> Function(AuthTokens)? onTokens,
+    void Function()? onUnauthorized,
+    HttpClientAdapter? adapter, // untuk pengujian
+  })  : _dio = Dio(BaseOptions(
           baseUrl: baseUrl,
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 60),
+        )),
+        _plain = Dio(BaseOptions(
+          baseUrl: baseUrl,
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 30),
         )) {
+    if (adapter != null) {
+      _dio.httpClientAdapter = adapter;
+      _plain.httpClientAdapter = adapter;
+    }
     _dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
       final t = token();
-      if (t != null) options.headers['Authorization'] = 'Bearer $t';
+      if (t != null && options.headers['Authorization'] == null) options.headers['Authorization'] = 'Bearer $t';
       handler.next(options);
-    }, onError: (e, handler) {
-      if (e.response?.statusCode == 401 && onUnauthorized != null) onUnauthorized();
+    }, onError: (e, handler) async {
+      final request = e.requestOptions;
+      final isAuthCall = request.path.startsWith('/auth/');
+      if (e.response?.statusCode == 401 && !isAuthCall && request.extra['retried'] != true) {
+        // Token akses habis: tukar token penyegar sekali, lalu ulangi permintaan yang tadi gagal.
+        final fresh = await _refresh(refreshToken?.call(), onTokens);
+        if (fresh != null) {
+          try {
+            request.extra['retried'] = true;
+            request.headers['Authorization'] = 'Bearer ${fresh.access}';
+            return handler.resolve(await _dio.fetch<dynamic>(request));
+          } on DioException catch (retryError) {
+            return handler.next(retryError);
+          }
+        }
+      }
+      if (e.response?.statusCode == 401 && !isAuthCall && onUnauthorized != null) onUnauthorized();
       handler.next(e);
     }));
   }
 
   final Dio _dio;
+  final Dio _plain; // tanpa pencegat, khusus untuk menukar token
+
+  /// Satu penukaran pada satu waktu: permintaan lain yang gagal bersamaan menunggu hasil yang sama,
+  /// sebab token penyegar berputar dan hanya boleh dipakai sekali.
+  Future<AuthTokens?>? _inflight;
+
+  Future<AuthTokens?> _refresh(String? refresh, Future<void> Function(AuthTokens)? onTokens) {
+    if (refresh == null || onTokens == null) return Future.value(null);
+    return _inflight ??= () async {
+      try {
+        final res = await _plain.post<dynamic>('/auth/refresh', data: {'refresh_token': refresh});
+        final tokens = AuthTokens.fromJson(res.data as Map<String, dynamic>);
+        await onTokens(tokens);
+        return tokens;
+      } on DioException {
+        return null;
+      } finally {
+        _inflight = null;
+      }
+    }();
+  }
 
   Future<T> _run<T>(Future<Response<dynamic>> Function() call, T Function(dynamic data) parse) async {
     try {
@@ -93,16 +156,69 @@ class DioKiraApi implements KiraApi {
   }
 
   @override
-  Future<String> register(String phone, String username, String pin) => _run(
-        () => _dio.post('/auth/register', data: {'phone': phone, 'username': username, 'pin': pin}),
-        (d) => d['access_token'] as String,
+  Future<AuthTokens> register(String phone, String username, String pin, {required bool consent}) => _run(
+        () => _dio.post('/auth/register',
+            data: {'phone': phone, 'username': username, 'pin': pin, 'consent': consent}),
+        (d) => AuthTokens.fromJson(d as Map<String, dynamic>),
       );
 
   @override
-  Future<String> login(String identifier, String pin) => _run(
+  Future<AuthTokens> login(String identifier, String pin) => _run(
         () => _dio.post('/auth/login', data: {'identifier': identifier, 'pin': pin}),
-        (d) => d['access_token'] as String,
+        (d) => AuthTokens.fromJson(d as Map<String, dynamic>),
       );
+
+  @override
+  Future<void> logout(String refreshToken) =>
+      _run(() => _dio.post('/auth/logout', data: {'refresh_token': refreshToken}), (_) {});
+
+  @override
+  Future<void> requestPinReset(String identifier) =>
+      _run(() => _dio.post('/auth/pin-reset/request', data: {'identifier': identifier}), (_) {});
+
+  @override
+  Future<void> confirmPinReset(String identifier, String code, String newPin) => _run(
+        () => _dio.post('/auth/pin-reset/confirm',
+            data: {'identifier': identifier, 'code': code, 'new_pin': newPin}),
+        (_) {},
+      );
+
+  @override
+  Future<AuthTokens> changePin(String currentPin, String newPin) => _run(
+        () => _dio.put('/auth/pin', data: {'current_pin': currentPin, 'new_pin': newPin}),
+        (d) => AuthTokens.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<void> giveConsent() => _run(() => _dio.post('/account/consent'), (_) {});
+
+  @override
+  Future<Map<String, dynamic>> exportAccount() =>
+      _run(() => _dio.get('/account/export'), (d) => d as Map<String, dynamic>);
+
+  @override
+  Future<void> deleteAccount(String pin) => _run(() => _dio.post('/account/delete', data: {'pin': pin}), (_) {});
+
+  @override
+  Future<List<AccessEntry>> getAccessLog() => _run(
+        () => _dio.get('/account/access-log'),
+        (d) => (d['entries'] as List).map((e) => AccessEntry.fromJson(e as Map<String, dynamic>)).toList(),
+      );
+
+  @override
+  Future<ShareLinkData> createShareLink({required int days, required int validDays}) => _run(
+        () => _dio.post('/summary/share', data: {'days': days, 'valid_days': validDays}),
+        (d) => ShareLinkData.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<List<ShareLinkData>> listShareLinks() => _run(
+        () => _dio.get('/summary/share'),
+        (d) => (d['links'] as List).map((e) => ShareLinkData.fromJson(e as Map<String, dynamic>)).toList(),
+      );
+
+  @override
+  Future<void> revokeShareLink(String id) => _run(() => _dio.delete('/summary/share/$id'), (_) {});
 
   @override
   Future<String> setUsername(String username) =>

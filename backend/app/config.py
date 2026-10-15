@@ -11,7 +11,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://kira:kira@localhost:5455/kira"
     test_database_url: str = "postgresql+asyncpg://kira:kira@localhost:5455/kira_test"
     jwt_secret: str = DEFAULT_JWT_SECRET
-    jwt_expire_minutes: int = 720
+    jwt_expire_minutes: int = 60  # token akses singkat; perangkat memperbaruinya dengan token penyegar
+    refresh_expire_days: int = 30
     anthropic_api_key: str = ""
     llm_model_chat: str = "claude-sonnet-5-5"
     llm_model_extract: str = "claude-haiku-5-5"
@@ -24,6 +25,8 @@ class Settings(BaseSettings):
     # Rahasia bersama dengan bot WhatsApp (Baileys, prototype). Kosong = kanal WhatsApp nonaktif.
     bot_secret: str = ""
     scheduler_enabled: bool = True
+    # Alamat publik API, dipakai membentuk tautan ringkasan untuk dokter (mis. https://api.kira.example).
+    public_base_url: str = "http://localhost:8000"
 
 
 def validate_settings(s: Settings) -> None:

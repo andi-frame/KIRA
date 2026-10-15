@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/login_screen.dart';
+import '../features/auth/reset_pin_screen.dart';
+import '../features/privacy/privacy_screen.dart';
 import '../features/check/check_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../features/doctor/doctor_summary_screen.dart';
@@ -15,7 +17,7 @@ import '../features/projection/projection_screen.dart';
 import '../shared/app_shell.dart';
 import 'providers.dart';
 
-const _gatedPaths = {'/splash', '/login', '/onboarding'};
+const _gatedPaths = {'/splash', '/login', '/onboarding', '/reset-pin'};
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
@@ -31,7 +33,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         case Gate.loading:
           return location == '/splash' ? null : '/splash';
         case Gate.loggedOut:
-          return location == '/login' ? null : '/login';
+          return location == '/login' || location == '/reset-pin' ? null : '/login';
         case Gate.needsOnboarding:
           return location == '/onboarding' ? null : '/onboarding';
         case Gate.ready:
@@ -42,6 +44,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (_, _) => const _Splash()),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
+      GoRoute(path: '/reset-pin', builder: (_, _) => const ResetPinScreen()),
+      GoRoute(path: '/privacy', builder: (_, _) => const PrivacyScreen()),
       GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
       GoRoute(path: '/family', builder: (_, _) => const FamilyScreen()),
       GoRoute(path: '/doctor', builder: (_, _) => const DoctorSummaryScreen()),

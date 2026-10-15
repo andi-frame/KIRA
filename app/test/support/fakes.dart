@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:kira/core/api_client.dart';
 import 'package:kira/core/share_service.dart';
@@ -12,6 +13,7 @@ import 'package:kira/features/check/location.dart';
 import 'package:kira/features/health/health_source.dart';
 import 'package:kira/features/health/health_sync.dart';
 import 'package:image_picker/image_picker.dart' show ImageSource;
+import 'package:kira/shared/account_models.dart';
 import 'package:kira/shared/family_models.dart';
 import 'package:kira/shared/insight_models.dart';
 import 'package:kira/shared/models.dart';
@@ -108,23 +110,116 @@ class FakeApi implements KiraApi {
   final List<({String id, List<Map<String, dynamic>> items})> patches = [];
   int projectionCalls = 0;
 
-  final List<({String phone, String username, String pin})> registrations = [];
+  final List<({String phone, String username, String pin, bool consent})> registrations = [];
   final List<({String identifier, String pin})> logins = [];
   final List<String> usernameChanges = [];
   Object? usernameError;
 
   @override
-  Future<String> register(String phone, String username, String pin) async {
-    registrations.add((phone: phone, username: username, pin: pin));
+  Future<AuthTokens> register(String phone, String username, String pin, {required bool consent}) async {
+    registrations.add((phone: phone, username: username, pin: pin, consent: consent));
     if (loginError != null) throw loginError!;
-    return 'token-baru';
+    return const AuthTokens('token-baru', 'refresh-baru');
   }
 
   @override
-  Future<String> login(String identifier, String pin) async {
+  Future<AuthTokens> login(String identifier, String pin) async {
     logins.add((identifier: identifier, pin: pin));
     if (loginError != null) throw loginError!;
-    return 'token';
+    return const AuthTokens('token', 'refresh');
+  }
+
+  final List<String> loggedOutRefresh = [];
+  final List<String> pinResetRequests = [];
+  final List<({String identifier, String code, String newPin})> pinResets = [];
+  final List<({String current, String next})> pinChanges = [];
+  final List<String> deletedAccounts = [];
+  int consents = 0, exports = 0;
+  Object? pinResetError, pinChangeError, deleteError, exportError, consentError;
+  Map<String, dynamic> exportData = {'format': 1, 'logs': <dynamic>[]};
+  List<AccessEntry> accessLog = const [];
+  List<ShareLinkData> shareLinks = [];
+  final List<({int days, int validDays})> createdLinks = [];
+  final List<String> revokedLinks = [];
+  Object? shareLinkError;
+
+  @override
+  Future<void> logout(String refreshToken) async => loggedOutRefresh.add(refreshToken);
+
+  @override
+  Future<void> requestPinReset(String identifier) async {
+    if (pinResetError != null) throw pinResetError!;
+    pinResetRequests.add(identifier);
+  }
+
+  @override
+  Future<void> confirmPinReset(String identifier, String code, String newPin) async {
+    if (pinResetError != null) throw pinResetError!;
+    pinResets.add((identifier: identifier, code: code, newPin: newPin));
+  }
+
+  @override
+  Future<AuthTokens> changePin(String currentPin, String newPin) async {
+    if (pinChangeError != null) throw pinChangeError!;
+    pinChanges.add((current: currentPin, next: newPin));
+    return const AuthTokens('token-pin-baru', 'refresh-pin-baru');
+  }
+
+  @override
+  Future<void> giveConsent() async {
+    if (consentError != null) throw consentError!;
+    consents++;
+    profile = Profile(
+      displayName: profile.displayName,
+      username: profile.username,
+      birthDate: profile.birthDate,
+      sex: profile.sex,
+      heightCm: profile.heightCm,
+      weightKg: profile.weightKg,
+      mode: profile.mode,
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> exportAccount() async {
+    if (exportError != null) throw exportError!;
+    exports++;
+    return exportData;
+  }
+
+  @override
+  Future<void> deleteAccount(String pin) async {
+    if (deleteError != null) throw deleteError!;
+    deletedAccounts.add(pin);
+  }
+
+  @override
+  Future<List<AccessEntry>> getAccessLog() async => accessLog;
+
+  @override
+  Future<ShareLinkData> createShareLink({required int days, required int validDays}) async {
+    if (shareLinkError != null) throw shareLinkError!;
+    createdLinks.add((days: days, validDays: validDays));
+    final link = ShareLinkData(
+      id: 'link-${createdLinks.length}',
+      days: days,
+      expiresAt: DateTime.now().add(Duration(days: validDays)),
+      url: 'https://api.kira.example/s/token-rahasia-${createdLinks.length}',
+    );
+    shareLinks = [ShareLinkData(id: link.id, days: days, expiresAt: link.expiresAt), ...shareLinks];
+    return link;
+  }
+
+  @override
+  Future<List<ShareLinkData>> listShareLinks() async => shareLinks;
+
+  @override
+  Future<void> revokeShareLink(String id) async {
+    revokedLinks.add(id);
+    shareLinks = [
+      for (final l in shareLinks)
+        if (l.id != id) l,
+    ];
   }
 
   @override
@@ -328,6 +423,20 @@ Widget testApp(Widget child,
   );
 }
 
+/// Sama seperti [testApp] tetapi dengan router, untuk layar yang berpindah halaman atau memakai AppShell.
+Widget testAppRouter(GoRouter router,
+    {FakeApi? api, List<Override> overrides = const [], String? token, PrefsStore? prefs}) {
+  return ProviderScope(
+    overrides: [
+      apiProvider.overrideWithValue(api ?? FakeApi()),
+      tokenStoreProvider.overrideWithValue(MemoryTokenStore(token ?? 'token')),
+      prefsStoreProvider.overrideWithValue(prefs ?? MemoryPrefsStore()),
+      ...overrides,
+    ],
+    child: MaterialApp.router(theme: kiraLightTheme, darkTheme: kiraDarkTheme, routerConfig: router),
+  );
+}
+
 class FakePhotoPicker implements PhotoPicker {
   FakePhotoPicker(this.bytes);
   final Uint8List bytes;
@@ -394,12 +503,26 @@ Override healthOverride(FakeHealthSource source) => healthSourceProvider.overrid
 
 class FakeShare implements ShareService {
   final List<({int bytes, String filename, String? message})> shared = [];
+  final List<({String filename, String mime, String content})> files = [];
+  final List<String> texts = [];
   Object? error;
 
   @override
   Future<void> sharePdf(Uint8List bytes, String filename, {String? message}) async {
     if (error != null) throw error!;
     shared.add((bytes: bytes.length, filename: filename, message: message));
+  }
+
+  @override
+  Future<void> shareFile(Uint8List bytes, String filename, String mimeType, {String? subject, String? message}) async {
+    if (error != null) throw error!;
+    files.add((filename: filename, mime: mimeType, content: String.fromCharCodes(bytes)));
+  }
+
+  @override
+  Future<void> shareText(String text, {String? subject}) async {
+    if (error != null) throw error!;
+    texts.add(text);
   }
 }
 

@@ -78,7 +78,7 @@ async def test_pengguna_baru_tidak_error_dan_diberi_catatan_info(client, auth_he
 
 async def test_data_pengguna_lain_tidak_bocor_dan_butuh_login(client, auth_headers):
     await post(client, auth_headers, "fasting_glucose", {"mg_dl": 130}, 1)
-    other = await client.post("/auth/register", json={"phone": "081200000055", "username": "orang_lain", "pin": "654321"})
+    other = await client.post("/auth/register", json={"phone": "081200000055", "username": "orang_lain", "consent": True, "pin": "654321"})
     oh = {"Authorization": f"Bearer {other.json()['access_token']}"}
     assert (await client.get("/insights/trends", headers=oh)).json()["clinical"]["fasting_glucose"]["points"] == []
     assert (await client.get("/insights/trends")).status_code == 401

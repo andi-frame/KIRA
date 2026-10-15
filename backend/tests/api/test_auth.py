@@ -1,6 +1,6 @@
 from sqlalchemy import text
 
-CREDS = {"phone": "081200000001", "username": "raka_dev", "pin": "123456"}
+CREDS = {"phone": "081200000001", "username": "raka_dev", "pin": "123456", "consent": True}
 LOGIN = {"identifier": "raka_dev", "pin": "123456"}
 
 
@@ -138,7 +138,7 @@ async def test_akun_lama_tanpa_nama_pengguna_bisa_membuatnya_nanti(client, auth_
 
 
 async def test_ubah_nama_pengguna_ditolak_bila_dipakai_orang_lain_atau_tidak_valid(client, auth_headers):
-    await client.post("/auth/register", json={"phone": "081200000050", "username": "dipakai", "pin": "123456"})
+    await client.post("/auth/register", json={"phone": "081200000050", "username": "dipakai", "pin": "123456", "consent": True})
     assert (await client.put("/auth/username", json={"username": "DIPAKAI"}, headers=auth_headers)).status_code == 409
     assert (await client.put("/auth/username", json={"username": "1x"}, headers=auth_headers)).status_code == 422
     assert (await client.put("/auth/username", json={"username": "baru_ok"})).status_code == 401

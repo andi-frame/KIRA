@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
+import '../privacy/consent_text.dart';
 
 final _phonePattern = RegExp(r'^\+?\d{8,15}$');
 final _pinPattern = RegExp(r'^\d{4,6}$');
@@ -26,6 +28,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _phone = TextEditingController(); // daftar
   final _pin = TextEditingController();
   bool _register = false;
+  bool _consent = false;
   bool _busy = false;
   String? _error;
 
@@ -48,6 +51,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return 'Isi nama pengguna atau nomor HP-mu.';
     }
     if (!_pinPattern.hasMatch(pin)) return 'PIN harus 4 sampai 6 angka.';
+    if (_register && !_consent) return 'Centang persetujuan data kesehatan dulu ya.';
     return null;
   }
 
@@ -64,10 +68,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
     try {
       final api = ref.read(apiProvider);
-      final token = _register
-          ? await api.register(_phone.text.trim(), _username.text.trim().toLowerCase(), pin)
+      final tokens = _register
+          ? await api.register(_phone.text.trim(), _username.text.trim().toLowerCase(), pin, consent: _consent)
           : await api.login(_identifier.text.trim().toLowerCase(), pin);
-      await ref.read(authProvider.notifier).setToken(token);
+      await ref.read(authProvider.notifier).setTokens(tokens);
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } finally {
@@ -157,6 +161,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onSubmitted: (_) => _submit(),
                     decoration: const InputDecoration(labelText: 'PIN', helperText: '4 sampai 6 angka'),
                   ),
+                  if (_register) ...[
+                    const SizedBox(height: KiraSpace.md),
+                    CheckboxListTile(
+                      key: const Key('register_consent'),
+                      value: _consent,
+                      onChanged: (v) => setState(() => _consent = v ?? false),
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      title: const Text('Saya setuju datanya diproses untuk proyeksi dan rekomendasi.'),
+                      subtitle: Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          key: const Key('consent_read'),
+                          style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 36)),
+                          onPressed: () => showConsentSheet(context),
+                          child: const Text('Baca apa saja yang diproses'),
+                        ),
+                      ),
+                    ),
+                  ] else
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        key: const Key('forgot_pin'),
+                        style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                        onPressed: () => context.push('/reset-pin'),
+                        child: const Text('Lupa PIN?'),
+                      ),
+                    ),
                   if (_error != null) ...[
                     const SizedBox(height: KiraSpace.md),
                     Semantics(

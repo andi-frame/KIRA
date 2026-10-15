@@ -1,3 +1,5 @@
+import hashlib
+import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -23,6 +25,15 @@ def verify_pin(pin: str, hashed: str) -> bool:
         return _hasher.verify(hashed, pin)
     except (VerificationError, InvalidHashError):
         return False
+
+
+def new_refresh_token() -> str:
+    return secrets.token_urlsafe(48)
+
+
+def hash_token(token: str) -> str:
+    """Token acak berentropi tinggi, jadi hash cepat sudah cukup (bukan kata sandi buatan manusia)."""
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 def create_token(user_id: uuid.UUID) -> str:

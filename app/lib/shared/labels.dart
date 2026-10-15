@@ -29,3 +29,12 @@ String bpLabel(String? category) => switch (category) {
       'hypertension' => 'tinggi (hipertensi)',
       _ => '',
     };
+
+const _monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+/// "12 Okt 2026"
+String formatDate(DateTime d) => '${d.day} ${_monthNames[d.month - 1]} ${d.year}';
+
+/// "12 Okt 2026, 14.05"
+String formatDateTime(DateTime d) =>
+    '${formatDate(d)}, ${d.hour.toString().padLeft(2, '0')}.${d.minute.toString().padLeft(2, '0')}';

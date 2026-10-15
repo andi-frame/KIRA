@@ -4,14 +4,16 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.db import get_session, get_session_factory
 from app.main import app
-from app.ratelimit import login_limiter
+from app.ratelimit import login_limiter, otp_limiter
 
 
 @pytest.fixture(autouse=True)
 def _fresh_limiter():
     login_limiter.clear()
+    otp_limiter.clear()
     yield
     login_limiter.clear()
+    otp_limiter.clear()
 
 
 @pytest.fixture
@@ -32,6 +34,6 @@ async def client(engine):
 
 @pytest.fixture
 async def auth_headers(client):
-    resp = await client.post("/auth/register", json={"phone": "081200000001", "username": "pengguna_uji", "pin": "123456"})
+    resp = await client.post("/auth/register", json={"phone": "081200000001", "username": "pengguna_uji", "consent": True, "pin": "123456"})
     assert resp.status_code == 200, resp.text
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}

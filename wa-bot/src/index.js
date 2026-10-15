@@ -15,7 +15,7 @@ import { drainOutbox } from "./outbox.js";
 const apiUrl = process.env.API_URL ?? "http://localhost:8000";
 const secret = process.env.BOT_SECRET;
 const authDir = process.env.AUTH_DIR ?? "auth";
-const outboxIntervalMs = Number(process.env.OUTBOX_INTERVAL_MS ?? 60_000);
+const outboxIntervalMs = Number(process.env.OUTBOX_INTERVAL_MS ?? 15_000);
 
 if (!secret) {
   console.error("BOT_SECRET wajib diisi (samakan dengan BOT_SECRET di backend).");
