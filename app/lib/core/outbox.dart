@@ -15,7 +15,7 @@ const offlineEmergencyHint =
     'Kalau ini darurat (nyeri dada, sesak, lemas mendadak), jangan menunggu sinyal: hubungi 119 atau ke IGD terdekat.';
 
 String newOutboxId() =>
-    '${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}-${Random.secure().nextInt(1 << 32).toRadixString(36)}';
+    '${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}-${Random.secure().nextInt(0x7fffffff).toRadixString(36)}';
 
 enum OutboxKind { message, result }
 
