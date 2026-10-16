@@ -8,7 +8,8 @@ Ringkasan hasil ada di README bagian Fase 6. Penyimpangan dari teks di bawah:
 - Kolom `log_items.role` dibuat tetapi belum diisi.
 - `PlanPrefs` mengambil daftar "tidak suka" dari `health_profiles.food_preferences.dislikes`.
 - Angka AKG di 6.2 sudah diverifikasi dari lampiran resmi (sama dengan yang diingat penulis, ditambah kelompok 80+).
-- Screenshot dan cetak ulang PDF (7.3) belum dikerjakan.
+- Screenshot (7.3) diambil ulang dan PDF dicetak ulang. Selain `07-beranda` dan `07b-beranda-lengkap`, ada `07c-beranda-proyeksi`
+  (potongan bagian proyeksi) yang dipakai deck dan proposal karena slide-nya membahas kurva 10 tahun.
 
 ## 0. Cara bekerja di repo ini (WAJIB dibaca)
 
