@@ -363,7 +363,7 @@ class DailyBarChart extends StatelessWidget {
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 32,
+                      reservedSize: maxVal >= 1000 ? 44 : 32, // kalori ribuan tidak boleh patah baris
                       interval: scale.step,
                       getTitlesWidget: (v, _) => Padding(
                         padding: const EdgeInsets.only(right: 4),
