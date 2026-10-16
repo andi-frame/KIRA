@@ -38,6 +38,20 @@ Aplikasi tidak bisa membukanya sendiri; pengguna melakukannya sekali: Info aplik
 pesan terkunci, tutup, lalu buka Info aplikasi lagi. Layar pengaturan menampilkan langkah ini bila izin belum lengkap, dengan tombol
 "Buka Info aplikasi". Aplikasi dari Google Play tidak terkena kunci ini.
 
+## Status penjagaan (cara mencari tahu mengapa kartu tidak muncul)
+
+Di layar Jeda sosmed ada kartu **Status penjagaan** yang dimuat ulang tiap 3 detik: apakah layanan berjalan, aplikasi apa yang
+terakhir terdeteksi (dan kapan), apa yang terjadi pada pembukaan aplikasi pilihan yang terakhir, dan **seandainya aplikasi pilihan
+dibuka sekarang, kartu apa yang tampil atau mengapa tidak ada** (di luar jam kartu, masa bebas, dilewati sampai besok, jatah
+tiga kali habis, semua sudah tercatat, atau isi kartu belum sampai). Bila KIRA belum dikecualikan dari penghemat baterai, ada
+peringatan dengan petunjuk per merek (Xiaomi, Oppo/Realme, Vivo, Huawei, Samsung) dan tombol "Atur penghemat baterai".
+Galat terakhir dari layanan ikut ditampilkan. Aplikasi sosmed yang dibuka sebelum layanan hidup tidak akan menampilkan apa pun,
+jadi cek baris pertama dulu.
+
+Fun fact menyala sejak Jeda pertama kali dinyalakan (bisa dimatikan), karena kartu terjadwal hanya berlaku di jam tertentu dan
+tanpa itu sebagian besar hari tidak ada kartu sama sekali. Jatah tampil baru dihitung setelah jendela kartu berhasil dipasang,
+jadi kegagalan memasang tidak menghabiskan jatah hari itu.
+
 ## Aturan agar tidak mengganggu
 
 - Mati sampai pengguna menyalakan, memilih aplikasi, dan memberi dua izin.

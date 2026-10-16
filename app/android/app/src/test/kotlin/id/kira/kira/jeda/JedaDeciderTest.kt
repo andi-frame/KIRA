@@ -184,4 +184,56 @@ class JedaDeciderTest {
         assertTrue(due(h(22), s = withFacts.copy(useGrace = false), state = freeUntil).isNotEmpty())
         assertTrue(due(h(22), now = t0 + 11 * 60_000L, s = withFacts, state = freeUntil).isNotEmpty())
     }
+
+    // ----- penjelasan keputusan (layar status) -----
+
+    private fun explain(
+        minute: Int,
+        now: Long = t0,
+        s: Settings = settings,
+        p: Payload? = payload,
+        state: GateState = GateState(),
+    ) = JedaDecider.explain(now, minute, "2026-10-17", "2026-10-17", s, p, state, true)
+
+    @Test fun `penjelasan siap menyebut jenis kartu`() {
+        val e = explain(h(22))
+        assertEquals("ready", e.code)
+        assertTrue("night" in e.kinds)
+    }
+
+    @Test fun `penjelasan mati tanpa aplikasi dilewati dan masa bebas`() {
+        assertEquals("off", explain(h(22), s = settings.copy(enabled = false)).code)
+        assertEquals("no_apps", explain(h(22), s = settings.copy(apps = emptySet())).code)
+        assertEquals("skip_day", explain(h(22), state = GateState(skipDay = "2026-10-17")).code)
+        val grace = explain(h(22), state = GateState(graceUntil = t0 + 60_000))
+        assertEquals("grace", grace.code)
+        assertEquals(t0 + 60_000, grace.graceUntil)
+        assertEquals("ready", explain(h(22), s = settings.copy(useGrace = false), state = GateState(graceUntil = t0 + 60_000)).code)
+    }
+
+    @Test fun `siang hari tanpa fun fact dijelaskan sebagai di luar jam`() {
+        val noOther = settings.copy(showOther = false)
+        assertEquals("outside_window", explain(h(14), s = noOther).code)
+        assertEquals("ready", explain(h(14), s = noOther.copy(funFact = true, facts = listOf(Fact("a", "T", "teks", "S")))).code)
+    }
+
+    @Test fun `tanpa isi kartu dan tanpa fakta dijelaskan, dengan fakta tetap siap`() {
+        assertEquals("no_content", explain(h(22), p = null).code)
+        assertEquals("ready", explain(h(22), p = null, s = settings.copy(funFact = true, facts = listOf(Fact("a", "T", "teks", "S")))).code)
+    }
+
+    @Test fun `jatah habis dan semua sudah tercatat dibedakan`() {
+        val capped = GateState(countDay = "2026-10-17", counts = mapOf("night" to 3, "evening" to 3, "other" to 1))
+        assertEquals("cap_reached", explain(h(22), state = capped).code)
+        val done = payload.copy(evening = null, eveningGeneric = null, other = null, night = null)
+        assertEquals("already_logged", explain(h(20), p = done).code)
+    }
+
+    @Test fun `jendela aktif mengikuti jam`() {
+        assertEquals(listOf("morning"), JedaDecider.activeKinds(h(7), settings))
+        assertEquals(listOf("evening"), JedaDecider.activeKinds(h(20), settings))
+        assertEquals(listOf("evening", "night"), JedaDecider.activeKinds(h(22), settings))
+        assertEquals(listOf("night"), JedaDecider.activeKinds(h(2), settings))
+        assertTrue(JedaDecider.activeKinds(h(14), settings).isEmpty())
+    }
 }

@@ -22,6 +22,9 @@ import androidx.core.content.ContextCompat
 /**
  * Memantau aplikasi yang sedang di depan. Hanya nama paketnya yang dibaca (UsageStatsManager), tidak ada isi layar.
  * Begitu aplikasi pilihan pengguna terbuka, kartu yang berlaku sekarang ditampilkan di depannya.
+ *
+ * Tiap langkah penting dicatat ke [Diag] (aplikasi terakhir terdeteksi, alasan tidak ada kartu, galat) supaya layar status
+ * di aplikasi bisa menjelaskan "mengapa kartu tidak muncul" tanpa harus membuka log perangkat.
  */
 class JedaService : Service() {
     private lateinit var store: JedaStore
@@ -30,6 +33,8 @@ class JedaService : Service() {
     private var current: String? = null
     private var cachedRaw: String? = null
     private var cachedPayload: Payload? = null
+    private var diag = Diag()
+    private var diagWrittenAt = 0L
 
     private val tick = object : Runnable {
         override fun run() {
@@ -37,12 +42,16 @@ class JedaService : Service() {
             if (interactive) {
                 try {
                     check()
-                } catch (_: Exception) {
-                    // Satu putaran gagal tidak boleh menghentikan penjagaan.
+                } catch (e: Exception) {
+                    // Satu putaran gagal tidak boleh menghentikan penjagaan, tetapi alasannya dicatat.
+                    diag = diag.copy(lastError = "${e.javaClass.simpleName}: ${e.message ?: ""}".take(200))
+                    flush(force = true)
                 }
             } else {
                 current = null // layar mati: saat menyala lagi, aplikasi di depan dihitung baru dibuka
             }
+            diag = diag.copy(lastTickAt = System.currentTimeMillis())
+            flush()
             handler.postDelayed(this, if (interactive) POLL_MS else POLL_SLEEP_MS)
         }
     }
@@ -63,6 +72,8 @@ class JedaService : Service() {
             this, NOTIFICATION_ID, notification(),
             if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0,
         )
+        diag = store.diag().copy(startedAt = System.currentTimeMillis(), lastError = "")
+        flush(force = true)
         handler.removeCallbacks(tick)
         handler.post(tick)
         return START_STICKY
@@ -77,6 +88,14 @@ class JedaService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    /** Menulis catatan kegiatan paling sering tiap beberapa detik (SharedPreferences tidak untuk ditulis tiap 0,7 detik). */
+    private fun flush(force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!force && now - diagWrittenAt < DIAG_EVERY_MS) return
+        diagWrittenAt = now
+        store.saveDiag(diag)
+    }
+
     private fun check() {
         val settings = store.settings()
         if (!settings.enabled) {
@@ -87,6 +106,8 @@ class JedaService : Service() {
         val changed = front != current
         current = front
         if (!changed) return
+        diag = diag.copy(lastFront = front, lastFrontAt = System.currentTimeMillis())
+        flush(force = true)
         JedaOverlay.current?.let { shown ->
             // Kartu sedang tampil: berpindah ke aplikasi lain (Home, dll.) menutupnya, tanpa menghitung sebagai dibaca.
             if (shown.target != front) JedaOverlay.dismissCurrent()
@@ -104,19 +125,31 @@ class JedaService : Service() {
         val date = JedaStore.dateKey(now)
         val day = JedaStore.dayKey(now)
         val state = store.state()
-        val cards = JedaDecider.due(
-            now = now,
-            minute = JedaStore.minuteOfDay(now),
-            date = date,
-            day = day,
-            settings = settings,
-            payload = payload,
-            state = state,
-            sameDayAsPayload = payload != null && JedaStore.dateKey(payload.generatedAt) == date,
-        )
-        if (cards.isEmpty() || !JedaPermissions.overlay(this)) return
-        store.saveState(JedaDecider.afterShown(state, day, cards))
-        JedaOverlay.show(this, cards, target = front, targetLabel = targetLabel(front), preview = false)
+        val minute = JedaStore.minuteOfDay(now)
+        val same = payload != null && JedaStore.dateKey(payload.generatedAt) == date
+        val cards = JedaDecider.due(now, minute, date, day, settings, payload, state, same)
+        diag = diag.copy(lastGuarded = front, lastGuardedAt = now)
+        if (cards.isEmpty()) {
+            diag = diag.copy(lastReason = JedaDecider.explain(now, minute, date, day, settings, payload, state, same).code)
+            flush(force = true)
+            return
+        }
+        if (!JedaPermissions.overlay(this)) {
+            diag = diag.copy(lastReason = "no_overlay_permission")
+            flush(force = true)
+            return
+        }
+        // Jatah tampil baru dihitung setelah jendela benar-benar berhasil dipasang: kegagalan memasang tidak boleh
+        // menghabiskan jatah tiga kali sehari tanpa pengguna pernah melihat kartunya.
+        JedaOverlay.show(this, cards, target = front, targetLabel = targetLabel(front), preview = false) { error ->
+            if (error == null) {
+                store.saveState(JedaDecider.afterShown(store.state(), day, cards))
+                diag = diag.copy(lastReason = "shown", shownTotal = diag.shownTotal + 1, lastError = "")
+            } else {
+                diag = diag.copy(lastReason = "overlay_failed", lastError = error.take(200))
+            }
+            flush(force = true)
+        }
     }
 
     private fun targetLabel(pkg: String): String? = try {
@@ -169,6 +202,7 @@ class JedaService : Service() {
         private const val POLL_MS = 700L
         private const val POLL_SLEEP_MS = 3000L
         private const val WINDOW_MS = 10_000L
+        private const val DIAG_EVERY_MS = 4_000L
 
         /** Menyalakan layanan bila diaktifkan dan izin lengkap; mematikannya bila tidak. */
         fun sync(context: Context) {

@@ -119,6 +119,38 @@ object JedaCodec {
         }
     }
 
+    fun diag(raw: String?): Diag {
+        if (raw.isNullOrEmpty()) return Diag()
+        return try {
+            val o = JSONObject(raw)
+            Diag(
+                startedAt = o.optLong("started_at", 0),
+                lastTickAt = o.optLong("last_tick_at", 0),
+                lastFront = if (o.isNull("last_front")) null else o.optString("last_front"),
+                lastFrontAt = o.optLong("last_front_at", 0),
+                lastGuardedAt = o.optLong("last_guarded_at", 0),
+                lastGuarded = if (o.isNull("last_guarded")) null else o.optString("last_guarded"),
+                lastReason = o.str("last_reason"),
+                lastError = o.str("last_error"),
+                shownTotal = o.optInt("shown_total", 0),
+            )
+        } catch (_: Exception) {
+            Diag()
+        }
+    }
+
+    fun diagJson(d: Diag): String = JSONObject()
+        .put("started_at", d.startedAt)
+        .put("last_tick_at", d.lastTickAt)
+        .put("last_front", d.lastFront ?: JSONObject.NULL)
+        .put("last_front_at", d.lastFrontAt)
+        .put("last_guarded_at", d.lastGuardedAt)
+        .put("last_guarded", d.lastGuarded ?: JSONObject.NULL)
+        .put("last_reason", d.lastReason)
+        .put("last_error", d.lastError)
+        .put("shown_total", d.shownTotal)
+        .toString()
+
     fun stateJson(s: GateState): String = JSONObject()
         .put("grace_until", s.graceUntil)
         .put("skip_day", s.skipDay ?: JSONObject.NULL)
