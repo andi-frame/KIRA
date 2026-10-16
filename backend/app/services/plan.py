@@ -109,6 +109,12 @@ async def _offsets(session: AsyncSession, user_id: uuid.UUID, start: date, end: 
     return dict(out)
 
 
+def meal_slot(log) -> str:
+    """Waktu makan sebuah catatan: dari ekstraksi ("tadi siang ..." -> lunch) bila ada, selain itu dari jam catatan."""
+    kinds = [i.get("meal_time") for i in (log.extracted or {}).get("items", []) if isinstance(i, dict) and i.get("meal_time")]
+    return kinds[0] if kinds and kinds[0] in MEAL_SLOTS else slot_for_time(log.occurred_at.astimezone(WIB))
+
+
 async def plan_today(session: AsyncSession, user_id: uuid.UUID, now: datetime | None = None) -> dict:
     now = now or utcnow()
     today = local_date(now)
@@ -118,7 +124,7 @@ async def plan_today(session: AsyncSession, user_id: uuid.UUID, now: datetime | 
     todays = [(lg, items) for lg, items in rows if local_date(lg.occurred_at) == today]
     eaten = [i for lg, items in todays if lg.kind in ("meal", "drink") for i in items]
     consumed = {k: sum(float(getattr(i, k) or 0) for i in eaten) for k in ("kcal", "sugar_g", "sodium_mg", "fat_g")}
-    done = {slot_for_time(lg.occurred_at.astimezone(WIB)) for lg, _ in todays if lg.kind == "meal"}
+    done = {meal_slot(lg) for lg, _ in todays if lg.kind == "meal"}
     plan = day_plan(today, ctx, prefs, catalog, recent=recent_ids_before(today, ctx, prefs, catalog, offsets),
                     offsets=offsets.get(today.isoformat()), consumed=consumed if eaten else None, done_slots=done)
     active_today = sum(float(lg.extracted.get("minutes", 0) or 0) for lg, _ in todays if lg.kind == "activity")

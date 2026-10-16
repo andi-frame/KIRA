@@ -100,3 +100,11 @@ async def test_rencana_milik_sendiri_dan_butuh_login(client, auth_headers):
                                                       "pin": "123456", "consent": True})
     oh = {"Authorization": f"Bearer {other.json()['access_token']}"}
     assert (await get(client, oh, "/plan/preferences"))["wake_time"] == "06:00"
+
+
+async def test_waktu_makan_dari_ekstraksi_menang_atas_jam_catatan(client, auth_headers):
+    # "tadi siang ..." dikirim pagi hari: yang ditandai sudah adalah makan siang, bukan sarapan
+    install_models(extract={**LUNCH, "items": [{"name": "ayam geprek", "dish_id": "ayam_geprek", "meal_time": "lunch"}]})
+    await client.post("/chat/message", json={"text": "tadi siang ayam geprek"}, headers=auth_headers)
+    done = {m["slot"] for m in (await get(client, auth_headers, "/plan/today"))["meals"] if m["done"]}
+    assert done == {"lunch"}

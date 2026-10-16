@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core_calc.planner import SLOT_LABELS, slot_for_time
+from app.core_calc.planner import SLOT_LABELS
 from app.models import Log, PlanPreference, User, WaLink, WaOutbox
 from app.services import plan as plan_service
 from app.timeutil import WIB, local_date, utcnow
@@ -54,9 +54,9 @@ async def _exists(session: AsyncSession, user_id: uuid.UUID, ref: str) -> bool:
 
 async def _logged_slots(session: AsyncSession, user_id: uuid.UUID, today: date) -> set[str]:
     since = datetime.combine(today, datetime.min.time(), tzinfo=WIB)
-    times = (await session.execute(select(Log.occurred_at).where(
+    logs = (await session.execute(select(Log).where(
         Log.user_id == user_id, Log.kind == "meal", Log.occurred_at >= since))).scalars().all()
-    return {slot_for_time(t.astimezone(WIB)) for t in times}
+    return {plan_service.meal_slot(lg) for lg in logs}
 
 
 async def due_messages(session: AsyncSession, user_id: uuid.UUID, prefs: dict, now: datetime) -> list[tuple[str, str, str]]:
