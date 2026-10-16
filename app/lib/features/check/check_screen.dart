@@ -169,62 +169,108 @@ class _RecommendationCard extends ConsumerWidget {
     final prep = rec.testKind == 'fasting_glucose'
         ? 'Puasa sekitar 8 jam sebelum cek (air putih boleh).'
         : 'Duduk tenang 5 menit sebelum tensi diukur.';
+    final scheme = context.scheme;
+    final ink = scheme.onSurface;
+    // Kartu putih seperti kartu lain; warna perhatian (amber) hanya di pil label.
     return Container(
-      padding: const EdgeInsets.all(KiraSpace.xl),
-      decoration: BoxDecoration(color: kira.attentionContainer, borderRadius: BorderRadius.circular(KiraRadius.card)),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(KiraRadius.card),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            Icon(Icons.fact_check_outlined, color: kira.onAttentionContainer),
-            const SizedBox(width: KiraSpace.sm),
-            Text('Saatnya cek', style: context.text.labelLarge?.copyWith(color: kira.onAttentionContainer)),
-          ]),
-          const SizedBox(height: KiraSpace.sm),
-          Text(rec.label, style: context.text.headlineSmall?.copyWith(color: kira.onAttentionContainer)),
-          const SizedBox(height: KiraSpace.sm),
-          Text(rec.reason, style: context.text.bodyLarge?.copyWith(color: kira.onAttentionContainer)),
-          const SizedBox(height: KiraSpace.sm),
-          Text(prep, style: context.text.bodyMedium?.copyWith(color: kira.onAttentionContainer)),
-          const SizedBox(height: KiraSpace.lg),
-          FilledButton.icon(
-            key: const Key('enter_result_button'),
-            icon: const Icon(Icons.edit_note),
-            label: const Text('Masukkan hasil'),
-            onPressed: () => showResultSheet(context),
-          ),
-          if (rec.followUp) ...[
-            const SizedBox(height: KiraSpace.lg),
-            Divider(color: kira.onAttentionContainer.withValues(alpha: 0.25)),
-            const SizedBox(height: KiraSpace.sm),
-            Semantics(
-              container: true,
-              label: 'Tindak lanjut',
+          Stack(children: [
+            // Lingkaran lembut dan maskot di kanan bawah bagian utama kartu.
+            Positioned(
+              right: -36,
+              bottom: -44,
+              child: Container(
+                width: 160,
+                height: 160,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: scheme.primaryContainer.withValues(alpha: 0.6)),
+              ),
+            ),
+            Positioned(
+              right: KiraSpace.sm,
+              bottom: 0,
+              child: Image.asset('assets/mascot/kira-check.png', width: 96, height: 96, excludeFromSemantics: true),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(KiraSpace.lg, KiraSpace.lg, 112, KiraSpace.lg),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(
-                  'Sudah sempat cek? Saran ini muncul ${rec.ageDays} hari lalu.',
-                  key: const Key('followup_question'),
-                  style: context.text.titleSmall?.copyWith(color: kira.onAttentionContainer),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: KiraSpace.sm, vertical: 2),
+                  decoration: BoxDecoration(color: kira.attentionContainer, borderRadius: BorderRadius.circular(999)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.fact_check_outlined, size: 14, color: kira.onAttentionContainer),
+                    const SizedBox(width: KiraSpace.xs),
+                    Text('Saatnya cek', style: context.text.labelMedium?.copyWith(color: kira.onAttentionContainer)),
+                  ]),
                 ),
                 const SizedBox(height: KiraSpace.sm),
-                Wrap(spacing: KiraSpace.sm, runSpacing: KiraSpace.xs, children: [
-                  OutlinedButton(
-                    key: const Key('followup_done'),
-                    onPressed: () => _respond(context, ref, 'done'),
-                    child: const Text('Sudah'),
+                Text(rec.label, style: context.text.titleLarge?.copyWith(color: ink)),
+                const SizedBox(height: KiraSpace.xs),
+                Text(rec.reason, style: context.text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                const SizedBox(height: KiraSpace.sm),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 1),
+                    child: Icon(Icons.schedule, size: 16, color: scheme.onSurfaceVariant),
                   ),
-                  OutlinedButton(
-                    key: const Key('followup_snooze'),
-                    onPressed: () => _respond(context, ref, 'snooze'),
-                    child: const Text('Nanti'),
-                  ),
-                  TextButton(
-                    key: const Key('followup_dismiss'),
-                    onPressed: () => _respond(context, ref, 'dismiss'),
-                    child: const Text('Tidak perlu'),
-                  ),
+                  const SizedBox(width: KiraSpace.xs),
+                  Expanded(child: Text(prep, style: context.text.bodySmall)),
                 ]),
+                const SizedBox(height: KiraSpace.md),
+                FilledButton.icon(
+                  key: const Key('enter_result_button'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 40),
+                    padding: const EdgeInsets.symmetric(horizontal: KiraSpace.lg),
+                    textStyle: context.text.labelLarge,
+                  ),
+                  icon: const Icon(Icons.edit_note, size: 18),
+                  label: const Text('Masukkan hasil'),
+                  onPressed: () => showResultSheet(context),
+                ),
               ]),
+            ),
+          ]),
+          if (rec.followUp) ...[
+            Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.6)),
+            Padding(
+              padding: const EdgeInsets.all(KiraSpace.lg),
+              child: Semantics(
+                container: true,
+                label: 'Tindak lanjut',
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(
+                    'Sudah sempat cek? Saran ini muncul ${rec.ageDays} hari lalu.',
+                    key: const Key('followup_question'),
+                    style: context.text.titleSmall?.copyWith(color: ink),
+                  ),
+                  const SizedBox(height: KiraSpace.sm),
+                  Wrap(spacing: KiraSpace.sm, runSpacing: KiraSpace.xs, children: [
+                    OutlinedButton(
+                      key: const Key('followup_done'),
+                      onPressed: () => _respond(context, ref, 'done'),
+                      child: const Text('Sudah'),
+                    ),
+                    OutlinedButton(
+                      key: const Key('followup_snooze'),
+                      onPressed: () => _respond(context, ref, 'snooze'),
+                      child: const Text('Nanti'),
+                    ),
+                    TextButton(
+                      key: const Key('followup_dismiss'),
+                      onPressed: () => _respond(context, ref, 'dismiss'),
+                      child: const Text('Tidak perlu'),
+                    ),
+                  ]),
+                ]),
+              ),
             ),
           ],
         ],
