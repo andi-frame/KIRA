@@ -102,8 +102,8 @@ class FakeApi implements KiraApi {
   WhatIfResult Function(WhatIfChange)? onWhatIf;
   CheckRecommendation? recommendation;
   List<Faskes> faskes = const [
-    Faskes(name: 'Puskesmas Coblong', kind: 'puskesmas', distanceKm: 0.4, address: 'Jl. Contoh No. 1', lat: -6.893, lng: 107.613),
-    Faskes(name: 'Posyandu Melati', kind: 'posyandu', distanceKm: 1.2),
+    Faskes(name: 'Puskesmas Coblong', kind: 'puskesmas', distanceKm: 0.4, address: 'Jl. Contoh No. 1', lat: -6.893, lng: 107.613, source: 'osm'),
+    Faskes(name: 'Posyandu Melati', kind: 'posyandu', distanceKm: 1.2, source: 'osm'),
   ];
   Future<ChatReply> Function(String text)? onMessage;
   Future<ChatReply> Function(String kind)? onPhoto;
@@ -662,9 +662,11 @@ class FakeApi implements KiraApi {
   Future<void> postDiagnosis(String condition) async => diagnoses.add(condition);
 
   Object? faskesError;
+  int faskesCalls = 0;
 
   @override
   Future<List<Faskes>> nearbyFaskes(double lat, double lng) async {
+    faskesCalls++;
     if (faskesError != null) throw faskesError!;
     return faskes;
   }
@@ -810,12 +812,34 @@ class FakePhotoPicker implements PhotoPicker {
 Override photoPickerOverride(Uint8List bytes) => photoPickerProvider.overrideWithValue(FakePhotoPicker(bytes));
 
 
+/// Lokasi palsu. Tanpa posisi, keadaannya [missing] (bawaan: izin belum diberikan). [grantOnRequest] meniru pengguna
+/// yang menekan "Izinkan" di dialog sistem.
 class FakeLocation implements LocationService {
-  FakeLocation([this.position]);
-  final ({double lat, double lng})? position;
+  FakeLocation([this.position, this.missing = LocationStatus.needsPermission, this.grantOnRequest]);
+  ({double lat, double lng})? position;
+  final LocationStatus missing;
+  final ({double lat, double lng})? grantOnRequest;
+  final List<String> calls = [];
+
+  LocationFix get _fix => position == null
+      ? (status: missing, lat: null, lng: null)
+      : (status: LocationStatus.found, lat: position!.lat, lng: position!.lng);
 
   @override
-  Future<({double lat, double lng})?> current() async => position;
+  Future<LocationFix> current() async => _fix;
+
+  @override
+  Future<LocationFix> requestAndLocate() async {
+    calls.add('request');
+    position ??= grantOnRequest;
+    return _fix;
+  }
+
+  @override
+  Future<void> openLocationSettings() async => calls.add('location_settings');
+
+  @override
+  Future<void> openAppSettings() async => calls.add('app_settings');
 }
 
 Override locationOverride([({double lat, double lng})? position]) =>

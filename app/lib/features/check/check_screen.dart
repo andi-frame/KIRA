@@ -233,18 +233,63 @@ class _RecommendationCard extends ConsumerWidget {
   }
 }
 
-class _FaskesSection extends ConsumerWidget {
+class _FaskesSection extends ConsumerStatefulWidget {
   const _FaskesSection();
 
-  Future<void> _search(BuildContext context, WidgetRef ref, double lat, double lng) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final ok = await ref.read(linkOpenerProvider).open(faskesSearchUri(lat, lng));
-    if (!ok) messenger.showSnackBar(const SnackBar(content: Text('Aplikasi peta belum bisa dibuka di perangkat ini.')));
+  @override
+  ConsumerState<_FaskesSection> createState() => _FaskesSectionState();
+}
+
+class _FaskesSectionState extends ConsumerState<_FaskesSection> {
+  // Kembali dari pengaturan lokasi/aplikasi: baca ulang lokasi supaya daftar langsung muncul.
+  late final AppLifecycleListener _lifecycle = AppLifecycleListener(onResume: () {
+    if (ref.read(faskesProvider).value?.location != LocationStatus.found) ref.invalidate(faskesProvider);
+  });
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle;
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
+  Future<void> _search(Uri uri) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await ref.read(linkOpenerProvider).open(uri);
+    if (!ok) messenger.showSnackBar(const SnackBar(content: Text('Aplikasi peta belum bisa dibuka di perangkat ini.')));
+  }
+
+  Future<void> _fixLocation(LocationStatus status) async {
+    final location = ref.read(locationProvider);
+    switch (status) {
+      case LocationStatus.serviceOff || LocationStatus.unavailable:
+        await location.openLocationSettings();
+      case LocationStatus.blocked:
+        await location.openAppSettings();
+      case LocationStatus.needsPermission:
+        await location.requestAndLocate();
+        ref.invalidate(faskesProvider);
+      case LocationStatus.found:
+        ref.invalidate(faskesProvider);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final faskes = ref.watch(faskesProvider);
+    final mapsButton = OutlinedButton.icon(
+      key: const Key('faskes_search_maps'),
+      icon: const Icon(Icons.map_outlined),
+      label: const Text('Cari puskesmas di Google Maps'),
+      onPressed: () => _search(faskes.value?.lat == null
+          ? faskesSearchNearbyUri()
+          : faskesSearchUri(faskes.value!.lat!, faskes.value!.lng!)),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -253,53 +298,109 @@ class _FaskesSection extends ConsumerWidget {
           loading: () => const Padding(padding: EdgeInsets.all(KiraSpace.lg), child: Center(child: CircularProgressIndicator.adaptive())),
           error: (e, _) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const SoftNote(
-              icon: Icons.location_off_outlined,
+              icon: Icons.cloud_off_outlined,
               text: 'Daftar tempat cek belum bisa dimuat. Puskesmas atau Posyandu terdekat juga bisa mengukur tensi dan gula darah.',
             ),
             const SizedBox(height: KiraSpace.sm),
-            OutlinedButton.icon(
-              key: const Key('faskes_search_maps'),
-              icon: const Icon(Icons.map_outlined),
-              label: const Text('Cari puskesmas di Google Maps'),
-              onPressed: () => _search(context, ref, defaultLat, defaultLng),
-            ),
+            mapsButton,
           ]),
-          data: (data) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (data.approximate)
-              const Padding(
-                padding: EdgeInsets.only(bottom: KiraSpace.md),
-                child: SoftNote(
-                  key: Key('location_note'),
-                  icon: Icons.location_searching,
-                  text: 'Lokasimu belum aktif, jadi daftar ini memakai area contoh. Aktifkan lokasi untuk yang paling dekat denganmu.',
+          data: (data) {
+            if (data.location != LocationStatus.found) {
+              return _LocationPrompt(
+                status: data.location,
+                onFix: () => _fixLocation(data.location),
+                onMaps: () => _search(faskesSearchNearbyUri()),
+              );
+            }
+            return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (data.mapDataMissing)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: KiraSpace.md),
+                  child: SoftNote(
+                    key: Key('faskes_unavailable'),
+                    icon: Icons.cloud_off_outlined,
+                    text: 'Data peta di sekitarmu belum bisa dimuat. Cari langsung di Google Maps, '
+                        'atau datangi Puskesmas terdekat.',
+                  ),
                 ),
-              ),
-            for (final f in data.faskes)
-              Padding(
-                padding: const EdgeInsets.only(bottom: KiraSpace.sm),
-                child: _FaskesTile(f),
-              ),
-            if (data.faskes.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: KiraSpace.sm),
-                child: Text(
-                  data.faskes.first.source == 'seed'
-                      ? 'Daftar contoh karena data peta belum bisa dimuat. Gunakan tombol di bawah untuk mencari langsung di peta.'
-                      : 'Data dari ${data.faskes.first.source == 'google' ? 'Google Maps' : 'OpenStreetMap'}. Jam buka dan layanan '
-                          'bisa berubah, jadi konfirmasi dulu sebelum berangkat.',
-                  key: const Key('faskes_source'),
-                  style: context.text.bodySmall,
+              for (final f in data.faskes)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: KiraSpace.sm),
+                  child: _FaskesTile(f),
                 ),
-              ),
-            OutlinedButton.icon(
-              key: const Key('faskes_search_maps'),
-              icon: const Icon(Icons.map_outlined),
-              label: const Text('Cari puskesmas lain di Google Maps'),
-              onPressed: () => _search(context, ref, data.lat, data.lng),
-            ),
-          ]),
+              if (data.faskes.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: KiraSpace.sm),
+                  child: Text(
+                    'Data dari ${data.faskes.first.source == 'google' ? 'Google Maps' : 'OpenStreetMap'}. Jam buka dan layanan '
+                    'bisa berubah, jadi konfirmasi dulu sebelum berangkat.',
+                    key: const Key('faskes_source'),
+                    style: context.text.bodySmall,
+                  ),
+                ),
+              mapsButton,
+            ]);
+          },
         ),
       ],
+    );
+  }
+}
+
+/// Ajakan mengaktifkan lokasi, dengan satu tombol yang sesuai penyebabnya. Tanpa lokasi tidak ada daftar contoh.
+class _LocationPrompt extends StatelessWidget {
+  const _LocationPrompt({required this.status, required this.onFix, required this.onMaps});
+  final LocationStatus status;
+  final VoidCallback onFix;
+  final VoidCallback onMaps;
+
+  @override
+  Widget build(BuildContext context) {
+    const title = 'Aktifkan lokasi';
+    const action = 'Aktifkan lokasi';
+    final message = switch (status) {
+      LocationStatus.serviceOff => 'Lokasi di ponselmu sedang mati. Nyalakan supaya KIRA bisa menunjukkan tempat cek terdekat.',
+      LocationStatus.blocked => 'Izin lokasi untuk KIRA ditolak. Izinkan di pengaturan aplikasi, lalu kembali ke sini.',
+      LocationStatus.unavailable => 'Lokasimu belum terbaca. Pastikan lokasi dan GPS di ponselmu menyala.',
+      _ => 'Supaya KIRA bisa menunjukkan puskesmas dan klinik terdekat. Lokasi hanya dipakai untuk pencarian ini.',
+    };
+    return Card(
+      key: const Key('location_prompt'),
+      child: Padding(
+        padding: const EdgeInsets.all(KiraSpace.lg),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(color: context.scheme.primaryContainer, shape: BoxShape.circle),
+            child: Icon(Icons.location_on_outlined, size: 20, color: context.scheme.onPrimaryContainer),
+          ),
+          const SizedBox(width: KiraSpace.md),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const SizedBox(height: KiraSpace.xs),
+              Text(title, style: context.text.titleSmall),
+              const SizedBox(height: 2),
+              Text(message, style: context.text.bodySmall?.copyWith(color: context.scheme.onSurfaceVariant)),
+              const SizedBox(height: KiraSpace.md),
+              Wrap(spacing: KiraSpace.xs, runSpacing: KiraSpace.xs, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                FilledButton.tonal(
+                  key: const Key('location_fix'),
+                  style: FilledButton.styleFrom(minimumSize: const Size(0, 40), padding: const EdgeInsets.symmetric(horizontal: KiraSpace.lg)),
+                  onPressed: onFix,
+                  child: Text(action),
+                ),
+                TextButton(
+                  key: const Key('faskes_search_maps'),
+                  style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
+                  onPressed: onMaps,
+                  child: const Text('Cari di Google Maps'),
+                ),
+              ]),
+            ]),
+          ),
+        ]),
+      ),
     );
   }
 }
@@ -307,6 +408,9 @@ class _FaskesSection extends ConsumerWidget {
 /// Pencarian "puskesmas" di Google Maps di sekitar titik pengguna (tanpa kunci apa pun).
 Uri faskesSearchUri(double lat, double lng, {String query = 'puskesmas'}) =>
     Uri.parse('https://www.google.com/maps/search/${Uri.encodeComponent(query)}/@$lat,$lng,15z');
+
+/// Tanpa koordinat: Google Maps sendiri memakai lokasi perangkat untuk "terdekat".
+Uri faskesSearchNearbyUri() => Uri.parse('https://www.google.com/maps/search/${Uri.encodeComponent('puskesmas terdekat')}');
 
 String faskesKindLabel(String kind) => switch (kind) {
       'puskesmas' => 'Puskesmas',

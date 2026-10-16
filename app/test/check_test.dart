@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kira/core/api_client.dart';
 import 'package:kira/features/check/check_screen.dart';
+import 'package:kira/features/check/location.dart';
 import 'package:kira/shared/models.dart';
 
 import 'support/fakes.dart';
@@ -12,14 +13,16 @@ const glucoseRec = CheckRecommendation(
   reason: 'Proyeksimu masih punya rentang lebar karena gula darahmu belum pernah diukur.',
 );
 
-Future<void> pumpCheck(WidgetTester tester, FakeApi api, {bool located = true}) async {
+Future<void> pumpCheck(WidgetTester tester, FakeApi api, {bool located = true, FakeLocation? location}) async {
   tester.view.physicalSize = const Size(900, 2600);
   tester.view.devicePixelRatio = 2;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(testApp(
     const CheckScreen(),
     api: api,
-    overrides: [locationOverride(located ? (lat: -6.893, lng: 107.613) : null)],
+    overrides: [
+      locationProvider.overrideWithValue(location ?? FakeLocation(located ? (lat: -6.893, lng: 107.613) : null)),
+    ],
   ));
   await tester.pumpAndSettle();
 }
@@ -46,10 +49,54 @@ void main() {
     expect(find.textContaining('0,4 km'), findsOneWidget);
   });
 
-  testWidgets('izin lokasi ditolak: daftar faskes tetap tampil dengan catatan', (tester) async {
-    await pumpCheck(tester, FakeApi()..recommendation = glucoseRec, located: false);
-    expect(find.text('Puskesmas Coblong'), findsOneWidget);
-    expect(find.byKey(const Key('location_note')), findsOneWidget);
+  group('lokasi belum tersedia: tanpa daftar contoh, ada ajakan mengaktifkan lokasi', () {
+    testWidgets('izin belum diberikan: tidak ada daftar, dialog izin baru muncul setelah tombol ditekan', (tester) async {
+      final location = FakeLocation(null, LocationStatus.needsPermission, (lat: -6.893, lng: 107.613));
+      await pumpCheck(tester, FakeApi()..recommendation = glucoseRec, location: location);
+      expect(find.byKey(const Key('location_prompt')), findsOneWidget);
+      expect(find.text('Puskesmas Coblong'), findsNothing);
+      expect(location.calls, isEmpty); // membuka tab Cek tidak langsung memunculkan dialog izin
+
+      await tester.tap(find.byKey(const Key('location_fix')));
+      await tester.pumpAndSettle();
+      expect(location.calls, ['request']);
+      expect(find.byKey(const Key('location_prompt')), findsNothing);
+      expect(find.text('Puskesmas Coblong'), findsOneWidget);
+    });
+
+    testWidgets('lokasi ponsel mati: membuka pengaturan lokasi', (tester) async {
+      final location = FakeLocation(null, LocationStatus.serviceOff);
+      await pumpCheck(tester, FakeApi(), location: location);
+      expect(find.textContaining('Lokasi di ponselmu sedang mati'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('location_fix')));
+      await tester.pumpAndSettle();
+      expect(location.calls, ['location_settings']);
+    });
+
+    testWidgets('izin ditolak permanen: membuka pengaturan aplikasi', (tester) async {
+      final location = FakeLocation(null, LocationStatus.blocked);
+      await pumpCheck(tester, FakeApi(), location: location);
+      expect(find.textContaining('Izin lokasi untuk KIRA ditolak'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('location_fix')));
+      await tester.pumpAndSettle();
+      expect(location.calls, ['app_settings']);
+    });
+
+    testWidgets('posisi belum terbaca: tetap mengarahkan ke pengaturan lokasi, bukan sekadar coba lagi', (tester) async {
+      final location = FakeLocation(null, LocationStatus.unavailable);
+      await pumpCheck(tester, FakeApi(), location: location);
+      expect(find.text('Coba lagi'), findsNothing);
+      await tester.tap(find.byKey(const Key('location_fix')));
+      await tester.pumpAndSettle();
+      expect(location.calls, ['location_settings']);
+    });
+
+    testWidgets('tanpa lokasi, server tidak dipanggil dengan titik contoh', (tester) async {
+      final api = FakeApi();
+      await pumpCheck(tester, api, located: false);
+      expect(api.faskesCalls, 0);
+      expect(find.byKey(const Key('faskes_search_maps')), findsOneWidget);
+    });
   });
 
   testWidgets('gula darah mustahil ditolak di form sebelum dikirim', (tester) async {
@@ -250,7 +297,8 @@ void mapTests() {
     tester.view.devicePixelRatio = 2;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(testApp(const CheckScreen(),
-        api: FakeApi()..recommendation = glucoseRec, overrides: [locationOverride(), linksOverride(FakeLinks(canOpen: false))]));
+        api: FakeApi()..recommendation = glucoseRec,
+        overrides: [locationOverride((lat: -6.893, lng: 107.613)), linksOverride(FakeLinks(canOpen: false))]));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('map_Puskesmas Coblong')));
     await tester.pumpAndSettle();

@@ -144,9 +144,12 @@ void main() {
       expect(find.textContaining('Data dari OpenStreetMap'), findsOneWidget);
     });
 
-    testWidgets('data contoh diberi keterangan jujur dan tombol cari di Google Maps tetap ada', (tester) async {
-      await pumpCheck(tester);
-      expect(find.textContaining('Daftar contoh'), findsOneWidget);
+    testWidgets('server hanya punya daftar contoh: daftar itu tidak ditampilkan, ada keterangan dan tombol Google Maps', (tester) async {
+      final api = FakeApi()
+        ..faskes = const [Faskes(name: 'Puskesmas Contoh', kind: 'puskesmas', distanceKm: 0.4, source: 'seed')];
+      await pumpCheck(tester, api: api);
+      expect(find.text('Puskesmas Contoh'), findsNothing);
+      expect(find.byKey(const Key('faskes_unavailable')), findsOneWidget);
       expect(find.byKey(const Key('faskes_search_maps')), findsOneWidget);
     });
 
