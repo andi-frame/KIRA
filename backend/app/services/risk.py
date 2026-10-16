@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core_calc.bp import bp_category, validate_glucose
+from app.core_calc.heart_rate import validate_bpm
 from app.core_calc.check_trigger import CheckRecommendation as CheckRec
 from app.core_calc.check_trigger import evaluate_check
 from app.core_calc.constants import GLUCOSE_HIGH_FASTING, GLUCOSE_HIGH_HBA1C, GLUCOSE_HIGH_RANDOM
@@ -305,7 +306,12 @@ def _validate(kind: str, value: dict) -> tuple[RedFlag | None, str | None]:
             return detect_red_flags(glucose_mg_dl=mg), None
         if kind == "blood_pressure":
             sys_, dia = int(value["sys"]), int(value["dia"])
+            if "pulse" in value:
+                validate_bpm(float(value["pulse"]))
             return detect_red_flags(bp=(sys_, dia)), bp_category(sys_, dia)
+        if kind == "resting_heart_rate":
+            validate_bpm(float(value["bpm"]))
+            return None, None
         if kind == "hba1c":
             if not 3.0 <= float(value["percent"]) <= 20.0:
                 raise ValueError("HbA1c tidak masuk akal")

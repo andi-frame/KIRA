@@ -29,6 +29,7 @@ CATEGORY_ID = {
 KIND_ID = {
     "fasting_glucose": "Gula darah puasa", "random_glucose": "Gula darah sewaktu",
     "blood_pressure": "Tekanan darah", "hba1c": "HbA1c", "waist": "Lingkar perut",
+    "resting_heart_rate": "Detak jantung istirahat",
 }
 
 
@@ -44,8 +45,10 @@ def _value_text(kind: str, value: dict) -> str:
     if kind == "blood_pressure" and value.get("protocol"):
         return f"{_n(value.get('avg_sys', value.get('sys')))}/{_n(value.get('avg_dia', value.get('dia')))} mmHg ({value.get('readings')} bacaan)"
     if kind == "blood_pressure":
-        return f"{_n(value.get('sys'))}/{_n(value.get('dia'))} mmHg"
-    unit = {"fasting_glucose": "mg/dL", "random_glucose": "mg/dL", "hba1c": "%", "waist": "cm"}.get(kind, "")
+        pulse = f", nadi {_n(value['pulse'])}" if value.get("pulse") else ""
+        return f"{_n(value.get('sys'))}/{_n(value.get('dia'))} mmHg{pulse}"
+    unit = {"fasting_glucose": "mg/dL", "random_glucose": "mg/dL", "hba1c": "%", "waist": "cm",
+            "resting_heart_rate": "kali/menit"}.get(kind, "")
     number = next(iter(value.values()), "")
     return f"{_n(number)} {unit}".strip()
 

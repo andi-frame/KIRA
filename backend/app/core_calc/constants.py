@@ -111,7 +111,7 @@ DAILY_LIMITS_MANAGEMENT = {"sugar_g": 25.0, "sodium_mg": 2000.0, "fat_g": 67.0}
 GLUCOSE_DIABETES_FASTING = 126
 HBA1C_DIABETES = 6.5
 # ASUMSI KIRA: selisih pengukuran pertama dan terakhir di bawah ini dianggap "stabil" (derau pengukuran harian).
-TREND_NOISE = {"sys": 5.0, "dia": 3.0, "fasting_glucose": 10.0, "random_glucose": 20.0, "hba1c": 0.3, "waist": 2.0}
+TREND_NOISE = {"sys": 5.0, "dia": 3.0, "fasting_glucose": 10.0, "random_glucose": 20.0, "hba1c": 0.3, "waist": 2.0, "resting_heart_rate": 5.0}
 
 # Kebutuhan energi per kelompok umur dewasa (kkal/hari). SUMBER (terverifikasi, primer): Permenkes 28/2019 tentang
 # Angka Kecukupan Gizi, Lampiran I Tabel 1 (dibaca dari salinan resmi JDIH BPK, peraturan.bpk.go.id/Details/138621,

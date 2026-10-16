@@ -20,6 +20,7 @@ class ReadingIn(BaseModel):
     sys: int = Field(ge=50, le=300)
     dia: int = Field(ge=30, le=200)
     session: Literal["morning", "evening"]
+    pulse: int | None = Field(default=None, ge=25, le=250)  # detak jantung (kali/menit) dari tensimeter, bila ada
     measured_at: datetime | None = None
 
 
@@ -47,7 +48,8 @@ async def add_reading(
 ) -> dict:
     try:
         row, flag = await svc.add_reading(
-            session, user_id, sys=body.sys, dia=body.dia, session_name=body.session, measured_at=body.measured_at
+            session, user_id, sys=body.sys, dia=body.dia, session_name=body.session, measured_at=body.measured_at,
+            pulse=body.pulse,
         )
     except svc.ProtocolError as exc:
         raise HTTPException(422, str(exc)) from None

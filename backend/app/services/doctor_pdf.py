@@ -26,12 +26,14 @@ GREY_SOFT = colors.HexColor("#EEF2F2")
 CHART_W, CHART_H = 250, 118
 KIND_LABEL = {
     "blood_pressure": "Tekanan darah", "fasting_glucose": "Gula darah puasa", "random_glucose": "Gula darah sewaktu",
-    "hba1c": "HbA1c", "waist": "Lingkar perut",
+    "hba1c": "HbA1c", "waist": "Lingkar perut", "resting_heart_rate": "Detak jantung istirahat",
 }
-UNIT = {"blood_pressure": "mmHg", "fasting_glucose": "mg/dL", "random_glucose": "mg/dL", "hba1c": "%", "waist": "cm"}
+UNIT = {"blood_pressure": "mmHg", "fasting_glucose": "mg/dL", "random_glucose": "mg/dL", "hba1c": "%", "waist": "cm",
+        "resting_heart_rate": "kali/menit"}
 RANGE_ID = {
     "normal": "normal", "prediabetes": "rentang prediabetes", "diabetes_range": "rentang diabetes",
     "below_cutoff": "di bawah ambang", "hypertension": "rentang hipertensi", "prehypertension": "normal-tinggi",
+    "below_range": "di bawah 60", "normal_range": "60-100 (normal)", "above_range": "di atas 100",
 }
 SOURCE_ID = {"ckg": "CKG", "lab": "laboratorium", "self": "ukur sendiri"}
 
@@ -177,7 +179,7 @@ def _triage_table(flags: list[dict], st: dict) -> Table:
 def _latest_results_table(clinical: dict, st: dict) -> Table | None:
     header = ["Pemeriksaan", "Terakhir", "Tanggal", "Sumber", "Rentang", "Tren"]
     rows = [header]
-    for kind in ("blood_pressure", "fasting_glucose", "random_glucose", "hba1c", "waist"):
+    for kind in ("blood_pressure", "fasting_glucose", "random_glucose", "hba1c", "waist", "resting_heart_rate"):
         c = clinical[kind]
         p = c["latest"]
         if p is None:

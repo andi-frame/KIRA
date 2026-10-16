@@ -47,8 +47,8 @@ class ScenarioIn(WhatIfIn):
 
 
 class ResultIn(BaseModel):
-    kind: Literal["fasting_glucose", "random_glucose", "blood_pressure", "hba1c", "waist"]
-    value: dict[str, float]
+    kind: Literal["fasting_glucose", "random_glucose", "blood_pressure", "hba1c", "waist", "resting_heart_rate"]
+    value: dict[str, float]  # tensi boleh memuat "pulse"; detak jantung istirahat: {"bpm": 72}
     measured_at: datetime | None = None
     source: Literal["ckg", "lab", "self"] = "self"
 
