@@ -11,16 +11,23 @@ SAFE_REPLACEMENT = (
 )
 
 # Batang nama obat tanpa batas kata di ujung: "glimepiride", "amlodipine", dst. ikut tertangkap.
+# "insulin" sengaja tidak di sini: juga nama hormon ("kepekaan insulin", "resistensi insulin"), lihat _INSULIN_AS_DRUG.
 _DRUGS = (
-    r"metformin|insulin|glibenklamid|glibenclamid|glimepirid|gliklazid|gliclazid|acarbose|sitagliptin|"
+    r"metformin|glibenklamid|glibenclamid|glimepirid|gliklazid|gliclazid|acarbose|sitagliptin|"
     r"empagliflozin|dapagliflozin|amlodipin|captopril|kaptopril|lisinopril|valsartan|candesartan|losartan|"
     r"bisoprolol|furosemid|simvastatin|atorvastatin"
 )
 _DISEASE = r"(diabetes|hipertensi|darah tinggi|kencing manis)"
 _DRUG_WORD = r"(obat|tablet|pil|kapsul|dosis|suntik|injeksi|resep)"
 _DOSE = r"\d+(?:[.,]\d+)?\s?(?:mg|mcg|ug|iu|unit)\b"
+# Insulin sebagai obat: didahului kata pemakaian, atau diikuti bentuk sediaan/jenis terapi.
+_INSULIN_AS_DRUG = (
+    r"\b(?:suntik(?:an)?|injeksi|pakai|memakai|menggunakan|terapi|resep|dosis)\b.{0,8}\binsulin\b"
+    r"|\binsulin\b.{0,6}\b(?:pen|basal|bolus|kerja|suntik|injeksi|unit|iu|dosis)\b"
+)
 _PATTERNS = [
     rf"\b(?:{_DRUGS})\w*",
+    _INSULIN_AS_DRUG,
     rf"\b{_DRUG_WORD}\b.{{0,40}}{_DOSE}",
     rf"{_DOSE}.{{0,40}}\b{_DRUG_WORD}\b",
     r"\b(hentikan|stop|berhenti)\b.{0,15}\bobat",

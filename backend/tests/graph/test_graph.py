@@ -153,7 +153,8 @@ async def test_demo_cache_short_circuits_models(session_maker, make_user, tmp_pa
 @pytest.mark.parametrize(
     "text_",
     ["Minum metformin 500 mg dua kali sehari ya", "Kamu menderita diabetes", "Hentikan obat tensimu",
-     "Dosis insulin yang pas untukmu 10 unit", "Kamu aman, makan saja sepuasnya", "Masih di batas amanmu hari ini"],
+     "Dosis insulin yang pas untukmu 10 unit", "Kamu aman, makan saja sepuasnya", "Masih di batas amanmu hari ini",
+     "Mungkin kamu perlu suntik insulin", "Coba mulai pakai insulin ya", "Insulin basal biasanya malam hari"],
 )
 def test_guardrail_rejects_medication_diagnosis_and_safe_claims(text_):
     ok, safe = check_reply(text_)
@@ -164,7 +165,11 @@ def test_guardrail_rejects_medication_diagnosis_and_safe_claims(text_):
     "text_",
     ["Natrium dari rendang itu sekitar 420 mg, masih sesuai targetmu hari ini.",
      "Coba ganti es teh manis jadi tawar minggu ini.",
-     "Kalau ada obat dari dokter, ikuti arahannya ya."],
+     "Kalau ada obat dari dokter, ikuti arahannya ya.",
+     # terukur pada model sungguhan: istilah fisiologi ini dulu ditolak sebagai nama obat
+     "Mengurangi gorengan membantu memperbaiki kepekaan insulin dan menjaga berat badan.",
+     "Tidur kurang bisa memicu resistensi insulin, jadi coba tidur lebih awal ya.",
+     "Kamu perlu menjaga kepekaan insulin dengan rutin bergerak."],
 )
 def test_guardrail_allows_normal_lifestyle_replies(text_):
     assert check_reply(text_) == (True, text_)
