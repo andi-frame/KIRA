@@ -54,6 +54,11 @@ abstract class KiraApi {
   Future<List<FoodSuggestion>> searchFoods(String query);
   Future<HistoryPage> getHistory({int days = 14, String? before});
   Future<DashboardData> getDashboard();
+  Future<DayPlan> getPlanToday();
+  Future<List<DayPlan>> getPlanWeek();
+  Future<DayPlan> swapPlan(String slot);
+  Future<PlanPreferences> getPlanPreferences();
+  Future<PlanPreferences> savePlanPreferences(PlanPreferences prefs);
   Future<Projection> getProjection();
   Future<WhatIfResult> whatIf(WhatIfChange change);
   Future<CheckRecommendation?> getCheck();
@@ -294,6 +299,30 @@ class DioKiraApi implements KiraApi {
   Future<MealLog> patchLog(String logId, {List<Map<String, dynamic>>? items, double? scale, String? group}) => _run(
         () => _dio.patch('/logs/$logId', data: {'items': ?items, 'scale': ?scale, 'group': ?group}),
         (d) => MealLog.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<DayPlan> getPlanToday() =>
+      _run(() => _dio.get('/plan/today'), (d) => DayPlan.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<List<DayPlan>> getPlanWeek() => _run(
+        () => _dio.get('/plan/week'),
+        (d) => ((d as Map<String, dynamic>)['days'] as List).map((e) => DayPlan.fromJson(e as Map<String, dynamic>)).toList(),
+      );
+
+  @override
+  Future<DayPlan> swapPlan(String slot) =>
+      _run(() => _dio.post('/plan/today/swap', data: {'slot': slot}), (d) => DayPlan.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<PlanPreferences> getPlanPreferences() =>
+      _run(() => _dio.get('/plan/preferences'), (d) => PlanPreferences.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<PlanPreferences> savePlanPreferences(PlanPreferences prefs) => _run(
+        () => _dio.put('/plan/preferences', data: prefs.toJson()),
+        (d) => PlanPreferences.fromJson(d as Map<String, dynamic>),
       );
 
   @override

@@ -120,6 +120,14 @@ class FakeApi implements KiraApi {
   Object? patchError;
   final List<String> searches = [];
   int dashboardCalls = 0;
+  int planTodayCalls = 0;
+  Object? planError;
+  DayPlan planToday = fakeDayPlan(DateTime(2026, 10, 16));
+  List<DayPlan> planWeek = [for (var i = 0; i < 7; i++) fakeDayPlan(DateTime(2026, 10, 16 + i))];
+  final List<String> swaps = [];
+  DayPlan Function(String slot)? onSwap;
+  PlanPreferences planPrefs = const PlanPreferences();
+  final List<PlanPreferences> savedPlanPrefs = [];
   Object? dashboardError;
   DashboardData dashboard = const DashboardData(
     today: TodayStatus(),
@@ -303,6 +311,32 @@ class FakeApi implements KiraApi {
     patchScales.add((scale: scale, group: group));
     if (patchError != null) throw patchError!;
     return patchResult ?? MealLog(id: logId, corrected: true);
+  }
+
+  @override
+  Future<DayPlan> getPlanToday() async {
+    planTodayCalls++;
+    if (planError != null) throw planError!;
+    return planToday;
+  }
+
+  @override
+  Future<List<DayPlan>> getPlanWeek() async => planWeek;
+
+  @override
+  Future<DayPlan> swapPlan(String slot) async {
+    swaps.add(slot);
+    return onSwap?.call(slot) ?? planToday;
+  }
+
+  @override
+  Future<PlanPreferences> getPlanPreferences() async => planPrefs;
+
+  @override
+  Future<PlanPreferences> savePlanPreferences(PlanPreferences prefs) async {
+    savedPlanPrefs.add(prefs);
+    planPrefs = prefs;
+    return prefs;
   }
 
   @override
@@ -918,3 +952,25 @@ Goal sampleGoal({
     weeksWithData: weeksWithData,
   );
 }
+
+
+DayPlan fakeDayPlan(DateTime date, {String lunch = 'Nasi warteg'}) => DayPlan(
+      date: date,
+      kcalTarget: 2650,
+      energySource: 'AKG 2019 (Permenkes 28/2019) untuk laki-laki 28 tahun',
+      meals: [
+        const PlanMeal(slot: 'breakfast', label: 'sarapan', time: '06:30', title: 'Roti telur', why: 'Gula 4 g, masih di bawah anggaran sarapan 12 g; 280 kkal.',
+            totals: NutrientTotals(kcal: 280, sugarG: 4, sodiumMg: 320, fatG: 12),
+            components: [PlanComponent(name: 'Roti tawar', grams: 60, kcal: 149), PlanComponent(name: 'Telur ceplok', grams: 50, kcal: 92)]),
+        PlanMeal(slot: 'lunch', label: 'makan siang', time: '12:00', title: lunch, why: 'Natrium 480 mg, masih di bawah anggaran makan siang 700 mg; 460 kkal.',
+            totals: const NutrientTotals(kcal: 460, sugarG: 3, sodiumMg: 480, fatG: 14)),
+        const PlanMeal(slot: 'snack', label: 'selingan', time: '15:30', title: 'Pisang', why: 'Gula 12 g; 90 kkal.',
+            totals: NutrientTotals(kcal: 90, sugarG: 12)),
+        const PlanMeal(slot: 'dinner', label: 'makan malam', time: '18:30', title: 'Pecel lele', why: 'Lemak 20 g; 540 kkal.',
+            totals: NutrientTotals(kcal: 540, sugarG: 6, sodiumMg: 650, fatG: 20)),
+      ],
+      exercise: const PlanExercise(minutes: 10, activity: 'jalan cepat', time: '17:00',
+          why: 'Mulai dari 50 menit minggu ini, naik bertahap sampai 150 menit (WHO 2020).'),
+      sleep: const PlanSleep(hours: 8, bedtime: '22:00', wakeTime: '06:00', why: 'Rata-rata tidurmu belakangan di bawah 7 jam, jadi targetnya 8 jam.'),
+      disclaimer: 'Rencana ini usulan untuk membantu kebiasaan sehari-hari, bukan resep atau terapi gizi.',
+    );

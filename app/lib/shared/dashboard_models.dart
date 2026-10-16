@@ -72,6 +72,41 @@ class NextAction {
   factory NextAction.fromJson(Map<String, dynamic> j) => NextAction(kind: j['kind'] as String, text: j['text'] as String);
 }
 
+/// Ringkasan rencana hari ini untuk kartu Beranda (rincian lengkap di layar Rencana).
+class PlanCard {
+  const PlanCard({this.meals = const [], this.exerciseText, this.exerciseDone = false, this.bedtime, this.adapted});
+  final List<({String label, String? time, String? title, bool done})> meals;
+  final String? exerciseText;
+  final bool exerciseDone;
+  final String? bedtime;
+  final String? adapted;
+
+  factory PlanCard.fromJson(Map<String, dynamic> j) {
+    final ex = j['exercise'] as Map<String, dynamic>?;
+    String? exText;
+    if (ex != null) {
+      exText = (ex['blocked'] as bool? ?? false)
+          ? 'Latihan baru ditahan dulu'
+          : '${ex['activity'] ?? 'jalan cepat'} ${(ex['minutes'] as num?)?.toInt() ?? 0} menit';
+    }
+    return PlanCard(
+      meals: [
+        for (final m in (j['meals'] as List? ?? const []))
+          (
+            label: (m as Map<String, dynamic>)['label'] as String,
+            time: m['time'] as String?,
+            title: m['title'] as String?,
+            done: (m['done'] as bool?) ?? false,
+          ),
+      ],
+      exerciseText: exText,
+      exerciseDone: (ex?['done'] as bool?) ?? false,
+      bedtime: (j['sleep'] as Map<String, dynamic>?)?['bedtime'] as String?,
+      adapted: j['adapted'] as String?,
+    );
+  }
+}
+
 class DashboardData {
   const DashboardData({
     required this.today,
@@ -87,7 +122,7 @@ class DashboardData {
   final List<HabitSignal> signals;
   final String dataQuality; // cukup | kurang
   final int loggedDays;
-  final Map<String, dynamic>? planToday; // Fase 4
+  final PlanCard? planToday;
 
   bool get enoughData => dataQuality == 'cukup';
 
@@ -97,6 +132,6 @@ class DashboardData {
         signals: (j['signals'] as List? ?? const []).map((e) => HabitSignal.fromJson(e as Map<String, dynamic>)).toList(),
         dataQuality: (j['data_quality'] as String?) ?? 'cukup',
         loggedDays: (j['logged_days'] as int?) ?? 0,
-        planToday: j['plan_today'] as Map<String, dynamic>?,
+        planToday: j['plan_today'] == null ? null : PlanCard.fromJson(j['plan_today'] as Map<String, dynamic>),
       );
 }

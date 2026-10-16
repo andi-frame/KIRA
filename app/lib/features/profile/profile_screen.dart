@@ -90,6 +90,15 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 const Divider(),
                 ListTile(
+                  key: const Key('tile_plan'),
+                  leading: const Icon(Icons.event_note_outlined),
+                  title: const Text('Rencana'),
+                  subtitle: const Text('Usulan makan, olahraga, dan tidur hari ini dan minggu ini'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/plan'),
+                ),
+                const Divider(),
+                ListTile(
                   key: const Key('tile_reminders'),
                   leading: const Icon(Icons.notifications_none),
                   title: const Text('Pengingat'),

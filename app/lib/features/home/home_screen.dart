@@ -72,6 +72,10 @@ class DashboardCards extends ConsumerWidget {
         _NextActionCard(action: d.nextAction, now: ref.read(clockProvider)()),
         const SizedBox(height: KiraSpace.lg),
         _TodayCard(today: d.today),
+        if (d.planToday != null) ...[
+          const SizedBox(height: KiraSpace.lg),
+          _PlanCardView(plan: d.planToday!),
+        ],
         const SizedBox(height: KiraSpace.lg),
         _SignalsCard(data: d),
       ]),
@@ -287,6 +291,50 @@ class _SignalTile extends StatelessWidget {
         const SizedBox(height: KiraSpace.xs),
         Text('Sumber: ${signal.source}', style: context.text.bodySmall),
       ],
+    );
+  }
+}
+
+
+class _PlanCardView extends StatelessWidget {
+  const _PlanCardView({required this.plan});
+  final PlanCard plan;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget row(IconData icon, String text, bool done) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(children: [
+            Icon(done ? Icons.check_circle : icon, size: 18,
+                color: done ? context.kira.improve : context.scheme.onSurfaceVariant),
+            const SizedBox(width: KiraSpace.sm),
+            Expanded(child: Text(done ? '$text (sudah)' : text, style: context.text.bodyMedium)),
+          ]),
+        );
+    return Card(
+      key: const Key('plan_card'),
+      child: InkWell(
+        onTap: () => context.push('/plan'),
+        borderRadius: BorderRadius.circular(KiraRadius.card),
+        child: Padding(
+          padding: const EdgeInsets.all(KiraSpace.lg),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Expanded(child: Text('Rencana hari ini', style: context.text.titleMedium)),
+              const Icon(Icons.chevron_right),
+            ]),
+            if (plan.adapted != null) Text(plan.adapted!, style: context.text.bodySmall),
+            const SizedBox(height: KiraSpace.xs),
+            for (final m in plan.meals)
+              if (m.title != null)
+                row(Icons.restaurant_outlined, '${m.time?.replaceAll(':', '.') ?? ''} ${m.label}: ${m.title}'.trim(), m.done),
+            if (plan.exerciseText != null) row(Icons.directions_walk, 'Olahraga: ${plan.exerciseText}', plan.exerciseDone),
+            if (plan.bedtime != null) row(Icons.bedtime_outlined, 'Tidur jam ${plan.bedtime!.replaceAll(':', '.')}', false),
+            const SizedBox(height: KiraSpace.xs),
+            Text('Usulan, bukan resep. Ketuk untuk rincian dan ganti usulan.', style: context.text.bodySmall),
+          ]),
+        ),
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'meal_models.dart';
 
 export 'dashboard_models.dart';
 export 'meal_models.dart';
+export 'plan_models.dart';
 
 double? _d(Object? v) => v is num ? v.toDouble() : null;
 List<double> _dl(Object? v) => (v as List? ?? const []).map((e) => (e as num).toDouble()).toList();
