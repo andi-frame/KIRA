@@ -84,9 +84,9 @@ Delapan node sesuai dokumen: `extract → safety_check → (emergency_reply | sa
 
 ## 7. Aplikasi Flutter
 
-Lima layar: Onboarding (komponen chat yang sama), Chat (teks, rekam suara, kamera, kartu ekstraksi yang bisa dikoreksi), Kira-kira 10 Tahun (kurva + pita, kurva kedua dari slider ber-debounce 300 ms, kartu kebiasaan paling berdampak), Saatnya cek (alasan, jenis cek, daftar faskes, tombol masukkan hasil), dan Profil sederhana (mode saja). Paket: riverpod, dio, go_router, record, image_picker, fl_chart, flutter_secure_storage.
+Layar utama dengan bilah bawah 4 tujuan: Ngobrol (chat teks, rekam suara, kamera, kartu ekstraksi), Beranda (ringkasan target harian, kartu aksi, dan proyeksi Kira-kira 10 Tahun dengan kurva + pita), Riwayat (riwayat makanan dan kebiasaan 14 hari), dan Cek (alasan, jenis cek, daftar faskes terdekat, tombol masukkan hasil). Profil diakses dari avatar bilah atas. Paket: riverpod, dio, go_router, record, image_picker, fl_chart, flutter_secure_storage.
 
-Arah visual: tenang, native, tipografi dan palet dipilih sengaja (bukan tema Material bawaan), proyeksi selalu bersama jalur perbaikan, bahasa tidak menakut-nakuti. Detail visual diputuskan saat implementasi lewat skill desain dan diverifikasi dengan Playwright pada build web.
+Arah visual: tenang, native, palet Discord dark gray (`#313338`) dengan aksen hijau KIRA dan kuning hangat untuk perhatian, menghindari *cognitive overload* dan template kaku. Detail visual mutakhir dikunci dan didokumentasikan di `docs/superpowers/design/kira-visual-direction.md`.
 
 ## 8. Keamanan dan privasi
 
