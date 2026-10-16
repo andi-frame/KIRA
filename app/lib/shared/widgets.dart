@@ -45,7 +45,7 @@ class EmergencyCard extends StatelessWidget {
   }
 }
 
-/// Kotak informasi lembut untuk status kosong, catatan, atau penjelasan.
+/// Catatan kecil untuk penjelasan atau privasi: ikon dan teks tanpa kotak tebal, supaya tidak bersaing dengan isi.
 class SoftNote extends StatelessWidget {
   const SoftNote({super.key, required this.icon, required this.text, this.title});
   final IconData icon;
@@ -55,27 +55,143 @@ class SoftNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(KiraSpace.lg),
+      padding: const EdgeInsets.symmetric(horizontal: KiraSpace.md, vertical: KiraSpace.md),
       decoration: BoxDecoration(
         color: context.scheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(KiraRadius.card),
+        borderRadius: BorderRadius.circular(KiraRadius.field),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: context.scheme.onSurfaceVariant),
+          Icon(icon, size: 20, color: context.scheme.primary),
           const SizedBox(width: KiraSpace.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (title != null) Text(title!, style: context.text.titleSmall),
-                Text(text, style: context.text.bodyMedium?.copyWith(color: context.scheme.onSurfaceVariant)),
+                if (title != null) ...[
+                  Text(title!, style: context.text.titleSmall),
+                  const SizedBox(height: 2),
+                ],
+                Text(text, style: context.text.bodySmall?.copyWith(color: context.scheme.onSurfaceVariant)),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Judul kelompok di luar kartu, memberi hierarki pada halaman panjang.
+class SectionHeader extends StatelessWidget {
+  const SectionHeader(this.title, {super.key, this.subtitle, this.trailing});
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(KiraSpace.xs, KiraSpace.xl, KiraSpace.xs, KiraSpace.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: context.text.titleLarge),
+              if (subtitle != null) Text(subtitle!, style: context.text.bodySmall),
+            ]),
+          ),
+          ?trailing,
+        ],
+      ),
+    );
+  }
+}
+
+/// Status kosong: maskot KIRA, satu kalimat, dan (bila ada) satu langkah berikutnya.
+class EmptyState extends StatelessWidget {
+  const EmptyState({super.key, required this.title, required this.message, this.action});
+  final String title;
+  final String message;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: KiraSpace.lg, vertical: KiraSpace.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Opacity(
+            opacity: 0.9,
+            child: Image.asset('assets/icon/icon.png', width: 72, height: 72, excludeFromSemantics: true),
+          ),
+          const SizedBox(height: KiraSpace.lg),
+          Text(title, textAlign: TextAlign.center, style: context.text.titleMedium),
+          const SizedBox(height: KiraSpace.xs),
+          Text(message, textAlign: TextAlign.center, style: context.text.bodyMedium?.copyWith(color: context.scheme.onSurfaceVariant)),
+          if (action != null) ...[
+            const SizedBox(height: KiraSpace.lg),
+            action!,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Tautan kecil "Sumber" yang membuka rujukannya di lembar bawah: rujukan tetap bisa dibaca tanpa memenuhi layar.
+class SourceLink extends StatelessWidget {
+  const SourceLink(this.source, {super.key, this.label = 'Sumber'});
+  final String source;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: KiraSpace.sm),
+        minimumSize: const Size(0, 36),
+        textStyle: context.text.labelMedium,
+        foregroundColor: context.scheme.onSurfaceVariant,
+      ),
+      icon: const Icon(Icons.menu_book_outlined, size: 16),
+      label: Text(label),
+      onPressed: () => showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (ctx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(KiraSpace.xl, 0, KiraSpace.xl, KiraSpace.xl),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(label, style: ctx.text.titleMedium),
+              const SizedBox(height: KiraSpace.sm),
+              Text(source, style: ctx.text.bodyMedium),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Kumpulan tautan utilitas dalam satu kartu, dipisah garis tipis.
+class LinkGroup extends StatelessWidget {
+  const LinkGroup({super.key, required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: [
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0) Divider(height: 1, indent: 56, color: context.scheme.outlineVariant.withValues(alpha: 0.5)),
+          children[i],
+        ],
+      ]),
     );
   }
 }
@@ -126,7 +242,7 @@ class ChatBubble extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: mine ? scheme.primaryContainer : scheme.surfaceContainerLowest,
                   borderRadius: radius,
-                  border: mine ? null : Border.all(color: scheme.outlineVariant),
+                  border: mine ? null : Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
                 ),
                 child: Text(
                   text,
