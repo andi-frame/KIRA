@@ -659,8 +659,13 @@ class FakeApi implements KiraApi {
   @override
   Future<void> postDiagnosis(String condition) async => diagnoses.add(condition);
 
+  Object? faskesError;
+
   @override
-  Future<List<Faskes>> nearbyFaskes(double lat, double lng) async => faskes;
+  Future<List<Faskes>> nearbyFaskes(double lat, double lng) async {
+    if (faskesError != null) throw faskesError!;
+    return faskes;
+  }
 
   FamilyOverview family = const FamilyOverview();
   final List<({String phone, FamilyPermissions permissions})> invites = [];

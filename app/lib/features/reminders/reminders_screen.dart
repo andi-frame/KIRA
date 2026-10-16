@@ -43,7 +43,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Pengingat')),
       body: ListView(
-        padding: const EdgeInsets.all(KiraSpace.lg),
+        padding: context.pagePadding,
         children: [
           Text(
             'Pengingat lembut di ponselmu, hanya yang kamu nyalakan. Isi notifikasinya tidak memuat data kesehatan, '

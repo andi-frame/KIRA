@@ -111,7 +111,7 @@ class _BarcodeScreenState extends ConsumerState<BarcodeScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Pindai kode batang')),
       body: ListView(
-        padding: const EdgeInsets.all(KiraSpace.lg),
+        padding: context.pagePadding,
         children: [
           if (_logged != null)
             _Logged(result: _logged!, onAnother: _reset)

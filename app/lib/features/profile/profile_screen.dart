@@ -20,7 +20,7 @@ class ProfileScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
         error: (_, _) => const Center(child: Text('Profil belum bisa dimuat.')),
         data: (p) => ListView(
-          padding: const EdgeInsets.all(KiraSpace.lg),
+          padding: context.pagePadding,
           children: [
             Card(
               child: Padding(

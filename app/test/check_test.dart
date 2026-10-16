@@ -238,8 +238,10 @@ void mapTests() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('map_Puskesmas Coblong')));
     await tester.pumpAndSettle();
+    // Rute di Google Maps ke koordinat tempat itu (bukan sekadar titik), bisa dibuka tanpa kunci apa pun.
     expect(links.opened.single.host, 'www.google.com');
-    expect(links.opened.single.queryParameters['query'], 'Puskesmas Coblong @-6.893,107.613');
+    expect(links.opened.single.path, '/maps/dir/');
+    expect(links.opened.single.queryParameters['destination'], '-6.893,107.613');
     expect(find.byKey(const Key('map_Posyandu Melati')), findsNothing); // tanpa koordinat: tidak ada tombol
   });
 

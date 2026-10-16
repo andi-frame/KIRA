@@ -395,16 +395,20 @@ class Faskes {
 }
 
 class ResultOutcome {
-  const ResultOutcome({required this.saved, this.redFlagMessage, this.bpCategory, this.projection});
+  const ResultOutcome({required this.saved, this.redFlagMessage, this.bpCategory, this.hrRange, this.projection});
   final bool saved;
   final String? redFlagMessage;
   final String? bpCategory;
+
+  /// Untuk detak jantung istirahat: below_range (< 60) | normal_range (60-100) | above_range (> 100).
+  final String? hrRange;
   final Projection? projection;
 
   factory ResultOutcome.fromJson(Map<String, dynamic> j) => ResultOutcome(
         saved: j['saved'] as bool,
         redFlagMessage: (j['red_flag'] as Map<String, dynamic>?)?['message'] as String?,
         bpCategory: j['bp_category'] as String?,
+        hrRange: j['hr_range'] as String?,
         projection: j['projection'] == null ? null : Projection.fromJson(j['projection'] as Map<String, dynamic>),
       );
 }

@@ -88,7 +88,7 @@ class _FormState extends ConsumerState<_Form> {
   Widget build(BuildContext context) {
     final p = _p;
     return ListView(
-      padding: const EdgeInsets.all(KiraSpace.lg),
+      padding: context.pagePadding,
       children: [
         Text('Jam', style: context.text.titleMedium),
         _timeTile('pref_wake', 'Bangun', p.wakeTime, (v) => _p = p.copyWith(wakeTime: v)),

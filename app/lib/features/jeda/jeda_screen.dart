@@ -50,7 +50,7 @@ class _JedaScreenState extends ConsumerState<JedaScreen> with WidgetsBindingObse
     return Scaffold(
       appBar: AppBar(title: const Text('Jeda sosmed')),
       body: ListView(
-        padding: const EdgeInsets.all(KiraSpace.lg),
+        padding: context.pagePadding,
         children: [
           Text(
             'Sebelum membuka Instagram, X, Facebook, atau aplikasi lain yang kamu pilih, KIRA menampilkan satu kartu '

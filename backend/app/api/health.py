@@ -167,6 +167,7 @@ async def post_result(
         "saved": outcome.saved,
         "red_flag": _flag(outcome.red_flag),
         "bp_category": outcome.bp_category,
+        "hr_range": classify_resting(body.value["bpm"]) if body.kind == "resting_heart_rate" and outcome.saved else None,
         "projection": projection_payload(outcome.state),
     }
     await idempotency.remember(session, user_id, key, out)

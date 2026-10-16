@@ -52,7 +52,7 @@ class _HistoryList extends ConsumerWidget {
     return ListView(
       key: const Key('history_list'),
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(KiraSpace.lg),
+      padding: context.pagePadding,
       children: [
         if (!anyLogged)
           const SoftNote(

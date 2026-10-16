@@ -71,7 +71,7 @@ class _Content extends ConsumerWidget {
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(KiraSpace.lg),
+      padding: context.pagePadding,
       children: [
         ...leading,
         if (p.needsProfile)

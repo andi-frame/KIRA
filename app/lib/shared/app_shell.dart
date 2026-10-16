@@ -5,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/outbox.dart';
+import '../core/refresh.dart';
 import '../core/providers.dart';
 import '../features/chat/chat_controller.dart';
 import '../features/health/health_sync.dart';
-import '../features/home/home_screen.dart';
 import '../features/jeda/jeda_bridge.dart';
 import '../features/jeda/jeda_controller.dart';
 import '../features/privacy/consent_gate.dart';
@@ -38,7 +38,8 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      ref.invalidate(dashboardProvider); // kondisi hari ini bisa berubah selama aplikasi tertutup
+      // Catatan bisa berubah selama aplikasi tertutup (WhatsApp, perangkat lain): muat ulang semua tampilan turunannya.
+      refreshHealthData(ref.invalidate);
       unawaited(ref.read(chatProvider.notifier).syncDay()); // hari berganti: obrolan hari baru mulai bersih
       unawaited(_flushOutbox());
       unawaited(ref.read(remindersProvider.notifier).reschedule());

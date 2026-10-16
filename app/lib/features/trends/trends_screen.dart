@@ -9,7 +9,9 @@ import '../../shared/widgets.dart';
 import 'insight_cards.dart';
 import 'trends_widgets.dart';
 
-final trendsProvider = FutureProvider.family<TrendsData, int>((ref, days) {
+/// autoDispose: membuka Tren selalu mengambil data terbaru (catatan bisa masuk dari WhatsApp atau perangkat lain tanpa
+/// lewat aplikasi ini), dan koreksi/penghapusan memuat ulang lewat refreshHealthData.
+final trendsProvider = FutureProvider.autoDispose.family<TrendsData, int>((ref, days) {
   ref.watch(authProvider.select((s) => s.token));
   return ref.read(apiProvider).getTrends(days);
 });
@@ -31,7 +33,7 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Tren dan penanda')),
       body: ListView(
-        padding: const EdgeInsets.all(KiraSpace.lg),
+        padding: context.pagePadding,
         children: [
           Text('Gambaran hasil pemeriksaan dan kebiasaanmu dari waktu ke waktu, untuk dibahas bersama dokter.',
               style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurfaceVariant)),

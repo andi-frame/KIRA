@@ -54,7 +54,7 @@ class _HealthScreenState extends ConsumerState<HealthScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Langkah dan tidur')),
       body: ListView(
-        padding: const EdgeInsets.all(KiraSpace.lg),
+        padding: context.pagePadding,
         children: [
           Text(
             'Kalau kamu mau, KIRA bisa mengisi catatan langkah dan tidur dari Health Connect di ponselmu, jadi kamu tidak perlu mengetiknya.',
