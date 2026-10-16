@@ -284,10 +284,10 @@ class _InputBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     return Container(
-      padding: const EdgeInsets.fromLTRB(KiraSpace.sm, KiraSpace.sm, KiraSpace.sm, KiraSpace.sm),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLowest,
-        border: Border(top: BorderSide(color: scheme.outlineVariant)),
+        border: Border(top: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.25))),
       ),
       child: recording
           ? Row(
@@ -304,9 +304,9 @@ class _InputBar extends StatelessWidget {
               children: [
                 IconButton(
                   key: const Key('camera_button'),
-                  style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+                  style: IconButton.styleFrom(minimumSize: const Size(44, 44)),
                   tooltip: 'Kirim foto makanan, struk, label gizi, atau hasil cek',
-                  icon: const Icon(Icons.photo_camera_outlined),
+                  icon: const Icon(Icons.photo_camera_outlined, size: 22),
                   onPressed: onCamera,
                 ),
                 Expanded(
@@ -317,16 +317,37 @@ class _InputBar extends StatelessWidget {
                     maxLines: 4,
                     textCapitalization: TextCapitalization.sentences,
                     onChanged: (_) => onChanged(),
-                    decoration: const InputDecoration(hintText: 'Ceritakan harimu...', isDense: true),
+                    decoration: InputDecoration(
+                      hintText: 'Ceritakan harimu...',
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.25)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.25)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: scheme.primary, width: 1.5),
+                      ),
+                      fillColor: scheme.surfaceContainer,
+                    ),
                   ),
                 ),
-                const SizedBox(width: KiraSpace.xs),
+                const SizedBox(width: 4),
                 _MicButton(recording: false, onStart: onRecordStart, onEnd: onRecordEnd),
                 IconButton.filled(
                   key: const Key('send_button'),
-                  style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(42, 42),
+                    backgroundColor: hasText ? scheme.primary : scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                    foregroundColor: hasText ? scheme.onPrimary : scheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  ),
                   tooltip: 'Kirim',
-                  icon: const Icon(Icons.arrow_upward),
+                  icon: const Icon(Icons.arrow_upward, size: 20),
                   onPressed: hasText ? onSend : null,
                 ),
               ],

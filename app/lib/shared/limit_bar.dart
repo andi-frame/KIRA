@@ -22,21 +22,49 @@ class LimitBar extends StatelessWidget {
       label: '$label ${nutrientNumber(value)} dari batas ${nutrientNumber(limit)} $unit, $words',
       child: ExcludeSemantics(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: KiraSpace.xs),
+          padding: const EdgeInsets.symmetric(vertical: 3),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Expanded(child: Text('$label ${nutrientNumber(value)} / ${nutrientNumber(limit)} $unit',
-                  style: context.text.bodyMedium)),
-              Text(words, style: context.text.bodySmall?.copyWith(fontWeight: over ? FontWeight.w700 : null)),
-            ]),
-            const SizedBox(height: 2),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Text(label, style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${nutrientNumber(value)} / ${nutrientNumber(limit)} $unit',
+                        style: context.text.bodySmall?.copyWith(color: context.scheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: over
+                        ? context.kira.attentionContainer.withValues(alpha: 0.5)
+                        : context.scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    words,
+                    style: context.text.labelSmall?.copyWith(
+                      color: over ? context.kira.attention : context.scheme.onSurfaceVariant,
+                      fontWeight: over ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(999),
               child: LinearProgressIndicator(
                 value: limit <= 0 ? 0 : (value / limit).clamp(0, 1).toDouble(),
-                minHeight: 6,
+                minHeight: 7,
                 color: color,
-                backgroundColor: context.scheme.surfaceContainerHighest,
+                backgroundColor: context.scheme.surfaceContainerHighest.withValues(alpha: 0.5),
               ),
             ),
           ]),
