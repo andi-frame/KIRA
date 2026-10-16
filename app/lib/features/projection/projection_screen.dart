@@ -74,6 +74,7 @@ class _Content extends ConsumerWidget {
       padding: context.pagePadding,
       children: [
         ...leading,
+        if (leading.isNotEmpty) const SectionHeader('Kira-kira 10 tahun'),
         if (p.needsProfile)
           Padding(
             padding: const EdgeInsets.only(bottom: KiraSpace.lg),

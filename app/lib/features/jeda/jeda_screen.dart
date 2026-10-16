@@ -55,13 +55,7 @@ class _JedaScreenState extends ConsumerState<JedaScreen> with WidgetsBindingObse
       body: ListView(
         padding: context.pagePadding,
         children: [
-          Text(
-            'Sebelum membuka Instagram, X, Facebook, atau aplikasi lain yang kamu pilih, KIRA menampilkan satu kartu '
-            'singkat: rencana pagi, ajakan mencatat malam hari, atau pengingat tidur. Kamu yang menentukan, dan bisa '
-            'dimatikan kapan saja.',
-            style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: KiraSpace.lg),
+          const PageIntro('Satu kartu singkat sebelum kamu membuka sosmed pilihanmu. Bisa dimatikan kapan saja.'),
           if (!bridge.supported)
             const SoftNote(
               key: Key('jeda_unsupported'),

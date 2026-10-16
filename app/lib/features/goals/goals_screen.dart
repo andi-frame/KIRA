@@ -158,14 +158,13 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
         data: (data) => ListView(
           padding: context.pagePadding,
           children: [
-            Text(
-              'Target kecil yang bisa dicapai, dihitung otomatis dari catatanmu Senin sampai Minggu. '
-              'Minggu tanpa catatan tidak dihitung sebagai gagal.',
-              style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: KiraSpace.lg),
+            const PageIntro('Dihitung otomatis dari catatanmu Senin sampai Minggu. Minggu tanpa catatan tidak dihitung sebagai gagal.'),
             if (data.goals.isEmpty)
-              const SoftNote(key: Key('goals_empty'), icon: Icons.flag_outlined, text: 'Belum ada target. Pilih satu untuk mulai.'),
+              const EmptyState(
+                key: Key('goals_empty'),
+                title: 'Belum ada target',
+                message: 'Pilih satu target kecil untuk mulai, misalnya bergerak 150 menit seminggu.',
+              ),
             for (final g in data.goals)
               Card(
                 key: Key('goal_${g.kind}'),
@@ -194,11 +193,14 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                 onPressed: () => _add(data),
               ),
             ],
-            const SizedBox(height: KiraSpace.lg),
-            Text(
-              'Acuan: 150 menit aktivitas sedang per minggu (WHO 2020) dan tidur 7 jam atau lebih (konsensus AASM/SRS). '
-              'Batas minuman manis dan hari mencatat adalah usul KIRA; sesuaikan dengan dirimu.',
-              style: context.text.bodySmall,
+            const SizedBox(height: KiraSpace.sm),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: SourceLink(
+                'Acuan: 150 menit aktivitas sedang per minggu (WHO 2020) dan tidur 7 jam atau lebih (konsensus AASM/SRS). '
+                'Batas minuman manis dan hari mencatat adalah usul KIRA; sesuaikan dengan dirimu.',
+                label: 'Acuan',
+              ),
             ),
           ],
         ),

@@ -72,45 +72,38 @@ class CheckScreen extends ConsumerWidget {
             padding: context.pagePadding,
             children: [
               rec == null ? const _EmptyState() : _RecommendationCard(rec: rec),
-              const SizedBox(height: KiraSpace.xl),
               const _FaskesSection(),
-              const SizedBox(height: KiraSpace.lg),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
+              const SectionHeader('Catat dan pantau'),
+              LinkGroup(children: [
+                ListTile(
                   key: const Key('heart_rate_button'),
-                  icon: const Icon(Icons.favorite_border),
-                  label: const Text('Catat detak jantung'),
-                  onPressed: () => showResultSheet(context, initial: 'hr'),
+                  leading: const Icon(Icons.favorite_border),
+                  title: const Text('Catat detak jantung'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => showResultSheet(context, initial: 'hr'),
                 ),
-              ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
+                ListTile(
                   key: const Key('bp_protocol_button'),
-                  icon: const Icon(Icons.monitor_heart_outlined),
-                  label: const Text('Ukur tensi di rumah 7 hari'),
-                  onPressed: () => context.push('/bp-protocol'),
+                  leading: const Icon(Icons.monitor_heart_outlined),
+                  title: const Text('Ukur tensi di rumah 7 hari'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/bp-protocol'),
                 ),
-              ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
+                ListTile(
                   key: const Key('trends_button'),
-                  icon: const Icon(Icons.show_chart),
-                  label: const Text('Lihat tren hasil cek dan penanda'),
-                  onPressed: () => context.push('/trends'),
+                  leading: const Icon(Icons.show_chart),
+                  title: const Text('Lihat tren hasil cek dan penanda'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/trends'),
                 ),
-              ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
+                ListTile(
                   key: const Key('diagnosis_button'),
-                  icon: const Icon(Icons.verified_outlined),
-                  label: const Text('Sudah didiagnosis dokter?'),
-                  onPressed: () => showDiagnosisDialog(context),
+                  leading: const Icon(Icons.verified_outlined),
+                  title: const Text('Sudah didiagnosis dokter?'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => showDiagnosisDialog(context),
                 ),
-              ),
+              ]),
             ],
           ),
         ),
@@ -134,27 +127,14 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       key: const Key('check_empty'),
-      child: Padding(
-        padding: const EdgeInsets.all(KiraSpace.xl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.check_circle_outline, size: 36, color: context.kira.improve),
-            const SizedBox(height: KiraSpace.md),
-            Text('Belum ada yang perlu dicek', style: context.text.titleLarge),
-            const SizedBox(height: KiraSpace.xs),
-            Text(
-              'KIRA terus memantau dari check-in harianmu dan akan memberi tahu kalau saatnya periksa.',
-              style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: KiraSpace.lg),
-            OutlinedButton.icon(
-              key: const Key('enter_result_button'),
-              icon: const Icon(Icons.edit_note),
-              label: const Text('Punya hasil pemeriksaan? Masukkan'),
-              onPressed: () => showResultSheet(context),
-            ),
-          ],
+      child: EmptyState(
+        title: 'Belum ada yang perlu dicek',
+        message: 'KIRA memantau dari check-in harianmu dan memberi tahu kalau saatnya periksa.',
+        action: OutlinedButton.icon(
+          key: const Key('enter_result_button'),
+          icon: const Icon(Icons.edit_note),
+          label: const Text('Masukkan hasil pemeriksaan'),
+          onPressed: () => showResultSheet(context),
         ),
       ),
     );
@@ -268,8 +248,7 @@ class _FaskesSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Tempat cek terdekat', style: context.text.titleMedium),
-        const SizedBox(height: KiraSpace.md),
+        const SectionHeader('Tempat cek terdekat'),
         faskes.when(
           loading: () => const Padding(padding: EdgeInsets.all(KiraSpace.lg), child: Center(child: CircularProgressIndicator.adaptive())),
           error: (e, _) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

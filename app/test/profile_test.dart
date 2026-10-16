@@ -8,6 +8,9 @@ import 'support/fakes.dart';
 
 void main() {
   testWidgets('profil menyediakan jalan ke keluarga, ringkasan dokter, dan WhatsApp', (tester) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(testApp(const ProfileScreen(), token: 'token'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('tile_family')), findsOneWidget);
@@ -20,7 +23,7 @@ void main() {
   testWidgets('menautkan WhatsApp menampilkan kode dan peringatan prototype', (tester) async {
     await tester.pumpWidget(testApp(const ProfileScreen(), api: FakeApi()..linkCode = 'KIRA 4821', token: 'token'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('tile_whatsapp')));
+    await tester.scrollUntilVisible(find.byKey(const Key('tile_whatsapp')), 200);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('tile_whatsapp')));
     await tester.pumpAndSettle();

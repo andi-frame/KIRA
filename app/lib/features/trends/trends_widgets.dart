@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
 import '../../shared/insight_models.dart';
+import '../../shared/widgets.dart';
 
 const _kindTitle = {
   'blood_pressure': 'Tekanan darah',
@@ -105,11 +106,11 @@ class TriageCard extends StatelessWidget {
               child: Text('Tidak ada penanda dari data yang ada.', style: context.text.bodyMedium),
             ),
           for (final f in [...shown, ...infos]) row(f),
-          const SizedBox(height: KiraSpace.md),
-          Text(
+          const SizedBox(height: KiraSpace.xs),
+          const SourceLink(
             'Penanda adalah aturan terhadap ambang pedoman (KMK 303/2026 untuk tekanan darah, PERKENI 2021 untuk gula darah), '
             'bukan penegakan penyakit.',
-            style: context.text.bodySmall,
+            label: 'Tentang penanda',
           ),
         ]),
       ),
@@ -409,7 +410,7 @@ class DailyBarChart extends StatelessWidget {
           Text(
             [
               if (avg != null) 'rata-rata ${_n(avg)} $unit',
-              if (limit != null) 'garis putus: ${limitLabel ?? 'batas ${_n(limit!)} $unit'}; batang koral melewatinya',
+              if (limit != null) 'garis putus: ${limitLabel ?? 'batas ${_n(limit!)} $unit'}; batang kuning melewatinya',
               'hari tanpa catatan tidak diberi batang',
             ].join(' · '),
             style: context.text.bodySmall,
@@ -433,26 +434,17 @@ class TrendsSection extends StatelessWidget {
     const kinds = ['blood_pressure', 'resting_heart_rate', 'fasting_glucose', 'random_glucose', 'hba1c'];
     final withData = [for (final k in kinds) if (data.series(k).points.isNotEmpty) k];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      if (showTriage) ...[TriageCard(flags: data.triage), const SizedBox(height: KiraSpace.lg)],
-      Text('Tren hasil pemeriksaan', style: context.text.titleLarge),
-      const SizedBox(height: KiraSpace.sm),
+      if (showTriage) TriageCard(flags: data.triage),
+      const SectionHeader('Tren hasil pemeriksaan'),
       if (withData.isEmpty)
-        Card(
-          key: const Key('clinical_empty'),
-          child: Padding(
-            padding: const EdgeInsets.all(KiraSpace.lg),
-            child: Text(
-              'Belum ada hasil pemeriksaan. Setelah kamu mencatat hasil gula darah atau tensi lewat tab Cek, tren-nya muncul di sini.',
-              style: context.text.bodyMedium,
-            ),
-          ),
+        const SoftNote(
+          key: Key('clinical_empty'),
+          icon: Icons.show_chart,
+          text: 'Belum ada hasil pemeriksaan. Catat gula darah atau tensi lewat tab Cek, tren-nya muncul di sini.',
         )
       else
         for (final k in withData) ...[ClinicalTrendCard(kind: k, series: data.series(k)), const SizedBox(height: KiraSpace.md)],
-      const SizedBox(height: KiraSpace.md),
-      Text('Kebiasaan harian', style: context.text.titleLarge),
-      Text('${data.daysLogged} dari ${data.daily.length} hari tercatat', style: context.text.bodyMedium),
-      const SizedBox(height: KiraSpace.md),
+      SectionHeader('Kebiasaan harian', subtitle: '${data.daysLogged} dari ${data.daily.length} hari tercatat'),
       Card(
         child: Padding(
           padding: const EdgeInsets.all(KiraSpace.lg),
