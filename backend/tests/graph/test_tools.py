@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import pytest
 
@@ -106,3 +106,25 @@ async def test_cari_gizi_komponen_baru_dan_salah_ketik(session_maker, make_user)
     uid = await make_user()
     out = await cari_gizi.ainvoke({"makanan": "timunn", "porsi_gram": 100}, config=cfg(uid, session_maker))
     assert out["found"] is True and out["name"] == "Timun" and "TKPI" in out["sumber"]
+
+
+async def test_rencana_hari_ini_dan_minggu_ringkas_dan_bersumber(session_maker, make_user):
+    from app.tools.plan import rencana_hari_ini, rencana_minggu
+
+    uid = await make_user(birth_date=date(1998, 3, 14), sex="male")
+    today = await rencana_hari_ini.ainvoke({}, config=cfg(uid, session_maker))
+    assert today["energi_kkal"] == 2650 and len(today["makan"]) == 4 and today["tidur"]["jam_tidur"]
+    assert all(m["usulan"] and m["alasan"] for m in today["makan"]) and "bukan resep" in today["catatan"]
+    week = await rencana_minggu.ainvoke({}, config=cfg(uid, session_maker))
+    assert len(week["hari"]) == 7 and week["hari"][0]["tanggal"] == today["tanggal"]
+
+
+async def test_riwayat_makan_hanya_milik_sendiri_dan_dibatasi(session_maker, make_user):
+    from app.tools.plan import riwayat_makan
+
+    a, b = await make_user(), await make_user()
+    await add_sugary_drink(session_maker, a, sugar_g=20)
+    out_a = await riwayat_makan.ainvoke({"hari": 30}, config=cfg(a, session_maker))
+    out_b = await riwayat_makan.ainvoke({}, config=cfg(b, session_maker))
+    assert len(out_a["hari"]) == 7 and out_a["hari"][0]["total"]["sugar_g"] == 20
+    assert len(out_b["hari"]) == 3 and not any(d["tercatat"] for d in out_b["hari"])
