@@ -279,6 +279,20 @@ def build_doctor_pdf(summary: dict, trends: dict) -> bytes:
         story += [Paragraph("Makanan yang paling sering dicatat", st["h"]),
                   Paragraph(_esc(", ".join(f"{f['name']} ({f['count']}x)" for f in summary["top_foods"])), st["p"])]
 
+    records = summary.get("medical_records") or []
+    if records:
+        story += [Paragraph("Rekam medis yang dicatat pasien", st["h"])]
+        rows = [["Tanggal", "Jenis", "Catatan"]]
+        for r in records:
+            values = "; ".join(f"{v['name']} {v['value']}{(' ' + v['unit']) if v.get('unit') else ''}" for v in r["values"])
+            note = r["title"] + (f" ({values})" if values else "") + (f" - {r['provider']}" if r.get("provider") else "")
+            rows.append([r["recorded_on"], r["kind_label"], note])
+        table_r = Table([[Paragraph(_esc(c), st["p"]) for c in row] for row in rows], colWidths=[24 * mm, 36 * mm, 117 * mm])
+        table_r.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), GREY_SOFT), ("LINEBELOW", (0, 0), (-1, -1), 0.3, LINE),
+                                     ("VALIGN", (0, 0), (-1, -1), "TOP"), ("TOPPADDING", (0, 0), (-1, -1), 2.5),
+                                     ("BOTTOMPADDING", (0, 0), (-1, -1), 2.5)]))
+        story += [table_r, Paragraph("Ditulis sendiri oleh pasien dan tidak diverifikasi KIRA.", st["small"])]
+
     d = summary["risk"]["diabetes"]
     cat = {"low": "rendah", "slightly_elevated": "sedikit meningkat", "moderate": "sedang", "high": "tinggi", "very_high": "sangat tinggi"}
     lo, hi = cat.get(d["category_low"], ""), cat.get(d["category_high"], "")

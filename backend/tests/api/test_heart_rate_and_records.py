@@ -132,3 +132,19 @@ async def test_rekam_medis_masuk_ekspor_akun(client, auth_headers):
     await client.post("/records", json=RECORD, headers=auth_headers)
     data = (await client.get("/account/export", headers=auth_headers)).json()
     assert [r["title"] for r in data["medical_records"]] == ["Panel lipid"]
+
+
+async def test_ringkasan_dokter_dan_pdf_memuat_rekam_medis_pasien(client, auth_headers):
+    await client.post("/records", json=RECORD, headers=auth_headers)
+    await client.post("/records", json={"kind": "allergy", "title": "Alergi udang"}, headers=auth_headers)
+    body = (await client.get("/summary/doctor", params={"days": 30}, headers=auth_headers)).json()
+    assert [r["title"] for r in body["medical_records"]] == ["Alergi udang", "Panel lipid"]
+    assert "Rekam medis yang dicatat pasien sendiri" in body["text"]
+    assert "Kolesterol total 210 mg/dL" in body["text"]
+    pdf = await client.get("/summary/doctor.pdf", params={"days": 30}, headers=auth_headers)
+    assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
+
+
+async def test_ringkasan_tanpa_rekam_medis_tidak_memuat_bagiannya(client, auth_headers):
+    body = (await client.get("/summary/doctor", params={"days": 30}, headers=auth_headers)).json()
+    assert body["medical_records"] == [] and "Rekam medis" not in body["text"]

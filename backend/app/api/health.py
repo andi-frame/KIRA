@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core_calc.heart_rate import classify_resting
 from app.core_calc.red_flags import RedFlag
 from app.db import get_session
 from app.models import Diagnosis, User, WhatIfScenario

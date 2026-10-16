@@ -57,4 +57,4 @@ async def test_dasar_perhitungan_menyebut_apa_yang_belum_diketahui(session_maker
         payload = projection_payload(await compute_risk_state(session, uid))
     basis = payload["basis"]
     assert basis["window_days"] == 14 and basis["activity"]["source"] == "unknown"
-    assert "berat/tinggi badan" in basis["unknown"] and basis["computed_at"]
+    assert "berat/tinggi badan" in basis["unknown"]

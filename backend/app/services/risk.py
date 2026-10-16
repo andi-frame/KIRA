@@ -271,7 +271,6 @@ async def compute_risk_state(session: AsyncSession, user_id: uuid.UUID) -> RiskS
                 ("berat/tinggi badan", bmi), ("lingkar perut", waist),
                 ("riwayat gula darah tinggi", inputs.history_high_glucose), ("riwayat keluarga", inputs.family_history),
                 ("obat tekanan darah", inputs.on_bp_medication)) if value is None],
-            "computed_at": utcnow().isoformat(),
         },
     )
 

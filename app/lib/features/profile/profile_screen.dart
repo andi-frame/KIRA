@@ -63,6 +63,15 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 const Divider(),
                 ListTile(
+                  key: const Key('tile_records'),
+                  leading: const Icon(Icons.folder_shared_outlined),
+                  title: const Text('Rekam medis'),
+                  subtitle: const Text('Diagnosis, hasil lab, obat, alergi, dan riwayat lain, bisa lewat cerita di Ngobrol'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/records'),
+                ),
+                const Divider(),
+                ListTile(
                   key: const Key('tile_trends'),
                   leading: const Icon(Icons.show_chart),
                   title: const Text('Tren dan penanda'),
