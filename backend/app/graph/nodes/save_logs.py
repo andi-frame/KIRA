@@ -38,14 +38,20 @@ async def save_logs(state: KiraState, config: RunnableConfig) -> dict:
             if note:
                 notes.append(note)
         elif extraction.intent in LOGGING_INTENTS:
-            if extraction.items:
+            # Model kadang memasukkan minuman ke items DAN drinks (katalog memuat minuman): yang di drinks yang dipakai,
+            # supaya gulanya tidak terhitung dua kali.
+            drink_keys = {d.name.strip().lower() for d in extraction.drinks} | {
+                f.id for d in extraction.drinks if (f := catalog.find_food(d.name))}
+            food_items = [it for it in extraction.items
+                          if it.name.strip().lower() not in drink_keys and (it.food_id or "") not in drink_keys]
+            if food_items:
                 items, resolved = [], []
-                for it in extraction.items:
+                for it in food_items:
                     res = resolve_food_item(it, catalog)
                     items.extend(res.items)
                     notes.extend(res.notes)
                     resolved.append(res.trace)
-                await add("meal", {"items": [i.model_dump() for i in extraction.items], "resolved": resolved}, items)
+                await add("meal", {"items": [i.model_dump() for i in food_items], "resolved": resolved}, items)
             for drink in extraction.drinks:
                 food = catalog.find_food(drink.name)
                 if food is None:

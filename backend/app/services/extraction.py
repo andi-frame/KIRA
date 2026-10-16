@@ -26,7 +26,7 @@ _CATALOG_RULES = (
     "\n\nPetakan makanan ke katalog di bawah: isi dish_id bila itu hidangan di KATALOG HIDANGAN, atau food_id bila "
     "makanan tunggal di KATALOG MAKANAN. Isi id HANYA dari katalog, jangan mengarang id. Hidangan campuran yang tidak ada "
     "di katalog dipecah ke components (maksimal 8): nama bahan sederhana, food_id dari katalog bila ada, dan perkiraan "
-    "gram. JANGAN mengisi angka gizi apa pun.\n\n"
+    "gram. Minuman hanya masuk drinks, jangan diulang di items. JANGAN mengisi angka gizi apa pun.\n\n"
 )
 _BY_KIND = {
     "text": "",

@@ -103,3 +103,17 @@ async def test_tidur_yang_hanya_disebut_lamanya_tersimpan(session_maker, make_us
     async with session_maker() as s:
         log = (await s.execute(select(Log).where(Log.user_id == uid, Log.kind == "sleep"))).scalar_one()
     assert log.extracted["hours"] == 5 and len(result.log_ids) == 1
+
+
+async def test_minuman_yang_juga_masuk_items_tidak_dihitung_dua_kali(session_maker, make_user):
+    # terukur pada model sungguhan: es teh manis muncul di items (food_id dari katalog) dan di drinks
+    uid = await make_user()
+    install([ai("Tercatat.")], {**BASE, "items": [{"name": "ayam geprek", "dish_id": "ayam_geprek"},
+                                                  {"name": "es teh manis", "food_id": "es_teh_manis"}],
+                                "drinks": [{"name": "es teh manis", "size": "gelas", "count": 1}]})
+    await run(uid, session_maker, input_text="ayam geprek sama es teh manis")
+    _, items = await saved(session_maker, uid)
+    assert {i.group_name for i in items} == {"Ayam geprek"} and len(items) == 4
+    async with session_maker() as s:
+        drinks = (await s.execute(select(Log).where(Log.user_id == uid, Log.kind == "drink"))).scalars().all()
+    assert len(drinks) == 1
