@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core_calc.red_flags import RedFlag
 from app.db import get_session
 from app.models import Diagnosis, User, WhatIfScenario
-from app.repos import faskes as faskes_repo
+from app.services import faskes_lookup
 from app.schemas.api import CheckRespondIn, DiagnosisIn, ResultIn, ScenarioIn, WhatIfIn
 from app.security import current_user_id
 from app.services import check_followup, idempotency, risk
@@ -192,4 +192,4 @@ async def faskes_nearby(
     _: uuid.UUID = Depends(current_user_id),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
-    return {"faskes": await faskes_repo.nearby(session, lat, lng)}
+    return await faskes_lookup.nearby(session, lat, lng)

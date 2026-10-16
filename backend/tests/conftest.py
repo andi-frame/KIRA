@@ -15,6 +15,15 @@ BACKEND = Path(__file__).resolve().parents[1]
 _phone_counter = itertools.count(1)
 
 
+@pytest.fixture(autouse=True)
+def _no_map_network(monkeypatch):
+    """Tes tidak boleh memanggil Google/Overpass sungguhan: tanpa sumber peta, fasilitas kesehatan jatuh ke data contoh."""
+    monkeypatch.setattr(settings, "google_places_api_key", "")
+    monkeypatch.setattr(settings, "overpass_urls", "")
+    from app.services import faskes_lookup
+    faskes_lookup._cache.clear()
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _schema():
     env = {**os.environ, "DATABASE_URL": settings.test_database_url}
