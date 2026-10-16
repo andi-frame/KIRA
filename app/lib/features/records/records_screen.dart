@@ -92,13 +92,12 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: context.pagePadding.copyWith(bottom: context.pagePadding.bottom + 72), // ruang untuk tombol Tambah
               children: [
-                Text('Simpan riwayat kesehatanmu di satu tempat, lalu bawa ke dokter.', style: context.text.bodyLarge),
-                const SizedBox(height: KiraSpace.sm),
+                const PageIntro('Riwayat kesehatanmu di satu tempat, siap dibawa ke dokter.'),
                 const SoftNote(
                   key: Key('records_note'),
                   icon: Icons.chat_bubble_outline,
-                  text: 'Kamu juga bisa menceritakannya di Ngobrol, misalnya "dokter bilang kolesterolku 210". KIRA menggolongkan dan '
-                      'menyimpannya. KIRA hanya menyimpan: tidak menilai isinya dan tidak menyarankan obat.',
+                  text: 'Bisa juga lewat Ngobrol, misalnya "dokter bilang kolesterolku 210". '
+                      'KIRA hanya menyimpan: tidak menilai isinya dan tidak menyarankan obat.',
                 ),
                 const SizedBox(height: KiraSpace.md),
                 if (kinds.length > 1)
@@ -119,25 +118,15 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
                   ]),
                 const SizedBox(height: KiraSpace.md),
                 if (records.isEmpty)
-                  Card(
+                  EmptyState(
                     key: const Key('records_empty'),
-                    child: Padding(
-                      padding: const EdgeInsets.all(KiraSpace.xl),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Icon(Icons.folder_open_outlined, size: 36, color: context.scheme.primary),
-                        const SizedBox(height: KiraSpace.md),
-                        Text('Belum ada rekam medis', style: context.text.titleLarge),
-                        const SizedBox(height: KiraSpace.xs),
-                        Text('Mulai dari diagnosis dokter, hasil lab terakhir, obat yang kamu pakai, atau alergi.',
-                            style: context.text.bodyLarge),
-                        const SizedBox(height: KiraSpace.md),
-                        OutlinedButton.icon(
-                          key: const Key('records_tell_in_chat'),
-                          onPressed: () => context.go('/chat'),
-                          icon: const Icon(Icons.chat_bubble_outline),
-                          label: const Text('Ceritakan di Ngobrol'),
-                        ),
-                      ]),
+                    title: 'Belum ada rekam medis',
+                    message: 'Mulai dari diagnosis dokter, hasil lab terakhir, obat yang kamu pakai, atau alergi.',
+                    action: OutlinedButton.icon(
+                      key: const Key('records_tell_in_chat'),
+                      onPressed: () => context.go('/chat'),
+                      icon: const Icon(Icons.chat_bubble_outline),
+                      label: const Text('Ceritakan di Ngobrol'),
                     ),
                   )
                 else

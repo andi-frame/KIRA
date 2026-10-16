@@ -135,10 +135,7 @@ class _Intro extends StatelessWidget {
       ('KIRA yang menghitung', 'Hari pertama dibuang, sisanya dirata-ratakan. Butuh minimal 3 hari dan 12 bacaan.'),
     ];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Satu bacaan di klinik bisa lebih tinggi atau lebih rendah dari biasanya. Rata-rata beberapa hari di rumah lebih '
-          'bisa dipegang, dan jadi bahan yang lebih baik untuk dokter.',
-          style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurfaceVariant)),
-      const SizedBox(height: KiraSpace.lg),
+      const PageIntro('Rata-rata beberapa hari di rumah lebih bisa dipegang daripada satu bacaan di klinik.'),
       Card(
         child: Padding(
           padding: const EdgeInsets.all(KiraSpace.lg),

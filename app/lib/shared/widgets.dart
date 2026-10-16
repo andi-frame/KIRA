@@ -83,6 +83,20 @@ class SoftNote extends StatelessWidget {
   }
 }
 
+/// Satu kalimat pembuka di atas halaman: pendek, tidak bersaing dengan isi.
+class PageIntro extends StatelessWidget {
+  const PageIntro(this.text, {super.key});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: KiraSpace.lg),
+      child: Text(text, style: context.text.bodyMedium?.copyWith(color: context.scheme.onSurfaceVariant)),
+    );
+  }
+}
+
 /// Judul kelompok di luar kartu, memberi hierarki pada halaman panjang.
 class SectionHeader extends StatelessWidget {
   const SectionHeader(this.title, {super.key, this.subtitle, this.trailing});

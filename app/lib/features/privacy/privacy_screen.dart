@@ -10,6 +10,7 @@ import '../../core/share_service.dart';
 import '../../core/theme.dart';
 import '../../shared/account_models.dart';
 import '../../shared/labels.dart';
+import '../../shared/widgets.dart';
 import 'consent_text.dart';
 
 final accessLogProvider = FutureProvider<List<AccessEntry>>((ref) {
@@ -61,10 +62,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
       body: ListView(
         padding: context.pagePadding,
         children: [
-          Text(
-            'Datamu milikmu. Di sini kamu bisa melihat siapa yang membukanya, mengunduhnya, atau menghapusnya.',
-            style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurfaceVariant),
-          ),
+          const PageIntro('Datamu milikmu: lihat siapa yang membukanya, unduh, atau hapus.'),
           const SizedBox(height: KiraSpace.lg),
           Card(
             child: ListTile(

@@ -71,9 +71,7 @@ class _DoctorSummaryScreenState extends ConsumerState<DoctorSummaryScreen> {
       body: ListView(
         padding: context.pagePadding,
         children: [
-          Text('Satu halaman untuk dibawa ke dokter atau ahli gizi: pola makan, tidur, dan hasil pemeriksaanmu.',
-              style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurfaceVariant)),
-          const SizedBox(height: KiraSpace.lg),
+          const PageIntro('Pola makan, tidur, dan hasil cekmu dalam satu halaman untuk dokter atau ahli gizi.'),
           Wrap(spacing: KiraSpace.sm, children: [
             for (final d in const [7, 30, 90])
               ChoiceChip(

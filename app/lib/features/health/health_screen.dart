@@ -56,24 +56,19 @@ class _HealthScreenState extends ConsumerState<HealthScreen> {
       body: ListView(
         padding: context.pagePadding,
         children: [
-          Text(
-            'Kalau kamu mau, KIRA bisa mengisi catatan langkah dan tidur dari Health Connect di ponselmu, jadi kamu tidak perlu mengetiknya.',
-            style: context.text.bodyLarge,
-          ),
-          const SizedBox(height: KiraSpace.lg),
+          const PageIntro('KIRA bisa mengisi langkah dan tidur dari Health Connect, jadi tidak perlu diketik.'),
           const SoftNote(
             icon: Icons.lock_outline,
             title: 'Yang dibaca',
-            text: 'KIRA hanya membaca langkah dan sesi tidur 14 hari terakhir, tidak pernah menulis ke Health Connect. '
-                'Kamu bisa mematikannya kapan saja, dan datanya ikut dihapus dari KIRA.',
+            text: 'KIRA hanya membaca langkah dan tidur 14 hari terakhir, tidak pernah menulis. '
+                'Bisa dimatikan kapan saja, datanya ikut dihapus.',
           ),
           const SizedBox(height: KiraSpace.md),
           const SoftNote(
             icon: Icons.calculate_outlined,
             title: 'Cara menghitung menit aktif',
-            text: 'Jalan dengan kecepatan 100 langkah per menit atau lebih dihitung sebagai aktivitas sedang '
-                '(Tudor-Locke dkk., Int J Behav Nutr Phys Act 2019, untuk usia 21-40 tahun). Ini perkiraan KIRA: '
-                'jalan santai yang panjang tidak ikut dihitung, jadi hasilnya cenderung lebih rendah dari kenyataan.',
+            text: 'Jalan 100 langkah per menit atau lebih dihitung aktivitas sedang (Tudor-Locke dkk. 2019). '
+                'Perkiraan ini cenderung lebih rendah dari kenyataan.',
           ),
           const SizedBox(height: KiraSpace.xl),
           if (s.message != null)

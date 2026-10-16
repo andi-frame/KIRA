@@ -45,12 +45,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       body: ListView(
         padding: context.pagePadding,
         children: [
-          Text(
-            'Pengingat lembut di ponselmu, hanya yang kamu nyalakan. Isi notifikasinya tidak memuat data kesehatan, '
-            'jadi tidak membocorkan apa pun di layar kunci.',
-            style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: KiraSpace.lg),
+          const PageIntro('Hanya yang kamu nyalakan. Isi notifikasinya tidak memuat data kesehatan.'),
           Card(
             child: Column(children: [
               SwitchListTile(

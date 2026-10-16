@@ -35,9 +35,7 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
       body: ListView(
         padding: context.pagePadding,
         children: [
-          Text('Gambaran hasil pemeriksaan dan kebiasaanmu dari waktu ke waktu, untuk dibahas bersama dokter.',
-              style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurfaceVariant)),
-          const SizedBox(height: KiraSpace.lg),
+          const PageIntro('Hasil cek dan kebiasaanmu dari waktu ke waktu.'),
           Wrap(spacing: KiraSpace.sm, children: [
             for (final d in const [7, 30, 90])
               ChoiceChip(
