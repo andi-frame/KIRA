@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
 import '../../core/theme.dart';
@@ -55,15 +56,17 @@ class _HistoryList extends ConsumerWidget {
       padding: context.pagePadding,
       children: [
         if (!anyLogged)
-          const SoftNote(
-            key: Key('history_empty'),
-            icon: Icons.restaurant_outlined,
-            text: 'Belum ada catatan di periode ini. Ceritakan makan, minum, olahraga, dan tidurmu di Ngobrol, nanti muncul di sini dan bisa kamu ubah atau hapus.',
+          EmptyState(
+            key: const Key('history_empty'),
+            title: 'Belum ada catatan',
+            message: 'Ceritakan makan, minum, olahraga, atau tidurmu di Ngobrol. Nanti muncul di sini dan bisa kamu ubah.',
+            action: FilledButton.tonal(onPressed: () => context.go('/chat'), child: const Text('Mulai di Ngobrol')),
           )
-        else
+        else ...[
           _WeekStrip(days: state.days.take(7).toList()),
-        const SizedBox(height: KiraSpace.lg),
-        for (final day in state.days) _DayCard(day: day),
+          const SectionHeader('Per hari'),
+          for (final day in state.days) _DayCard(day: day),
+        ],
         const SizedBox(height: KiraSpace.md),
         Center(
           child: state.loadingMore

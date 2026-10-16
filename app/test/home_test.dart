@@ -59,6 +59,9 @@ void main() {
     expect(find.text('Baik'), findsOneWidget);
     expect(find.textContaining('5 hari tercatat'), findsOneWidget);
 
+    await tester.ensureVisible(find.byKey(const Key('signal_sleep')));
+    await tester.drag(find.byKey(const Key('signal_sleep')), const Offset(0, 150));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sering tidur kurang dari 6 jam'));
     await tester.pumpAndSettle();
     expect(find.text('Sumber: AASM/SRS (Watson dkk. 2015)'), findsOneWidget);

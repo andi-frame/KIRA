@@ -22,23 +22,25 @@ class HomeScreen extends ConsumerWidget {
     return ProjectionScreen(
       title: 'Beranda',
       onRefresh: () => ref.invalidate(dashboardProvider),
-      leading: const [DashboardCards(), SizedBox(height: KiraSpace.lg)],
+      leading: const [DashboardCards()],
       trailing: [
-        const Divider(height: KiraSpace.xl),
-        ListTile(
-          key: const Key('home_trends_link'),
-          leading: const Icon(Icons.timeline),
-          title: const Text('Tren dan penanda'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.push('/trends'),
-        ),
-        ListTile(
-          key: const Key('home_doctor_link'),
-          leading: const Icon(Icons.description_outlined),
-          title: const Text('Ringkasan untuk dokter'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.push('/doctor'),
-        ),
+        const SectionHeader('Lainnya'),
+        LinkGroup(children: [
+          ListTile(
+            key: const Key('home_trends_link'),
+            leading: const Icon(Icons.timeline),
+            title: const Text('Tren dan penanda'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/trends'),
+          ),
+          ListTile(
+            key: const Key('home_doctor_link'),
+            leading: const Icon(Icons.description_outlined),
+            title: const Text('Ringkasan untuk dokter'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/doctor'),
+          ),
+        ]),
       ],
     );
   }
@@ -69,14 +71,21 @@ class DashboardCards extends ConsumerWidget {
         ),
       ),
       data: (d) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _NextActionCard(action: d.nextAction, now: ref.read(clockProvider)()),
-        const SizedBox(height: KiraSpace.lg),
+        _NextActionCard(
+          action: d.nextAction,
+          now: ref.read(clockProvider)(),
+          name: ref.watch(profileProvider).value?.displayName,
+        ),
+        SectionHeader('Hari ini', trailing: _KcalLabel(today: d.today)),
         _TodayCard(today: d.today),
         if (d.planToday != null) ...[
-          const SizedBox(height: KiraSpace.lg),
+          const SizedBox(height: KiraSpace.md),
           _PlanCardView(plan: d.planToday!),
         ],
-        const SizedBox(height: KiraSpace.lg),
+        SectionHeader(
+          'Kebiasaanmu',
+          subtitle: d.enoughData ? '7 hari terakhir, ${d.loggedDays} hari tercatat. Penanda, bukan diagnosis.' : null,
+        ),
         _SignalsCard(data: d),
       ]),
     );
@@ -91,9 +100,10 @@ String greeting(DateTime now) => switch (now.hour) {
     };
 
 class _NextActionCard extends StatelessWidget {
-  const _NextActionCard({required this.action, required this.now});
+  const _NextActionCard({required this.action, required this.now, this.name});
   final NextAction action;
   final DateTime now;
+  final String? name;
 
   @override
   Widget build(BuildContext context) {
@@ -107,15 +117,18 @@ class _NextActionCard extends StatelessWidget {
       key: const Key('next_action_card'),
       color: context.scheme.primaryContainer,
       child: Padding(
-        padding: const EdgeInsets.all(KiraSpace.lg),
+        padding: const EdgeInsets.all(KiraSpace.xl),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(greeting(now), style: context.text.labelLarge?.copyWith(color: context.scheme.onPrimaryContainer)),
-          const SizedBox(height: KiraSpace.xs),
+          Text(
+            name == null || name!.trim().isEmpty ? greeting(now) : '${greeting(now)}, ${name!.trim()}',
+            style: context.text.bodyMedium?.copyWith(color: context.scheme.onPrimaryContainer),
+          ),
+          const SizedBox(height: KiraSpace.sm),
           Text(action.text,
               key: const Key('next_action_text'),
-              style: context.text.titleMedium?.copyWith(color: context.scheme.onPrimaryContainer)),
+              style: context.text.titleLarge?.copyWith(color: context.scheme.onPrimaryContainer)),
           if (label != null) ...[
-            const SizedBox(height: KiraSpace.md),
+            const SizedBox(height: KiraSpace.lg),
             FilledButton(key: const Key('next_action_button'), onPressed: go, child: Text(label)),
           ],
         ]),
@@ -138,16 +151,6 @@ class _TodayCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(KiraSpace.lg),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Expanded(child: Text('Hari ini', style: context.text.titleMedium)),
-            Text(
-              today.kcalTarget == null
-                  ? '${nutrientNumber(n.kcal)} kkal'
-                  : '${nutrientNumber(n.kcal)} dari ${nutrientNumber(today.kcalTarget!)} kkal',
-              key: const Key('today_kcal'),
-              style: context.text.titleSmall,
-            ),
-          ]),
           Text(
             today.mealsLogged == 0 ? 'Belum ada catatan makan hari ini.' : '${today.mealsLogged} kali makan tercatat.',
             style: context.text.bodySmall,
@@ -181,6 +184,23 @@ class _TodayCard extends StatelessWidget {
           ),
         ]),
       ),
+    );
+  }
+}
+
+class _KcalLabel extends StatelessWidget {
+  const _KcalLabel({required this.today});
+  final TodayStatus today;
+
+  @override
+  Widget build(BuildContext context) {
+    final n = today.nutrition;
+    return Text(
+      today.kcalTarget == null
+          ? '${nutrientNumber(n.kcal)} kkal'
+          : '${nutrientNumber(n.kcal)} dari ${nutrientNumber(today.kcalTarget!)} kkal',
+      key: const Key('today_kcal'),
+      style: context.text.titleSmall?.copyWith(color: context.scheme.onSurfaceVariant),
     );
   }
 }
@@ -249,15 +269,16 @@ class _SignalsCard extends StatelessWidget {
     return Card(
       key: const Key('signals_card'),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(KiraSpace.lg, KiraSpace.lg, KiraSpace.lg, KiraSpace.sm),
+        padding: const EdgeInsets.fromLTRB(KiraSpace.lg, KiraSpace.sm, KiraSpace.lg, KiraSpace.sm),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Sinyal kebiasaan', style: context.text.titleMedium),
-          Text(
-            data.enoughData
-                ? 'Dari catatanmu 7 hari terakhir (${data.loggedDays} hari tercatat). Penanda, bukan diagnosis.'
-                : 'Catatan minggu ini masih sedikit, jadi KIRA belum menyimpulkan kebiasaanmu.',
-            style: context.text.bodySmall,
-          ),
+          if (!data.enoughData)
+            Padding(
+              padding: const EdgeInsets.only(bottom: KiraSpace.sm),
+              child: Text(
+                'Catatan minggu ini masih sedikit, jadi KIRA belum menyimpulkan kebiasaanmu.',
+                style: context.text.bodyMedium?.copyWith(color: context.scheme.onSurfaceVariant),
+              ),
+            ),
           for (final s in data.signals) _SignalTile(signal: s),
         ]),
       ),

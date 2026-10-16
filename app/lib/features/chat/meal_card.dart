@@ -183,7 +183,7 @@ class _GroupView extends StatelessWidget {
       children: [
         Row(children: [
           Expanded(
-            child: Text(group.title, style: context.text.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),
+            child: Text(group.title, style: context.text.titleSmall),
           ),
           // Saklar: ketuk sekali menjadi setengah porsi, ketuk lagi kembali ke porsi biasa.
           TextButton(
@@ -193,9 +193,7 @@ class _GroupView extends StatelessWidget {
           ),
         ]),
         Text(
-          halved
-              ? 'Sekarang setengah porsi. Ketuk "Porsi biasa" untuk mengembalikan.'
-              : 'Perkiraan resep, gram tiap bagian bisa kamu ubah.',
+          halved ? 'Sekarang setengah porsi.' : 'Perkiraan resep, gram bisa diubah.',
           style: context.text.bodySmall,
         ),
         for (final item in group.items)
@@ -206,7 +204,7 @@ class _GroupView extends StatelessWidget {
             'Total: ${nutrientNumber(t.kcal)} kkal, ${nutrientLine(sugarG: t.sugarG, sodiumMg: t.sodiumMg, fatG: t.fatG)}'
             '${group.hasUncounted ? ' (belum termasuk yang belum terhitung)' : ''}',
             key: Key('group_total_$index'),
-            style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            style: context.text.labelLarge,
           ),
         ),
       ],
@@ -263,10 +261,8 @@ class _ItemRow extends StatelessWidget {
         children: [
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(item.name,
-                  style: emphasize
-                      ? context.text.bodyLarge?.copyWith(fontWeight: FontWeight.w700)
-                      : context.text.bodyLarge),
+              Text(item.name, style: emphasize ? context.text.titleSmall : context.text.bodyMedium),
+              const SizedBox(height: 2),
               Text(detail, style: context.text.bodySmall),
             ]),
           ),
@@ -280,14 +276,18 @@ class _ItemRow extends StatelessWidget {
           IconButton(
             key: Key('edit_item_${item.id}'),
             tooltip: 'Ubah porsi ${item.name}',
-            icon: const Icon(Icons.edit_outlined, size: 20),
+            visualDensity: VisualDensity.compact,
+            color: context.scheme.onSurfaceVariant,
+            icon: const Icon(Icons.edit_outlined, size: 18),
             onPressed: () => _edit(context),
           ),
           if (removable)
             IconButton(
               key: Key('remove_item_${item.id}'),
               tooltip: 'Hapus ${item.name}',
-              icon: const Icon(Icons.remove_circle_outline, size: 20),
+              visualDensity: VisualDensity.compact,
+              color: context.scheme.onSurfaceVariant,
+              icon: const Icon(Icons.close, size: 18),
               onPressed: () => guard(context, () => actions.remove(item)),
             ),
         ],

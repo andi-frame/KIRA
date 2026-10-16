@@ -436,7 +436,7 @@ class _TypingBubble extends StatelessWidget {
             decoration: BoxDecoration(
               color: context.scheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(KiraRadius.card),
-              border: Border.all(color: context.scheme.outlineVariant),
+              border: Border.all(color: context.scheme.outlineVariant.withValues(alpha: 0.6)),
             ),
             child: const SizedBox(width: 24, height: 16, child: LinearProgressIndicator()),
           ),
@@ -494,7 +494,7 @@ class ExtractionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(KiraRadius.card),
-        border: Border.all(color: scheme.outlineVariant),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -516,7 +516,7 @@ class ExtractionCard extends StatelessWidget {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     spacing: KiraSpace.sm,
                     children: [
-                      Text(data.items[i].name, style: context.text.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),
+                      Text(data.items[i].name, style: context.text.titleSmall),
                       if (data.items[i].portionText != null)
                         Text(data.items[i].portionText!, style: context.text.bodyMedium),
                     ],
@@ -598,7 +598,7 @@ class _LabelRows extends StatelessWidget {
                 size: 18, color: context.scheme.onSurfaceVariant),
             const SizedBox(width: KiraSpace.sm),
             Expanded(
-              child: Text(label.productName, style: context.text.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),
+              child: Text(label.productName, style: context.text.titleSmall),
             ),
           ]),
           Text(
