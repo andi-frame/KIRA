@@ -113,26 +113,58 @@ class _NextActionCard extends StatelessWidget {
       'measure_bp' => ('Buka protokol tensi', () => context.push('/bp-protocol')),
       _ => (null, null),
     };
+    final scheme = context.scheme;
+    final ink = scheme.onPrimaryContainer;
     return Card(
       key: const Key('next_action_card'),
-      color: context.scheme.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(KiraSpace.xl),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(
-            name == null || name!.trim().isEmpty ? greeting(now) : '${greeting(now)}, ${name!.trim()}',
-            style: context.text.bodyMedium?.copyWith(color: context.scheme.onPrimaryContainer),
+      color: scheme.primaryContainer,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(children: [
+        // Lingkaran lembut di belakang maskot.
+        Positioned(
+          right: -36,
+          bottom: -44,
+          child: Container(
+            width: 168,
+            height: 168,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: scheme.surface.withValues(alpha: 0.45)),
           ),
-          const SizedBox(height: KiraSpace.sm),
-          Text(action.text,
+        ),
+        Positioned(
+          right: KiraSpace.sm,
+          bottom: 0,
+          child: Image.asset('assets/mascot/kira-wave.png', width: 104, height: 104, excludeFromSemantics: true),
+        ),
+        Padding(
+          // Ruang kanan untuk maskot supaya teks tidak tertutup.
+          padding: const EdgeInsets.fromLTRB(KiraSpace.lg, KiraSpace.lg, 120, KiraSpace.lg),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(
+              name == null || name!.trim().isEmpty ? greeting(now) : '${greeting(now)}, ${name!.trim()}',
+              style: context.text.titleMedium?.copyWith(color: ink),
+            ),
+            const SizedBox(height: KiraSpace.xs),
+            Text(
+              action.text,
               key: const Key('next_action_text'),
-              style: context.text.titleLarge?.copyWith(color: context.scheme.onPrimaryContainer)),
-          if (label != null) ...[
-            const SizedBox(height: KiraSpace.lg),
-            FilledButton(key: const Key('next_action_button'), onPressed: go, child: Text(label)),
-          ],
-        ]),
-      ),
+              style: context.text.bodyMedium?.copyWith(color: ink.withValues(alpha: 0.85)),
+            ),
+            if (label != null) ...[
+              const SizedBox(height: KiraSpace.md),
+              FilledButton(
+                key: const Key('next_action_button'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(0, 40),
+                  padding: const EdgeInsets.symmetric(horizontal: KiraSpace.lg),
+                  textStyle: context.text.labelLarge,
+                ),
+                onPressed: go,
+                child: Text(label),
+              ),
+            ],
+          ]),
+        ),
+      ]),
     );
   }
 }
