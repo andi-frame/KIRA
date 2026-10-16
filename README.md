@@ -58,8 +58,8 @@ uv run uvicorn app.main:app --port 8000
 
 # 3. Aplikasi
 cd ../app
-flutter run -d chrome --dart-define=API_URL=http://localhost:8000
-# APK: flutter build apk --release --dart-define=API_URL=https://<server-kamu>
+flutter run -d chrome --dart-define=API_URL=http://localhost:8000   # tanpa --dart-define, aplikasi memakai https://kira-be.byhan.id
+# APK: flutter build apk --release   (otomatis memakai https://kira-be.byhan.id; server lain: --dart-define=API_URL=https://<server-kamu>)
 # Web: flutter build web --release --dart-define=API_URL=https://<server-kamu>
 ```
 
