@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
 import '../../shared/models.dart';
+import '../home/home_screen.dart';
 
 const historyPageDays = 14;
 const _maxReloadDays = 60; // batas server per permintaan
@@ -50,6 +51,7 @@ class HistoryController extends AsyncNotifier<HistoryState> {
 
   Future<void> _patch(Future<void> Function() call) async {
     await call();
+    ref.invalidate(dashboardProvider); // koreksi gizi mengubah kondisi hari ini di Beranda
     await reload();
   }
 

@@ -14,14 +14,27 @@ import 'scenarios_card.dart';
 import 'risk_chart.dart';
 import 'weekly_recap_card.dart';
 
+/// Proyeksi 10 tahun. Beranda memakai layar ini dengan kartu harian di atas (`leading`) dan tautan di bawah
+/// (`trailing`), supaya kurva, hipertensi, what-if, target, skenario, dan rekap mingguan tetap ada di satu tempat.
 class ProjectionScreen extends ConsumerWidget {
-  const ProjectionScreen({super.key});
+  const ProjectionScreen({
+    super.key,
+    this.title = 'Kira-kira 10 tahun',
+    this.leading = const [],
+    this.trailing = const [],
+    this.onRefresh,
+  });
+
+  final String title;
+  final List<Widget> leading;
+  final List<Widget> trailing;
+  final VoidCallback? onRefresh;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final projection = ref.watch(projectionProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Kira-kira 10 tahun'), actions: const [ProfileAction()]),
+      appBar: AppBar(title: Text(title), actions: const [ProfileAction()]),
       body: projection.when(
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
         error: (e, _) => LoadError(
@@ -29,8 +42,11 @@ class ProjectionScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(projectionProvider),
         ),
         data: (p) => RefreshIndicator(
-          onRefresh: () => ref.refresh(projectionProvider.future),
-          child: _Content(projection: p),
+          onRefresh: () {
+            onRefresh?.call();
+            return ref.refresh(projectionProvider.future);
+          },
+          child: _Content(projection: p, leading: leading, trailing: trailing),
         ),
       ),
     );
@@ -38,8 +54,10 @@ class ProjectionScreen extends ConsumerWidget {
 }
 
 class _Content extends ConsumerWidget {
-  const _Content({required this.projection});
+  const _Content({required this.projection, this.leading = const [], this.trailing = const []});
   final Projection projection;
+  final List<Widget> leading;
+  final List<Widget> trailing;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,6 +73,7 @@ class _Content extends ConsumerWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(KiraSpace.lg),
       children: [
+        ...leading,
         if (p.needsProfile)
           Padding(
             padding: const EdgeInsets.only(bottom: KiraSpace.lg),
@@ -146,6 +165,7 @@ class _Content extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: KiraSpace.md, vertical: KiraSpace.sm),
           child: Text('Ini perkiraan untuk menemani keputusanmu, bukan pengganti dokter.', style: context.text.bodySmall),
         ),
+        ...trailing,
       ],
     );
   }

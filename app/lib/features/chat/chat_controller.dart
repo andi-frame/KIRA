@@ -8,6 +8,7 @@ import '../../core/outbox.dart';
 import '../../core/providers.dart';
 import '../../shared/models.dart';
 import '../history/history_controller.dart';
+import '../home/home_screen.dart';
 import '../projection/projection_providers.dart';
 import '../reminders/reminders_controller.dart';
 import 'frequent_foods.dart';
@@ -142,6 +143,7 @@ class ChatController extends Notifier<ChatState> {
       ref
         ..invalidate(projectionProvider) // catatan baru mengubah proyeksi
         ..invalidate(historyProvider)
+        ..invalidate(dashboardProvider)
         ..invalidate(frequentFoodsProvider);
       unawaited(ref.read(remindersProvider.notifier).reschedule()); // sudah mencatat: pengingat hari ini tak perlu
     }
@@ -158,7 +160,8 @@ class ChatController extends Notifier<ChatState> {
     ]);
     ref
       ..invalidate(projectionProvider) // gizi berubah, proyeksi ikut berubah
-      ..invalidate(historyProvider);
+      ..invalidate(historyProvider)
+      ..invalidate(dashboardProvider);
   }
 
   /// Ubah gram satu item (makanan tunggal atau komponen hidangan); item lain tetap.

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../core/outbox.dart';
 import '../core/providers.dart';
 import '../features/health/health_sync.dart';
+import '../features/home/home_screen.dart';
 import '../features/privacy/consent_gate.dart';
 import '../features/reminders/reminders_controller.dart';
 
@@ -34,6 +35,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      ref.invalidate(dashboardProvider); // kondisi hari ini bisa berubah selama aplikasi tertutup
       unawaited(_flushOutbox());
       unawaited(ref.read(remindersProvider.notifier).reschedule());
     }
@@ -85,9 +87,9 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
             label: 'Ngobrol',
           ),
           NavigationDestination(
-            icon: Icon(Icons.show_chart),
-            selectedIcon: Icon(Icons.auto_graph),
-            label: '10 Tahun',
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Beranda',
           ),
           NavigationDestination(
             icon: Icon(Icons.restaurant_menu_outlined),

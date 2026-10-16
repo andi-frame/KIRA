@@ -53,6 +53,7 @@ abstract class KiraApi {
   Future<MealLog> patchLog(String logId, {List<Map<String, dynamic>>? items, double? scale, String? group});
   Future<List<FoodSuggestion>> searchFoods(String query);
   Future<HistoryPage> getHistory({int days = 14, String? before});
+  Future<DashboardData> getDashboard();
   Future<Projection> getProjection();
   Future<WhatIfResult> whatIf(WhatIfChange change);
   Future<CheckRecommendation?> getCheck();
@@ -294,6 +295,10 @@ class DioKiraApi implements KiraApi {
         () => _dio.patch('/logs/$logId', data: {'items': ?items, 'scale': ?scale, 'group': ?group}),
         (d) => MealLog.fromJson(d as Map<String, dynamic>),
       );
+
+  @override
+  Future<DashboardData> getDashboard() =>
+      _run(() => _dio.get('/dashboard'), (d) => DashboardData.fromJson(d as Map<String, dynamic>));
 
   @override
   Future<HistoryPage> getHistory({int days = 14, String? before}) => _run(
