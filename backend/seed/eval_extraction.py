@@ -19,6 +19,8 @@ class Case:
     drinks: list[str] = field(default_factory=list)
     bed_time: str | None = None
     intent: str = "log"
+    dish_ids: list[str] = field(default_factory=list)  # hidangan katalog yang harus dipetakan (dish_id)
+    components: list[str] = field(default_factory=list)  # komponen yang harus muncul saat hidangan dipecah model
 
 
 @dataclass
@@ -51,6 +53,11 @@ CASES: list[Case] = [
     Case("nasi uduk komplit pagi tadi, kopi tubruk", ["nasi uduk"], ["kopi"]),
     Case("Nanti malam mau makan rendang lagi, boleh berapa?", [], [], None, "question_portion"),
     Case("boleh ga sih makan durian kalau lagi prediabetes?", [], [], None, "question_portion"),
+    # Hidangan komposit (katalog dalam konteks): dipetakan ke dish_id, atau dipecah ke komponen bila tidak ada di katalog
+    Case("siang tadi ayam geprek level 3 sama es teh", ["geprek"], ["teh"], dish_ids=["ayam_geprek"]),
+    Case("makan malam nasi padang pakai rendang", ["padang"], dish_ids=["nasi_padang"]),
+    Case("sarapan nasi kuning komplit", ["nasi kuning"], dish_ids=["nasi_kuning_komplit"]),
+    Case("makan nasi bakar isi cakalang sama lalapan timun", ["nasi bakar"], components=["nasi", "timun"]),
 ]
 
 
@@ -65,6 +72,9 @@ def score_case(case: Case, result: Extraction) -> Score:
     drink_names = [d.name for d in result.drinks]
     checks += [(f, _has(food_names, f)) for f in case.foods]
     checks += [(d, _has(drink_names, d)) for d in case.drinks]
+    checks += [(f"dish {d}", any(i.dish_id == d for i in result.items)) for d in case.dish_ids]
+    comp_names = [c.name for i in result.items for c in i.components]
+    checks += [(f"komponen {c}", _has(comp_names, c)) for c in case.components]
     if case.bed_time:
         got = result.sleep.bed_time if result.sleep else None
         checks.append((f"tidur {case.bed_time}", got == case.bed_time))
@@ -83,13 +93,18 @@ def summarize(scores: list[Score | None]) -> dict:
 
 async def main() -> None:
     from app.config import settings
+    from app.db import SessionLocal
+    from app.repos import foods as foods_repo
+
+    async with SessionLocal() as session:  # katalog yang sama dengan yang dipakai graf (butuh seed.load)
+        catalog = foods_repo.catalog_prompt(await foods_repo.catalog(session))
 
     scores: list[Score | None] = []
     latencies: list[float] = []
     for case in CASES:
         started = time.perf_counter()
         try:
-            score = score_case(case, await extract_from_text(case.text))
+            score = score_case(case, await extract_from_text(case.text, catalog))
         except ExtractionError:
             score = None
         latencies.append(time.perf_counter() - started)

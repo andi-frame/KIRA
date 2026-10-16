@@ -90,3 +90,19 @@ async def test_cari_gizi_reports_where_the_numbers_come_from(session_maker, make
     assert rendang["fat_g"] == pytest.approx(7.9 * 0.7)  # lemak TKPI 7,9 g/100 g x porsi 70 g
     boba = await cari_gizi.ainvoke({"makanan": "boba"}, config=cfg(uid, session_maker))
     assert "estimasi" in boba["sumber"].lower() and "TKPI" not in boba["sumber"].split("(")[0]
+
+
+async def test_cari_gizi_hidangan_mengembalikan_komponen_dan_total(session_maker, make_user):
+    uid = await make_user()
+    out = await cari_gizi.ainvoke({"makanan": "ayam geprek"}, config=cfg(uid, session_maker))
+    assert out["found"] is True and out["hidangan"] == "Ayam geprek" and len(out["komponen"]) == 4
+    assert out["total"]["kcal"] == pytest.approx(sum(k["kcal"] for k in out["komponen"]), abs=0.2)
+    assert all(k["sumber"] for k in out["komponen"]) and "asumsi" in out["sumber"]
+    half = await cari_gizi.ainvoke({"makanan": "ayam geprek", "porsi_gram": out["porsi_g"] / 2}, config=cfg(uid, session_maker))
+    assert half["total"]["kcal"] == pytest.approx(out["total"]["kcal"] / 2, abs=0.3)
+
+
+async def test_cari_gizi_komponen_baru_dan_salah_ketik(session_maker, make_user):
+    uid = await make_user()
+    out = await cari_gizi.ainvoke({"makanan": "timunn", "porsi_gram": 100}, config=cfg(uid, session_maker))
+    assert out["found"] is True and out["name"] == "Timun" and "TKPI" in out["sumber"]

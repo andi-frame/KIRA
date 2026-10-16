@@ -20,6 +20,7 @@ class ItemData:
     fat_g: float | None = None
     kcal: float | None = None
     food_id: str | None = None
+    group_name: str | None = None  # hidangan induk bila item ini komponen sebuah hidangan
 
 
 async def add_log(

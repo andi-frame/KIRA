@@ -1,7 +1,6 @@
 from langchain_core.runnables import RunnableConfig
 
 from app.core_calc.label import LabelFacts, label_totals
-from app.core_calc.nutrition import match_food
 from app.core_calc.red_flags import parse_sleep_hours
 from app.graph.state import KiraState
 from app.repos import foods as foods_repo
@@ -9,7 +8,7 @@ from app.repos import logs as logs_repo
 from app.repos.logs import ItemData
 from app.schemas.extraction import Extraction
 from app.services import risk
-from app.services.nutrition_items import item_data
+from app.services.nutrition_items import item_data, resolve_food_item
 from app.timeutil import utcnow
 from app.tools._ctx import ctx
 
@@ -24,7 +23,7 @@ async def save_logs(state: KiraState, config: RunnableConfig) -> dict:
     log_ids: list[str] = []
 
     async with session_factory() as session:
-        foods = await foods_repo.all_foods(session)
+        catalog = await foods_repo.catalog(session)
 
         async def add(kind: str, extracted: dict, items: list[logs_repo.ItemData]) -> None:
             log = await logs_repo.add_log(
@@ -40,23 +39,23 @@ async def save_logs(state: KiraState, config: RunnableConfig) -> dict:
                 notes.append(note)
         elif extraction.intent in LOGGING_INTENTS:
             if extraction.items:
-                items = []
+                items, resolved = [], []
                 for it in extraction.items:
-                    food = match_food(it.name, foods)
-                    if food is None:
-                        notes.append(f"Makanan '{it.name}' belum ada di database gizi; gizinya belum terhitung.")
-                    items.append(item_data(it.name, food, it.portion_g_guess))
-                await add("meal", {"items": [i.model_dump() for i in extraction.items]}, items)
+                    res = resolve_food_item(it, catalog)
+                    items.extend(res.items)
+                    notes.extend(res.notes)
+                    resolved.append(res.trace)
+                await add("meal", {"items": [i.model_dump() for i in extraction.items], "resolved": resolved}, items)
             for drink in extraction.drinks:
-                food = match_food(drink.name, foods)
+                food = catalog.find_food(drink.name)
                 if food is None:
                     notes.append(f"Minuman '{drink.name}' belum ada di database gizi; gizinya belum terhitung.")
                 await add("drink", {"name": drink.name, "size": drink.size, "count": drink.count},
                           [item_data(drink.name, food, None, multiplier=drink.count)])
             sleep = extraction.sleep
-            if sleep and (sleep.bed_time or sleep.wake_time):
+            if sleep and (sleep.bed_time or sleep.wake_time or sleep.hours):
                 hours = parse_sleep_hours(sleep.bed_time, sleep.wake_time) if sleep.bed_time and sleep.wake_time else None
-                await add("sleep", {**sleep.model_dump(), "hours": hours}, [])
+                await add("sleep", {**sleep.model_dump(), "hours": hours if hours is not None else sleep.hours}, [])
             for act in extraction.activity:
                 await add("activity", act.model_dump(), [])
 

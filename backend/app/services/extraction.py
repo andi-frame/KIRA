@@ -19,7 +19,14 @@ _BASE = (
     "menjadi JSON sesuai skema. Isi hanya yang disebut pengguna; jangan menebak yang tidak ada. "
     "Jangan menghitung kalori, gula, atau risiko. Perkiraan gram porsi (portion_g_guess) boleh diisi kasar. "
     "Jam tidur/bangun format 24 jam HH:MM. intent: log (mencatat), question_portion (bertanya boleh makan "
-    "berapa), question_general (pertanyaan lain), result_input (melaporkan hasil pemeriksaan)."
+    "berapa), question_general (pertanyaan lain), result_input (melaporkan hasil pemeriksaan). "
+    "Tidur yang hanya disebut lamanya (\"tidur cuma 5 jam\") diisi sleep.hours."
+)
+_CATALOG_RULES = (
+    "\n\nPetakan makanan ke katalog di bawah: isi dish_id bila itu hidangan di KATALOG HIDANGAN, atau food_id bila "
+    "makanan tunggal di KATALOG MAKANAN. Isi id HANYA dari katalog, jangan mengarang id. Hidangan campuran yang tidak ada "
+    "di katalog dipecah ke components (maksimal 8): nama bahan sederhana, food_id dari katalog bila ada, dan perkiraan "
+    "gram. JANGAN mengisi angka gizi apa pun.\n\n"
 )
 _BY_KIND = {
     "text": "",
@@ -58,13 +65,20 @@ async def _run(messages: list) -> Extraction:
         raise ExtractionError("model ekstraksi gagal") from exc
 
 
-async def extract_from_text(text: str) -> Extraction:
+def _system(kind: str, catalog: str | None) -> SystemMessage:
+    # Katalog hanya untuk makanan; label/hasil cek tidak memetakan makanan.
+    with_catalog = catalog and kind in {"text", "food", "receipt"}
+    return SystemMessage(_BASE + _BY_KIND[kind] + (_CATALOG_RULES + catalog if with_catalog else ""))
+
+
+async def extract_from_text(text: str, catalog: str | None = None) -> Extraction:
     if not text or not text.strip():
         raise ValueError("teks kosong")
-    return await _run([SystemMessage(_BASE + _BY_KIND["text"]), HumanMessage(text.strip())])
+    return await _run([_system("text", catalog), HumanMessage(text.strip())])
 
 
-async def extract_from_image(image: bytes, kind: Literal["food", "receipt", "label", "result"]) -> Extraction:
+async def extract_from_image(image: bytes, kind: Literal["food", "receipt", "label", "result"],
+                             catalog: str | None = None) -> Extraction:
     if not image:
         raise ValueError("gambar kosong")
     data_uri = f"data:{_mime(image)};base64,{base64.b64encode(image).decode()}"
@@ -72,4 +86,4 @@ async def extract_from_image(image: bytes, kind: Literal["food", "receipt", "lab
         {"type": "text", "text": "Ekstrak data dari gambar ini."},
         {"type": "image_url", "image_url": {"url": data_uri}},
     ]
-    return await _run([SystemMessage(_BASE + _BY_KIND[kind]), HumanMessage(content=content)])
+    return await _run([_system(kind, catalog), HumanMessage(content=content)])
