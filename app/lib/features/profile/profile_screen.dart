@@ -155,12 +155,6 @@ class ProfileScreen extends ConsumerWidget {
                 if (context.mounted && Navigator.canPop(context)) Navigator.pop(context);
               },
             ),
-            const SizedBox(height: KiraSpace.xl),
-            Text(
-              'KIRA bukan alat diagnosis dan tidak memberi saran obat. Data yang tampil di sini adalah data demo.',
-              textAlign: TextAlign.center,
-              style: context.text.bodySmall,
-            ),
           ],
         ),
       ),
