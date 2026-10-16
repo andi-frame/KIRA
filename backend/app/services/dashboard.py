@@ -12,7 +12,7 @@ from app.core_calc.goals import SLEEP_TARGET_HOURS
 from app.core_calc.habits import DAILY_ACTIVE_TARGET, habit_report, next_best_action, week_metrics, weekly_changes
 from app.core_calc.triage import triage_flags
 from app.models import User
-from app.services import bp_protocol, goals as goals_service, history, risk
+from app.services import bp_protocol, goals as goals_service, history, plan as plan_service, risk
 from app.services.projection_view import projection_payload
 from app.services.trends import clinical_trends, latest_for_triage, risk_history
 from app.timeutil import WIB, local_date, utcnow
@@ -76,15 +76,25 @@ async def build_dashboard(session: AsyncSession, user_id: uuid.UUID, now: dateti
     )
     week, prev = days[-7:], days[-14:-7]
     goals = (await goals_service.list_goals(session, user_id))["goals"]
+    plan = await plan_service.plan_today(session, user_id, now)
+    plan_card = {
+        "meals": [{k: m.get(k) for k in ("slot", "label", "time", "title", "done", "over_budget")}
+                  | {"kcal": (m.get("totals") or {}).get("kcal")} for m in plan["meals"]],
+        "exercise": plan["exercise"] and {k: plan["exercise"].get(k) for k in
+                                          ("minutes", "activity", "time", "done", "done_minutes", "blocked", "strength")},
+        "sleep": {k: plan["sleep"][k] for k in ("hours", "bedtime", "wake_time")},
+        "adapted": plan["adapted"],
+    }
     return {
         "today": {
             "date": today.isoformat(),
             "nutrition": {"kcal": t["kcal"] or 0, "sugar_g": t["sugar_g"] or 0, "sodium_mg": t["sodium_mg"] or 0,
-                          "fat_g": t["fat_g"] or 0, "limits": limits, "kcal_target": None},
+                          "fat_g": t["fat_g"] or 0, "limits": limits, "kcal_target": plan["energy"]["kcal"]},
             "activity_minutes": t["active_minutes"] or 0,
             "activity_target_today": DAILY_ACTIVE_TARGET,
             "sleep_hours_last_night": t["sleep_hours"],
-            "sleep_target": {"hours": SLEEP_TARGET_HOURS, "bedtime": None},
+            "sleep_target": {"hours": plan["sleep"]["hours"], "bedtime": plan["sleep"]["bedtime"],
+                             "minimum_hours": SLEEP_TARGET_HOURS},
             "meals_logged": t["meals"],
             "last_log_at": t["last_log_at"],
         },
@@ -97,7 +107,7 @@ async def build_dashboard(session: AsyncSession, user_id: uuid.UUID, now: dateti
         "logged_days": report["logged_days"],
         "risk": projection_payload(state),
         "risk_history": await risk_history(session, user_id, RISK_HISTORY_DAYS),
-        "plan_today": None,
+        "plan_today": plan_card,
         "goals": goals,
         "open_check": open_check,
         "next_best_action": action,

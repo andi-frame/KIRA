@@ -27,7 +27,11 @@ async def test_pengguna_baru_data_kurang_dan_ajakan_mencatat(client, auth_header
     assert body["data_quality"] == "kurang" and body["logged_days"] == 0
     assert body["today"]["nutrition"]["kcal"] == 0 and body["today"]["meals_logged"] == 0
     assert body["today"]["nutrition"]["limits"]["sugar_g"] == 50.0
-    assert body["today"]["sleep_hours_last_night"] is None and body["plan_today"] is None
+    assert body["today"]["sleep_hours_last_night"] is None
+    plan = body["plan_today"]
+    assert [m["slot"] for m in plan["meals"]] == ["breakfast", "lunch", "snack", "dinner"]
+    assert body["today"]["nutrition"]["kcal_target"] == 2150  # bawaan sampai profil diisi
+    assert body["today"]["sleep_target"]["bedtime"] == plan["sleep"]["bedtime"] == "22:00"
     assert [s["key"] for s in body["signals"]] == ["result_no_results", "data"]  # info, tanpa menyimpulkan kebiasaan
     assert len(body["week"]["days"]) == 7 and body["next_best_action"]["kind"] in {"log_meal", "exercise", "sleep"}
 
