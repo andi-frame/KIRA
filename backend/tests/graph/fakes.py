@@ -14,12 +14,15 @@ class FakeChatModel(BaseChatModel):
     fail_with: Exception | None = None
     call_count: int = 0
     seen: list[list[BaseMessage]] = []
+    tools_bound: list[bool] = []  # per panggilan: apakah tool di-bind (agent tanpa tool memanggil model langsung)
+    _binding: bool = False
 
     @property
     def _llm_type(self) -> str:
         return "fake-kira"
 
     def bind_tools(self, tools: Any, **kwargs: Any) -> "FakeChatModel":
+        self._binding = True
         return self
 
     def _generate(self, messages: list[BaseMessage], stop=None, run_manager=None, **kwargs: Any) -> ChatResult:
@@ -28,6 +31,8 @@ class FakeChatModel(BaseChatModel):
         index = min(self.call_count, len(self.responses) - 1)
         self.call_count += 1
         self.seen.append(list(messages))
+        self.tools_bound.append(self._binding)
+        self._binding = False
         # id unik per panggilan, seperti model sungguhan (add_messages menimpa pesan ber-id sama)
         message = self.responses[index].model_copy(update={"id": f"fake-{self.call_count}"})
         return ChatResult(generations=[ChatGeneration(message=message)])

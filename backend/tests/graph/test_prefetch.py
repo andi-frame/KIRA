@@ -100,3 +100,64 @@ def test_hitung_risiko_tidak_disiapkan_dua_kali():
 def test_pertanyaan_biasa_tanpa_kata_risiko_tidak_menyiapkan_hitung_risiko():
     assert plan_calls({"intent": "question_general", "items": [], "drinks": []}, text="halo KIRA, apa kabar?") == []
 
+
+SLEEP_ONLY = {"items": [], "drinks": [], "sleep": {"bed_time": "02:00", "wake_time": "07:00"}, "activity": [],
+              "clinical_result": None, "intent": "log"}
+
+
+@pytest.mark.parametrize("extraction", [
+    SLEEP_ONLY,
+    {**SLEEP_ONLY, "sleep": None, "activity": [{"kind": "jalan kaki", "minutes": 30}]},
+    # terukur pada model sungguhan: "semalam tidur cuma 5 jam" (tanpa jam tidur/bangun) terekstrak tanpa field sleep
+    {**SLEEP_ONLY, "sleep": None, "summary": "Tidur 5 jam semalam"},
+])
+async def test_catatan_tidur_atau_aktivitas_saja_dijawab_tanpa_tool(session_maker, make_user, extraction):
+    from tests.graph.fakes import ai
+
+    uid = await make_user()
+    chat, _ = install([ai("Tidurnya sudah kucatat ya.")], extraction)
+    result = await run(uid, session_maker, input_text="semalam tidur cuma 5 jam")
+    assert chat.call_count == 1 and chat.tools_bound == [False]  # model tidak bisa mencari gizi makanan dari riwayat
+    assert result.reply == "Tidurnya sudah kucatat ya." and result.tool_calls == []
+
+
+async def test_putaran_tool_dari_model_dibatasi_lalu_model_menjawab_tanpa_tool(session_maker, make_user):
+    from app.graph.kira_graph import MAX_TOOL_ROUNDS
+    from tests.graph.fakes import ai
+
+    uid = await make_user()
+    whatif = lambda i: ai(tool_calls=[{"name": "simulasi_whatif", "args": {"perubahan": {"active_30min": True}}, "id": f"w{i}"}])
+    chat, _ = install([*[whatif(i) for i in range(MAX_TOOL_ROUNDS)], ai("Rentangnya bisa turun bila rutin bergerak.")],
+                      {"items": [], "drinks": [], "intent": "question_general"})
+    result = await run(uid, session_maker, input_text="kalau aku rajin jalan kaki gimana?")
+    assert chat.call_count == MAX_TOOL_ROUNDS + 1
+    assert chat.tools_bound == [True] * MAX_TOOL_ROUNDS + [False]
+    # panggilan terakhir tanpa tool: hasil tool tetap terlihat sebagai teks, tanpa pesan tool mentah
+    last = chat.seen[-1]
+    assert all(type(m).__name__ != "ToolMessage" for m in last)
+    assert any("simulasi_whatif" in str(m.content) for m in last)
+    assert result.reply == "Rentangnya bisa turun bila rutin bergerak."
+    assert [c["name"] for c in result.tool_calls] == ["simulasi_whatif"] * MAX_TOOL_ROUNDS  # jejak tetap lengkap
+
+
+def test_tanpa_tool_mempertahankan_urutan_dan_teks_model():
+    from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+
+    from app.graph.kira_graph import _without_tool_turns
+
+    msgs = [SystemMessage("s"), HumanMessage("tanya"),
+            AIMessage("cek dulu", tool_calls=[{"name": "hitung_risiko", "args": {}, "id": "a"}]),
+            ToolMessage('{"score": 9}', tool_call_id="a", name="hitung_risiko")]
+    out = _without_tool_turns(msgs)
+    assert [type(m).__name__ for m in out] == ["SystemMessage", "HumanMessage", "AIMessage", "HumanMessage"]
+    assert out[2].content == "cek dulu" and not out[2].tool_calls
+    assert 'hitung_risiko: {"score": 9}' in out[3].content
+
+
+async def test_balasan_kosong_dari_model_dicoba_ulang_sekali(session_maker, make_user):
+    from tests.graph.fakes import ai
+
+    uid = await make_user()
+    chat, _ = install([ai(""), ai("Jalan kakinya sudah kucatat.")], {**SLEEP_ONLY, "sleep": None})
+    result = await run(uid, session_maker, input_text="tadi jalan kaki 30 menit")
+    assert chat.call_count == 2 and result.reply == "Jalan kakinya sudah kucatat."
