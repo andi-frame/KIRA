@@ -14,6 +14,30 @@ penuh. Tujuannya mengubah momen "buka Instagram tanpa sadar" menjadi satu dorong
 
 Kartu yang berlaku bersamaan (mis. 22.00: catat + tidur) tampil bertumpuk dalam satu layar.
 
+## Fun fact kesehatan (opsional, mati secara bawaan)
+
+Bila dinyalakan, setiap kali aplikasi pilihan dibuka (di luar masa bebas dan hari yang dilewati) tampil kartu "Tahukah kamu?"
+berisi satu fakta kesehatan singkat beserta sumbernya, ditambah ajakan memutuskan dengan sadar: lanjut atau tidak. Faktanya
+berputar berurutan (14 fakta) supaya tidak berulang. Kartu ini tidak punya tombol aksi dan tidak dibatasi tiga kali sehari,
+karena penggunalah yang memintanya; "Lewati sampai besok" dan masa bebas tetap berlaku. Daftar faktanya konstanta di aplikasi
+(`jeda_facts.dart`) dan dikirim ke Android bersama pengaturan, sehingga tetap muncul walau rencana tidak bisa dimuat (tanpa
+sinyal). Sumber tiap fakta ada di `docs/sumber-angka-klinis.md`.
+
+## Masa bebas setelah kartu ditutup (dapat dimatikan)
+
+Secara bawaan, setelah "Lanjut" ditekan semua aplikasi pilihan bebas dibuka selama 15/30/60 menit. Saklar "Setelah kartu ditutup,
+bebas buka sosmed selama" bisa dimatikan: kartu lalu muncul lagi setiap kali sosmed dibuka. Batas tiga kali sehari per jenis
+kartu terjadwal tetap berlaku; fun fact tidak dibatasi.
+
+## Izin terkunci "Dikontrol oleh setelan terbatas"
+
+Android 13 ke atas mengunci izin sensitif untuk aplikasi yang dipasang dari berkas APK (bukan dari toko aplikasi), dan Android 15
+memperluasnya ke akses penggunaan serta tampil di atas aplikasi lain ([Android Authority](https://androidauthority.com/android-15-restricted-settings-sideloading-3481098)).
+Aplikasi tidak bisa membukanya sendiri; pengguna melakukannya sekali: Info aplikasi > titik tiga (⋮) > **Izinkan setelan terbatas**
+> konfirmasi PIN/sidik jari, lalu kembali dan tekan Izinkan lagi. Bila menu itu belum ada, tekan Izinkan sekali sampai muncul
+pesan terkunci, tutup, lalu buka Info aplikasi lagi. Layar pengaturan menampilkan langkah ini bila izin belum lengkap, dengan tombol
+"Buka Info aplikasi". Aplikasi dari Google Play tidak terkena kunci ini.
+
 ## Aturan agar tidak mengganggu
 
 - Mati sampai pengguna menyalakan, memilih aplikasi, dan memberi dua izin.

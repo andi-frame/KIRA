@@ -41,6 +41,8 @@ services:
       STT_BASE_URL: ${STT_BASE_URL:-https://api.groq.com/openai/v1}
       STT_API_KEY: ${STT_API_KEY:-}
       STT_MODEL: ${STT_MODEL:-whisper-large-v3-turbo}
+      # Fasilitas kesehatan terdekat: kunci Google Places opsional; tanpa kunci dipakai OpenStreetMap.
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
       BOT_SECRET: ${BOT_SECRET:-}
       SCHEDULER_ENABLED: "true"
     expose:

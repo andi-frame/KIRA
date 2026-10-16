@@ -49,6 +49,30 @@ Belum diuji di Coolify sungguhan; sudah lolos `docker compose -f docker-compose.
    dengan `API_URL` domain itu.
 5. WhatsApp: hapus komentar blok `wa-bot` di berkas Compose dan isi `BOT_SECRET` (peringatan di `wa-bot/README.md` berlaku).
 
+## Pengguna demo
+
+Untuk demo yang lebih baik ada tujuh pengguna dengan data berbeda (semua dummy, PIN `123456`): Raka (alur utama), Sari (hipertensi
+terkontrol), Budi (prediabetes), Dewi (sehat dan aktif), Pak Joko (diabetes dan tensi tinggi), Nia (pekerja shift, tidur tidak
+teratur), dan Tara (pengguna baru, baru 3 hari tercatat). Dibuat dengan skrip yang idempoten dan deterministik:
+
+```bash
+cd backend
+uv run python -m seed.demo_users --list           # daftar persona dan cara masuk
+uv run python -m seed.demo_users --reset          # hapus lalu buat ulang semuanya (juga Raka)
+uv run python -m seed.demo_users --only sari,budi # hanya yang disebut
+```
+
+Di server Coolify: buka terminal kontainer backend, lalu `uv run --no-dev python -m seed.demo_users --reset`. Masuk dengan nama
+pengguna (mis. `sari`) atau nomor telepon. Jangan jalankan di basis data berisi pengguna sungguhan tanpa `--only`: `--reset`
+hanya menghapus akun demo (dikenali dari nomor `0812000100NN` dan Raka), tetapi akun demo tetap tampil bagi siapa pun yang tahu PIN-nya.
+
+## Peta untuk "Tempat cek terdekat"
+
+Tanpa pengaturan apa pun, daftar diambil dari OpenStreetMap (Overpass API, beberapa server dicoba bergantian karena server
+publik kadang penuh) dan tiap tempat punya tombol rute Google Maps. Bila `GOOGLE_PLACES_API_KEY` diisi, Google Places
+(Places API New, pencarian teks "puskesmas", "klinik kesehatan", "rumah sakit") didahulukan; bagian ini belum diuji dengan kunci
+sungguhan. Bila semua sumber gagal, data contoh dipakai dan aplikasi mengatakannya, dengan tombol "Cari puskesmas di Google Maps".
+
 ## Cadangan dan pemulihan
 
 - `scripts/backup-db.sh [folder]` membuat `pg_dump` terkompresi dan menghapus yang lebih tua dari 14 hari. Jadwalkan dengan cron
