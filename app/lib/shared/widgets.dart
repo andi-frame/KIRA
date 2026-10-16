@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
@@ -80,9 +82,12 @@ class SoftNote extends StatelessWidget {
 
 /// Gelembung percakapan, dipakai bersama oleh chat dan onboarding.
 class ChatBubble extends StatelessWidget {
-  const ChatBubble({super.key, required this.text, required this.mine});
+  const ChatBubble({super.key, required this.text, required this.mine, this.image});
   final String text;
   final bool mine;
+
+  /// Foto yang dikirim pengguna. Bila ada, gelembung hanya berisi foto; teks menjadi label untuk pembaca layar.
+  final Uint8List? image;
 
   @override
   Widget build(BuildContext context) {
@@ -97,18 +102,37 @@ class ChatBubble extends StatelessWidget {
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.82),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: KiraSpace.lg, vertical: KiraSpace.md),
-          decoration: BoxDecoration(
-            color: mine ? scheme.primaryContainer : scheme.surfaceContainerLowest,
-            borderRadius: radius,
-            border: mine ? null : Border.all(color: scheme.outlineVariant),
-          ),
-          child: Text(
-            text,
-            style: context.text.bodyLarge?.copyWith(color: mine ? scheme.onPrimaryContainer : scheme.onSurface),
-          ),
-        ),
+        child: image != null
+            ? Semantics(
+                image: true,
+                label: text,
+                child: ClipRRect(
+                  borderRadius: radius,
+                  child: Image.memory(
+                    image!,
+                    key: const Key('chat_photo'),
+                    width: 240,
+                    height: 240,
+                    fit: BoxFit.cover,
+                    cacheWidth: 720,
+                    gaplessPlayback: true,
+                    excludeFromSemantics: true,
+                    errorBuilder: (_, _, _) => ChatBubble(text: text, mine: mine),
+                  ),
+                ),
+              )
+            : Container(
+                padding: const EdgeInsets.symmetric(horizontal: KiraSpace.lg, vertical: KiraSpace.md),
+                decoration: BoxDecoration(
+                  color: mine ? scheme.primaryContainer : scheme.surfaceContainerLowest,
+                  borderRadius: radius,
+                  border: mine ? null : Border.all(color: scheme.outlineVariant),
+                ),
+                child: Text(
+                  text,
+                  style: context.text.bodyLarge?.copyWith(color: mine ? scheme.onPrimaryContainer : scheme.onSurface),
+                ),
+              ),
       ),
     );
   }

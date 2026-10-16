@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kira/core/api_client.dart';
 import 'package:kira/features/projection/projection_providers.dart';
+import 'package:kira/features/chat/chat_controller.dart';
 import 'package:kira/features/chat/chat_screen.dart';
 import 'package:kira/shared/models.dart';
 
@@ -153,4 +154,27 @@ void main() {
     await container.read(projectionProvider.future);
     expect(api.projectionCalls, 2);
   });
+
+  testWidgets('foto yang dikirim tampil sebagai gambar saja, labelnya untuk pembaca layar', (tester) async {
+    final api = FakeApi();
+    await tester.pumpWidget(testApp(const ChatScreen(), api: api));
+    await tester.pumpAndSettle();
+
+    final container = ProviderScope.containerOf(tester.element(find.byType(ChatScreen)));
+    await container.read(chatProvider.notifier).sendPhoto('food', Uint8List.fromList(_onePixelPng), 'makan.png');
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('chat_photo')), findsOneWidget);
+    expect(find.text('Foto makanan'), findsNothing);
+    expect(find.bySemanticsLabel('Foto makanan'), findsOneWidget);
+    expect(find.text('Foto diterima.'), findsOneWidget);
+  });
 }
+
+const _onePixelPng = [
+  0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, //
+  0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, //
+  0x89, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x44, 0x41, 0x54, 0x78, 0xDA, 0x63, 0xFC, 0xCF, 0xC0, 0x50, //
+  0x0F, 0x00, 0x04, 0x85, 0x01, 0x80, 0x84, 0xA9, 0x8C, 0x21, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, //
+  0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+];

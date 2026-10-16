@@ -17,9 +17,9 @@ enum ChatKind { user, pending, kira, extraction, emergency, error }
 
 class ChatItem {
   const ChatItem._(this.kind,
-      {this.text = '', this.data, this.logIds = const [], this.retry, this.calls = const [], this.id, this.meal});
+      {this.text = '', this.data, this.logIds = const [], this.retry, this.calls = const [], this.id, this.meal, this.image});
 
-  const ChatItem.user(String text) : this._(ChatKind.user, text: text);
+  const ChatItem.user(String text, {Uint8List? image}) : this._(ChatKind.user, text: text, image: image);
   /// Pesan yang belum terkirim karena tidak ada sinyal; tersimpan di ponsel dan dikirim otomatis.
   const ChatItem.pending(String text, String id) : this._(ChatKind.pending, text: text, id: id);
   const ChatItem.kira(String text, {List<ToolCall> calls = const []}) : this._(ChatKind.kira, text: text, calls: calls);
@@ -38,6 +38,10 @@ class ChatItem {
 
   /// Catatan makan yang tersimpan (item, gizi, kelompok hidangan); null untuk balasan lama tanpa rincian.
   final MealLog? meal;
+
+  /// Foto yang dikirim pengguna, hanya di memori ponsel selama sesi. Server tidak menyimpan foto, jadi riwayat yang
+  /// dipulihkan hanya berisi labelnya.
+  final Uint8List? image;
 }
 
 class ChatState {
@@ -165,7 +169,7 @@ class ChatController extends Notifier<ChatState> {
       'label': 'Foto label gizi kemasan',
       'result': 'Foto hasil pemeriksaan',
     };
-    _add(ChatItem.user(labels[kind] ?? 'Foto'));
+    _add(ChatItem.user(labels[kind] ?? 'Foto', image: bytes));
     await _run(() => ref.read(apiProvider).sendPhoto(kind, bytes, name));
   }
 

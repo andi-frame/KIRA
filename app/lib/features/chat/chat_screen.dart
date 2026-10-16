@@ -374,7 +374,7 @@ class _ItemView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     switch (item.kind) {
       case ChatKind.user:
-        return ChatBubble(text: item.text, mine: true);
+        return ChatBubble(text: item.text, mine: true, image: item.image);
       case ChatKind.pending:
         return Column(
           key: Key('pending_${item.id}'),
