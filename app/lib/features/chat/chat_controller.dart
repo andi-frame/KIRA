@@ -10,6 +10,7 @@ import '../../shared/models.dart';
 import '../history/history_controller.dart';
 import '../home/home_screen.dart';
 import '../projection/projection_providers.dart';
+import '../jeda/jeda_controller.dart';
 import '../reminders/reminders_controller.dart';
 import 'frequent_foods.dart';
 
@@ -146,6 +147,7 @@ class ChatController extends Notifier<ChatState> {
         ..invalidate(dashboardProvider)
         ..invalidate(frequentFoodsProvider);
       unawaited(ref.read(remindersProvider.notifier).reschedule()); // sudah mencatat: pengingat hari ini tak perlu
+      unawaited(ref.read(jedaProvider.notifier).refresh()); // kartu "catat hari ini" ikut menyesuaikan
     }
     final data = reply.extraction;
     if (data != null && !data.isEmpty && reply.logIds.isNotEmpty && reply.redFlag == null) {
