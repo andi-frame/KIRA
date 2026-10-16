@@ -1,7 +1,14 @@
 # Spesifikasi: makanan per komponen, riwayat makan, Beranda hidup, dan perencana harian/mingguan
 
-Status: **belum diimplementasikan**. Dokumen ini ditulis supaya agent lain bisa melanjutkan tanpa konteks percakapan sebelumnya.
-Cabang kerja: `feat/dashboard-planner` (dibuat dari `main` setelah merge `78fc9db`; belum ada commit selain dokumen ini).
+Status: **diimplementasikan** di cabang `feat/dashboard-planner` (dibuat ulang dari `main` setelah merge `feat/chat-latency`).
+Ringkasan hasil ada di README bagian Fase 6. Penyimpangan dari teks di bawah:
+- Skrip pengambil data bernama `seed/fetch_components.py` (bukan `fetch_usda.py`) karena juga membaca TKPI; USDA diambil dari berkas
+  unduhan SR Legacy, bukan API `DEMO_KEY`.
+- Satu `Log` makan tetap berisi semua makanan dalam satu pesan (perilaku lama); komponen hidangan dibedakan lewat `log_items.group_name`.
+- Kolom `log_items.role` dibuat tetapi belum diisi.
+- `PlanPrefs` mengambil daftar "tidak suka" dari `health_profiles.food_preferences.dislikes`.
+- Angka AKG di 6.2 sudah diverifikasi dari lampiran resmi (sama dengan yang diingat penulis, ditambah kelompok 80+).
+- Screenshot dan cetak ulang PDF (7.3) belum dikerjakan.
 
 ## 0. Cara bekerja di repo ini (WAJIB dibaca)
 

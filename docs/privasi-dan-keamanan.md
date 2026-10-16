@@ -34,6 +34,19 @@ menghapus data. Dokumen ini bukan nasihat hukum; peninjauan oleh konsultan hukum
 - **Layanan transkripsi suara (Groq, Whisper):** rekaman suara yang dikirim pengguna.
 - **WhatsApp:** hanya bila pengguna menautkan nomornya; pesan melewati jembatan Baileys yang tidak resmi (prototype).
 
+## Rencana dan pengingat
+
+- **Data baru:** preferensi rencana (`plan_preferences`: jam bangun/makan/olahraga, hari olahraga, tujuan, kanal pengingat, jam tenang)
+  dan penggantian usulan (`plan_overrides`). Keduanya ikut `GET /account/export` dan terhapus bersama akun.
+- **Rencana dihitung kode KIRA** dari profil, catatan, dan katalog hidangan; model bahasa hanya menyampaikannya lewat tool baca-saja.
+- **Pengingat WhatsApp rencana** mati secara bawaan, hanya untuk nomor yang tertaut, maksimal 4 pesan WhatsApp per hari (semua jenis),
+  tidak di jam tenang, dan bisa dimatikan dengan membalas "stop pengingat". Isinya boleh memuat nama usulan makan dan perkiraan
+  energi, **tidak pernah** hasil pemeriksaan (tensi, gula darah).
+- **Notifikasi lokal** rencana juga mati secara bawaan dan isinya generik ("Waktunya makan siang"), tanpa angka kesehatan,
+  karena layar kunci bisa dilihat orang lain.
+- **Katalog makanan** (sekitar 1.400 token daftar nama) ikut terkirim ke penyedia model bahasa bersama pesan pengguna supaya
+  makanan bisa dipetakan; katalog itu bukan data pribadi.
+
 ## Sesi dan PIN
 
 - Token akses berlaku 60 menit; perangkat memperbaruinya dengan token penyegar (30 hari, berputar tiap dipakai, hanya hash SHA-256 yang disimpan).
