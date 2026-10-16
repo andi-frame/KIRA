@@ -31,6 +31,24 @@ Jalankan langkah 1-5 sekali di server percobaan sebelum hari demo.
 7. **WhatsApp (prototype)**: isi `BOT_SECRET`, lalu `docker compose -f docker-compose.prod.yml --profile whatsapp up -d`
    dan scan QR dari `docker compose ... logs -f wa-bot`. Lihat peringatan di `wa-bot/README.md`: tidak resmi, nomor khusus, data dummy.
 
+## Lewat Coolify
+
+Pakai `docker-compose.coolify.yml`, bukan `docker-compose.prod.yml`: berkas produksi memuat Caddy yang ikut meminta port 80/443,
+padahal proxy Coolify (Traefik) sudah memegangnya dan sudah mengurus HTTPS. Berkas Coolify hanya berisi Postgres dan API.
+Belum diuji di Coolify sungguhan; sudah lolos `docker compose -f docker-compose.coolify.yml config`.
+
+1. Resource baru > repositori GitHub > build pack **Docker Compose**, branch `main`, **Docker Compose Location**
+   `/docker-compose.coolify.yml`.
+2. Tab **Environment Variables**: isi `POSTGRES_PASSWORD`, `JWT_SECRET` (`openssl rand -hex 32`), `CORS_ORIGINS`, dan kunci model
+   (untuk 9router: `LLM_BASE_URL=https://9router.byhan.id/v1`, `LLM_API_KEY`, `LLM_MODEL_CHAT=ag/gemini-3.8-flash-high`,
+   `LLM_MODEL_EXTRACT=ag/gemini-3.8-flash-low`). Variabel yang wajib dan kosong ditandai Coolify dan menahan deploy.
+   `KIRA_DOMAIN` tidak dipakai di sini.
+3. Layanan **backend** > **Domains**: `https://api.contoh-kira.id:8000` (port 8000 = port dalam kontainer; DNS A-record
+   domain itu harus mengarah ke server Coolify). `PUBLIC_BASE_URL` terisi otomatis dari domain ini.
+4. Deploy, lalu `curl https://api.contoh-kira.id/health/ready` harus `{"status":"ready"}`. Bangun aplikasi seperti langkah 5 di atas
+   dengan `API_URL` domain itu.
+5. WhatsApp: hapus komentar blok `wa-bot` di berkas Compose dan isi `BOT_SECRET` (peringatan di `wa-bot/README.md` berlaku).
+
 ## Cadangan dan pemulihan
 
 - `scripts/backup-db.sh [folder]` membuat `pg_dump` terkompresi dan menghapus yang lebih tua dari 14 hari. Jadwalkan dengan cron
