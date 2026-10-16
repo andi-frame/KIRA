@@ -5,12 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core_calc.nutrition import match_food
 from app.db import get_session
 from app.models import Log, LogItem
 from app.repos import foods as foods_repo
 from app.repos import logs as logs_repo
-from app.schemas.api import LogItemOut, LogOut, LogPatch
+from app.schemas.api import ItemPatch, LogItemOut, LogOut, LogPatch
 from app.security import current_user_id
 from app.services.nutrition_items import item_data
 from app.timeutil import local_date, utcnow
@@ -23,7 +22,8 @@ def _out(log: Log, items: list[LogItem]) -> LogOut:
         id=str(log.id), kind=log.kind, source=log.source, occurred_at=log.occurred_at, raw_text=log.raw_text,
         extracted=log.extracted, corrected=log.corrected,
         items=[LogItemOut(id=str(i.id), name=i.name, portion_g=i.portion_g, sugar_g=i.sugar_g,
-                          sodium_mg=i.sodium_mg, fat_g=i.fat_g, kcal=i.kcal) for i in items],
+                          sodium_mg=i.sodium_mg, fat_g=i.fat_g, kcal=i.kcal, food_id=i.food_id, group=i.group_name)
+               for i in items],
     )
 
 
@@ -100,10 +100,24 @@ async def patch_log(
     log = await logs_repo.get_owned(session, user_id, log_id)
     if log is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Catatan tidak ditemukan")
+    patches = body.items if body.items is not None else await _current_as_patches(session, log)
+    if body.scale is not None:
+        patches = [_scaled(p, body.scale) if body.group is None or p.group == body.group else p for p in patches]
     if log.source in {"photo_label", "barcode"}:  # angka tercetak di kemasan, bukan dari tabel pangan
-        new_items = await _scaled_label_items(session, log, body.items)
+        new_items = await _scaled_label_items(session, log, patches)
     else:
-        foods = await foods_repo.all_foods(session)
-        new_items = [item_data(p.name, match_food(p.name, foods), p.portion_g) for p in body.items]
+        catalog = await foods_repo.catalog(session)
+        new_items = [
+            item_data(p.name, catalog.find_food(p.name, p.food_id), p.portion_g, group_name=p.group) for p in patches
+        ]
     rows = await logs_repo.replace_items(session, log, new_items)
     return _out(log, rows)
+
+
+async def _current_as_patches(session: AsyncSession, log: Log) -> list[ItemPatch]:
+    items = (await logs_repo._with_items(session, [log]))[0][1]
+    return [ItemPatch(name=i.name, portion_g=i.portion_g, food_id=i.food_id, group=i.group_name) for i in items]
+
+
+def _scaled(p: ItemPatch, scale: float) -> ItemPatch:
+    return p.model_copy(update={"portion_g": None if p.portion_g is None else p.portion_g * scale})

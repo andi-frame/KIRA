@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import account, auth, bp_protocol, goals, products, share, chat, family, health, logs, passive, profile, summary, whatsapp
+from app.api import account, auth, bp_protocol, foods, goals, products, share, chat, family, health, logs, passive, profile, summary, whatsapp
 from app.config import settings, validate_settings
 from app.db import SessionLocal
 from app.scheduler import build_scheduler
@@ -33,7 +33,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-for module in (auth, account, bp_protocol, goals, share, products, profile, chat, logs, health, whatsapp, family, summary, passive):
+for module in (auth, account, bp_protocol, foods, goals, share, products, profile, chat, logs, health, whatsapp, family, summary, passive):
     app.include_router(module.router)
 
 
