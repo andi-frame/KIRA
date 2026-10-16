@@ -82,3 +82,12 @@ async def test_percobaan_pin_salah_saat_hapus_akun_dibatasi(client, auth_headers
         assert (await client.post("/account/delete", json={"pin": "000000"}, headers=auth_headers)).status_code == 403
     blocked = await client.post("/account/delete", json={"pin": "123456"}, headers=auth_headers)
     assert blocked.status_code == 429
+
+
+async def test_unduh_data_memuat_preferensi_dan_penggantian_rencana(client, auth_headers):
+    assert (await client.get("/account/export", headers=auth_headers)).json()["plan_preferences"] is None
+    await client.put("/plan/preferences", json={"wake_time": "05:30"}, headers=auth_headers)
+    await client.post("/plan/today/swap", json={"slot": "lunch"}, headers=auth_headers)
+    body = (await client.get("/account/export", headers=auth_headers)).json()
+    assert body["plan_preferences"]["wake_time"] == "05:30"
+    assert [o["slot"] for o in body["plan_overrides"]] == ["lunch"]
