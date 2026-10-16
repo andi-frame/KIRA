@@ -138,3 +138,17 @@ async def test_klinik_kecantikan_dibuang_dan_puskesmas_diutamakan_atas_klinik_se
     assert "Bandung Skin Centre" not in names
     assert names == ["Puskesmas Sekeloa", "Klinik Sehat"]  # puskesmas sedikit lebih jauh tetap didahulukan
     assert out["faskes"][0]["distance_km"] > out["faskes"][1]["distance_km"]  # jarak yang ditampilkan tetap jujur
+
+
+async def test_rumah_sakit_khusus_dibuang_tetapi_rumah_sakit_umum_tetap(session_maker, monkeypatch):
+    raw = [{"id": str(i), "name": n, "kind": "rumah_sakit", "address": None, "lat": -6.8916 - i * 0.0005, "lng": 107.6108}
+           for i, n in enumerate(["RSGM Unpad", "Rumah Sakit Ginjal Nyonya Habibie", "Rumah Sakit Mata Cicendo", "RSIA Kota Bandung",
+                                  "Rumah Sakit Advent", "Rumah Sakit Jiwa Provinsi"])]
+
+    async def fake(lat, lng):
+        return raw
+
+    monkeypatch.setattr(faskes_lookup, "_overpass", fake)
+    async with session_maker() as s:
+        out = await faskes_lookup.nearby(s, LAT, LNG)
+    assert [f["name"] for f in out["faskes"]] == ["Rumah Sakit Advent"]

@@ -37,8 +37,13 @@ _POSYANDU = re.compile(r"posyandu|posbindu", re.IGNORECASE)
 _HOSPITAL = re.compile(r"rumah sakit|\brsu?d?\b|\brs[a-z]{0,3}\b|hospital", re.IGNORECASE)
 
 
-# Tempat yang bukan untuk cek rutin gula darah/tensi (kecantikan, gigi, hewan): dibuang dari daftar.
-_NOT_CHECKUP = re.compile(r"aesthetic|estetik|kecantikan|beauty|skin|derma|klinik gigi|dental|dokter gigi|veteriner|hewan|vet|pet|salon|spa|bersalin|laser", re.IGNORECASE)
+# Tempat yang bukan untuk cek rutin gula darah/tensi (kecantikan, gigi, hewan, dan rumah sakit khusus seperti ginjal, mata, jiwa,
+# ibu dan anak): dibuang dari daftar. Pengguna yang membutuhkannya tetap bisa mencari sendiri lewat tombol Google Maps.
+_NOT_CHECKUP = re.compile(
+    r"aesthetic|estetik|kecantikan|beauty|skin|derma|klinik gigi|dental|dokter gigi|gigi|mulut|rsgm|veteriner|hewan|\bvet\b|\bpet\b|"
+    r"salon|\bspa\b|bersalin|ibu dan anak|\brsia\b|laser|ginjal|\bmata\b|\bjiwa\b|kanker|\btht\b",
+    re.IGNORECASE,
+)
 # Puskesmas dan rumah sakit lebih berguna untuk cek rutin dan tindak lanjut: dihitung "lebih dekat" saat mengurutkan.
 _KIND_WEIGHT = {"puskesmas": 0.6, "posyandu": 0.7, "rumah_sakit": 0.8, "klinik": 1.0}
 

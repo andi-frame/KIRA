@@ -376,7 +376,7 @@ class _ReadingSheetState extends ConsumerState<_ReadingSheet> {
             decoration: const InputDecoration(
               labelText: 'Detak jantung / nadi (boleh dikosongkan)',
               suffixText: 'kali/menit',
-              helperText: 'Tensimeter biasanya menampilkannya di bawah angka tensi.',
+              helperText: 'Biasanya tampil di layar tensimeter.',
             ),
           ),
           if (_error != null) ...[

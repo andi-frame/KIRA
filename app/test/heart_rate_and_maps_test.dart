@@ -40,6 +40,9 @@ void main() {
       expect(api.results.single.value, {'bpm': 72});
       expect(find.byKey(const Key('hr_outcome')), findsOneWidget);
       expect(find.textContaining('rentang 60-100'), findsOneWidget);
+      // Detak jantung tidak masuk proyeksi diabetes: tidak boleh mengklaim proyeksi dikalibrasi ulang.
+      expect(find.textContaining('tidak mengubah proyeksi diabetes'), findsOneWidget);
+      expect(find.textContaining('dikalibrasi ulang'), findsNothing);
     });
 
     testWidgets('angka mustahil ditolak sebelum dikirim', (tester) async {

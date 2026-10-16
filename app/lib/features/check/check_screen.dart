@@ -710,9 +710,13 @@ class _OutcomeView extends StatelessWidget {
               Text('Tersimpan', style: context.text.titleMedium?.copyWith(color: kira.onImproveContainer)),
             ]),
             const SizedBox(height: KiraSpace.sm),
-            Text('Proyeksimu sudah dikalibrasi ulang dengan hasil nyata.',
+            Text(
+                outcome.hrRange != null
+                    ? 'Muncul di Tren dan penanda serta ringkasan untuk dokter. Detak jantung tidak mengubah proyeksi diabetes.'
+                    : 'Proyeksimu sudah dikalibrasi ulang dengan hasil nyata.',
+                key: const Key('outcome_note'),
                 style: context.text.bodyLarge?.copyWith(color: kira.onImproveContainer)),
-            if (after != null && before != null)
+            if (after != null && before != null && outcome.hrRange == null)
               Padding(
                 padding: const EdgeInsets.only(top: KiraSpace.xs),
                 child: Text(
