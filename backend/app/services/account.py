@@ -16,6 +16,7 @@ from app.models import (
     HealthProfile,
     Log,
     LogItem,
+    MedicalRecord,
     Message,
     RiskSnapshot,
     User,
@@ -100,6 +101,7 @@ async def export_account(session: AsyncSession, user_id: uuid.UUID) -> dict:
         "whatsapp_linked": wa.scalar_one_or_none() is not None,
         "plan_preferences": _row(prefs) if (prefs := await session.get(PlanPreference, user_id)) else None,
         "plan_overrides": await _rows(session, PlanOverride, PlanOverride.user_id == user_id),
+        "medical_records": await _rows(session, MedicalRecord, MedicalRecord.user_id == user_id, order=MedicalRecord.recorded_on),
     }
 
 

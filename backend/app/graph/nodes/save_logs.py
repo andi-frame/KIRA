@@ -7,12 +7,19 @@ from app.repos import foods as foods_repo
 from app.repos import logs as logs_repo
 from app.repos.logs import ItemData
 from app.schemas.extraction import Extraction
-from app.services import risk
+from app.services import log_edit, risk
+from app.services import medical_records as records_service
+from app.services.meal_slot import SLOT_LABELS, infer_meal_slot
 from app.services.nutrition_items import item_data, resolve_food_item
-from app.timeutil import utcnow
+from app.timeutil import WIB, utcnow
 from app.tools._ctx import ctx
 
 LOGGING_INTENTS = {"log", "result_input"}
+SLOT_QUESTION = (
+    "Waktu makan untuk catatan '{title}' belum pasti: KIRA mencatatnya sebagai {guess} hanya dari jam {clock}. "
+    "Tanyakan SATU pertanyaan singkat: ini sarapan, makan siang, makan malam, atau selingan? (Aplikasi juga menampilkan "
+    "pilihannya.) Jangan mengubah catatan sebelum pengguna menjawab."
+)
 
 
 async def save_logs(state: KiraState, config: RunnableConfig) -> dict:
@@ -25,15 +32,32 @@ async def save_logs(state: KiraState, config: RunnableConfig) -> dict:
     async with session_factory() as session:
         catalog = await foods_repo.catalog(session)
 
-        async def add(kind: str, extracted: dict, items: list[logs_repo.ItemData]) -> None:
+        async def add(kind: str, extracted: dict, items: list[logs_repo.ItemData],
+                       meal_slot: str | None = None, slot_confirmed: bool = True) -> None:
             log = await logs_repo.add_log(
                 session, user_id, kind=kind, source=source, occurred_at=now, extracted=extracted,
-                raw_text=raw, items=items, commit=False,
+                raw_text=raw, items=items, commit=False, meal_slot=meal_slot, slot_confirmed=slot_confirmed,
             )
             log_ids.append(str(log.id))
 
         is_label = state.get("image_kind") == "label"
-        if is_label:
+        if extraction.intent == "correction":
+            # Koreksi atas catatan yang sudah ada: tidak boleh menjadi entri baru (itu membuat catatan dobel).
+            if extraction.correction is None:
+                notes.append("Pesan ini tampak seperti koreksi tetapi tidak jelas catatan mana yang dimaksud. "
+                             "Tanyakan; jangan mencatat entri baru.")
+            else:
+                outcome = await log_edit.apply_correction(session, user_id, extraction.correction)
+                notes.append(outcome.note)
+                if outcome.ok and outcome.log_id and extraction.correction.action != "delete":
+                    log_ids.append(outcome.log_id)
+        elif extraction.intent == "medical_record":
+            if extraction.medical_record is None:
+                notes.append("Pengguna tampak bercerita soal riwayat medis tetapi isinya tidak jelas. Tanyakan apa yang ingin dicatat.")
+            else:
+                saved = await records_service.add_from_chat(session, user_id, extraction.medical_record)
+                notes.append(saved)
+        elif is_label:
             note = await _save_label(add, extraction)
             if note:
                 notes.append(note)
@@ -51,7 +75,14 @@ async def save_logs(state: KiraState, config: RunnableConfig) -> dict:
                     items.extend(res.items)
                     notes.extend(res.notes)
                     resolved.append(res.trace)
-                await add("meal", {"items": [i.model_dump() for i in food_items], "resolved": resolved}, items)
+                stated = next((it.meal_time for it in food_items if it.meal_time), None)
+                main_dish = any(_is_main_dish(catalog, it) for it in food_items)
+                slot, sure = infer_meal_slot(stated, now, total_kcal=sum(i.kcal or 0 for i in items), main_dish=main_dish)
+                if not sure:
+                    title = ", ".join(dict.fromkeys(i.group_name or i.name for i in items)) or "makanan"
+                    notes.append(SLOT_QUESTION.format(title=title, guess=SLOT_LABELS[slot], clock=now.astimezone(WIB).strftime("%H.%M")))
+                await add("meal", {"items": [i.model_dump() for i in food_items], "resolved": resolved}, items,
+                          meal_slot=slot, slot_confirmed=sure)
             for drink in extraction.drinks:
                 food = catalog.find_food(drink.name)
                 if food is None:
@@ -81,12 +112,18 @@ async def save_logs(state: KiraState, config: RunnableConfig) -> dict:
                 notes.append("Angka hasil pemeriksaan tidak masuk akal, jadi tidak disimpan. Minta pengguna cek ulang angkanya.")
 
         if log_ids:
+            await session.flush()
             snapshot_state = await risk.compute_risk_state(session, user_id)
-            await risk.save_snapshot(session, user_id, snapshot_state, commit=False)
+            await risk.save_snapshot_if_changed(session, user_id, snapshot_state, commit=False)
             await risk.refresh_check_recommendation(session, user_id, snapshot_state, commit=False)
         await session.commit()
     return {"log_ids": log_ids, "notes": notes}
 
+
+
+def _is_main_dish(catalog, item) -> bool:
+    dish = catalog.find_dish(item.name, item.dish_id)
+    return dish is not None and bool(set(dish.meal_kinds) & {"breakfast", "lunch", "dinner"})
 
 
 async def _save_label(add, extraction: Extraction) -> str | None:

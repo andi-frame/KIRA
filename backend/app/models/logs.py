@@ -46,6 +46,10 @@ class Log(Base):
     raw_text: Mapped[str | None] = mapped_column(Text)
     extracted: Mapped[dict] = mapped_column(JSONB, nullable=False)
     corrected: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    # Waktu makan (breakfast | lunch | snack | dinner) untuk kind=meal; null pada catatan lama dan jenis lain.
+    meal_slot: Mapped[str | None] = mapped_column(Text)
+    # false bila waktu makan hanya ditebak dari jam: pengguna diminta memastikan.
+    slot_confirmed: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
 
 
 class LogItem(Base):

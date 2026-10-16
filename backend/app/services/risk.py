@@ -252,6 +252,20 @@ async def save_snapshot(session: AsyncSession, user_id: uuid.UUID, state: RiskSt
         await session.commit()
 
 
+async def save_snapshot_if_changed(session: AsyncSession, user_id: uuid.UUID, state: RiskState, *, commit: bool = True) -> bool:
+    """Seperti save_snapshot, tetapi tidak menambah baris bila skor dan masukannya sama dengan snapshot terakhir
+    (koreksi catatan berulang tidak boleh menggembungkan riwayat)."""
+    last = (await session.execute(
+        select(RiskSnapshot).where(RiskSnapshot.user_id == user_id, RiskSnapshot.model == "findrisc")
+        .order_by(RiskSnapshot.computed_at.desc()).limit(1)
+    )).scalar_one_or_none()
+    if last is not None and (last.score_low, last.score_high) == (state.rng.low, state.rng.high) \
+            and last.inputs == asdict(state.inputs):
+        return False
+    await save_snapshot(session, user_id, state, commit=commit)
+    return True
+
+
 async def open_recommendations(session: AsyncSession, user_id: uuid.UUID) -> list[CheckRecommendation]:
     stmt = (
         select(CheckRecommendation)

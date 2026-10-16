@@ -53,7 +53,11 @@ def _nothing_to_calculate(extraction: dict | None) -> bool:
     """Pesan yang hanya mencatat tanpa makanan, minuman, label, atau hasil cek (mis. tidur, aktivitas) tidak butuh angka
     apa pun: cukup konfirmasi, tanpa tool. Aturan di prompt saja tidak cukup (terukur: model tetap mencari gizi makanan
     dari riwayat chat). Tidak bergantung pada field sleep: "tidur cuma 5 jam" tanpa jam tidur/bangun terekstrak kosong."""
-    if not extraction or extraction.get("intent") != "log":
+    if not extraction:
+        return False
+    if extraction.get("intent") in {"correction", "medical_record"}:
+        return True  # hasilnya sudah ada di CATATAN SISTEM; konfirmasi singkat tanpa tool
+    if extraction.get("intent") != "log":
         return False
     return not any(extraction.get(k) for k in ("items", "drinks", "label", "clinical_result"))
 

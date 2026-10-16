@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core_calc.constants import DAILY_LIMITS, DAILY_LIMITS_MANAGEMENT
 from app.models import Log, LogItem, User
+from app.services.log_edit import halved_groups
 from app.timeutil import WIB, local_date, utcnow
 
 NUTRIENTS = ("kcal", "sugar_g", "sodium_mg", "fat_g")
@@ -54,6 +55,9 @@ def meal_view(log: Log, items: list[LogItem]) -> dict:
         "totals": _totals(items),
         "uncounted": sum(1 for i in items if i.kcal is None),
         "corrected": log.corrected,
+        "meal_slot": log.meal_slot if log.kind == "meal" else None,
+        "slot_confirmed": log.slot_confirmed,
+        "halved_groups": halved_groups(log),
     }
 
 
@@ -75,6 +79,19 @@ async def logs_between(session: AsyncSession, user_id: uuid.UUID, start: date, e
     return [(lg, by_log[lg.id]) for lg in logs]
 
 
+def activity_view(log: Log) -> dict:
+    return {"log_id": str(log.id), "kind": str(log.extracted.get("kind") or "aktivitas"),
+            "minutes": float(log.extracted.get("minutes", 0) or 0), "time": log.occurred_at.astimezone(WIB).isoformat(),
+            "source": log.source, "corrected": log.corrected}
+
+
+def sleep_view(log: Log) -> dict:
+    ex = log.extracted
+    return {"log_id": str(log.id), "hours": float(ex["hours"]) if ex.get("hours") else None,
+            "bed_time": ex.get("bed_time"), "wake_time": ex.get("wake_time"),
+            "time": log.occurred_at.astimezone(WIB).isoformat(), "source": log.source, "corrected": log.corrected}
+
+
 def day_summary(day: date, rows: list[tuple[Log, list[LogItem]]], limits: dict[str, float]) -> dict:
     meals = [meal_view(lg, items) for lg, items in rows if lg.kind == "meal"]
     drinks = [meal_view(lg, items) for lg, items in rows if lg.kind == "drink"]
@@ -90,6 +107,8 @@ def day_summary(day: date, rows: list[tuple[Log, list[LogItem]]], limits: dict[s
         "drinks": drinks,
         "activity_minutes": round(sum(activity), 1) if activity else None,
         "sleep_hours": round(max(sleep), 1) if sleep else None,
+        "activities": [activity_view(lg) for lg, _ in rows if lg.kind == "activity"],
+        "sleeps": [sleep_view(lg) for lg, _ in rows if lg.kind == "sleep"],
     }
 
 

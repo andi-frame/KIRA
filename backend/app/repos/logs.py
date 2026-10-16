@@ -34,9 +34,11 @@ async def add_log(
     raw_text: str | None,
     items: list[ItemData],
     commit: bool = True,
+    meal_slot: str | None = None,
+    slot_confirmed: bool = True,
 ) -> Log:
     log = Log(user_id=user_id, kind=kind, source=source, occurred_at=occurred_at,
-              extracted=extracted, raw_text=raw_text)
+              extracted=extracted, raw_text=raw_text, meal_slot=meal_slot, slot_confirmed=slot_confirmed)
     session.add(log)
     await session.flush()
     for item in items:
@@ -105,12 +107,14 @@ async def on_date(session: AsyncSession, user_id: uuid.UUID, day: date):
     return await _with_items(session, list((await session.execute(stmt)).scalars().all()))
 
 
-async def replace_items(session: AsyncSession, log: Log, items: list[ItemData]) -> list[LogItem]:
+async def replace_items(session: AsyncSession, log: Log, items: list[ItemData], *, commit: bool = True) -> list[LogItem]:
     await session.execute(delete(LogItem).where(LogItem.log_id == log.id))
     rows = [LogItem(log_id=log.id, **item.__dict__) for item in items]
     session.add_all(rows)
     log.corrected = True
-    await session.commit()
+    await session.flush()
+    if commit:
+        await session.commit()
     return rows
 
 

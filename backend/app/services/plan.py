@@ -110,7 +110,10 @@ async def _offsets(session: AsyncSession, user_id: uuid.UUID, start: date, end: 
 
 
 def meal_slot(log) -> str:
-    """Waktu makan sebuah catatan: dari ekstraksi ("tadi siang ..." -> lunch) bila ada, selain itu dari jam catatan."""
+    """Waktu makan sebuah catatan: yang tersimpan (disebut pengguna, dikonfirmasi, atau ditebak saat mencatat); pada catatan
+    lama dari ekstraksi ("tadi siang ..." -> lunch) bila ada, selain itu dari jam catatan."""
+    if getattr(log, "meal_slot", None) in MEAL_SLOTS:
+        return log.meal_slot
     kinds = [i.get("meal_time") for i in (log.extracted or {}).get("items", []) if isinstance(i, dict) and i.get("meal_time")]
     return kinds[0] if kinds and kinds[0] in MEAL_SLOTS else slot_for_time(log.occurred_at.astimezone(WIB))
 

@@ -67,17 +67,30 @@ class ItemPatch(BaseModel):
 
 
 class LogPatch(BaseModel):
-    """Ganti isi catatan (item yang tidak dikirim = dihapus, mis. "tanpa nasi"), dan/atau skalakan porsi.
-    `scale` tanpa `items` menskalakan item yang ada; `group` membatasinya pada satu hidangan ("setengah porsi geprek")."""
+    """Ubah satu catatan. Makan/minum: ganti isi (item yang tidak dikirim = dihapus, mis. "tanpa nasi"), skalakan porsi
+    (`scale`, dibatasi `group` untuk satu hidangan), atau `half` (saklar "setengah porsi": true = jadikan setengah, false =
+    kembalikan; mengulang perintah yang sama tidak menurunkan angka lagi). `meal_slot` mengubah waktu makan.
+    Aktivitas/tidur: `minutes`, `activity_kind`, `hours`, `bed_time`, `wake_time`. Minuman: `count`. `occurred_at` memindahkan waktunya."""
 
     items: list[ItemPatch] | None = None
     scale: float | None = Field(default=None, gt=0, le=10)
     group: str | None = Field(default=None, max_length=120)
+    half: bool | None = None
+    meal_slot: Literal["breakfast", "lunch", "dinner", "snack"] | None = None
+    minutes: int | None = Field(default=None, ge=0, le=1440)
+    activity_kind: str | None = Field(default=None, min_length=1, max_length=60)
+    hours: float | None = Field(default=None, gt=0, le=24)
+    bed_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    wake_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    count: float | None = Field(default=None, gt=0, le=50)
+    occurred_at: datetime | None = None
 
     @model_validator(mode="after")
     def _something_to_do(self) -> "LogPatch":
-        if self.items is None and self.scale is None:
-            raise ValueError("isi items atau scale")
+        fields = (self.items, self.scale, self.half, self.meal_slot, self.minutes, self.activity_kind, self.hours,
+                  self.bed_time, self.wake_time, self.count, self.occurred_at)
+        if all(v is None for v in fields):
+            raise ValueError("tidak ada yang diubah")
         return self
 
 
@@ -102,6 +115,9 @@ class LogOut(BaseModel):
     extracted: dict
     corrected: bool
     items: list[LogItemOut]
+    meal_slot: str | None = None
+    slot_confirmed: bool = True  # false: waktu makan hanya ditebak dari jam; aplikasi menawarkan pilihan
+    halved_groups: list[str] = []  # hidangan yang sedang "setengah porsi" (tombolnya menjadi "Porsi biasa")
 
 
 class CheckRespondIn(BaseModel):

@@ -49,8 +49,9 @@ class ActivityItem(BaseModel):
 
 
 class ClinicalResultExtract(BaseModel):
-    kind: Literal["fasting_glucose", "random_glucose", "blood_pressure", "hba1c", "waist"]
-    # glukosa: {"mg_dl": 110}; tensi: {"sys": 135, "dia": 85}; hba1c: {"percent": 5.8}; waist: {"cm": 92}
+    kind: Literal["fasting_glucose", "random_glucose", "blood_pressure", "hba1c", "waist", "resting_heart_rate"]
+    # glukosa: {"mg_dl": 110}; tensi: {"sys": 135, "dia": 85, "pulse": 72 (opsional)}; hba1c: {"percent": 5.8};
+    # waist: {"cm": 92}; detak jantung istirahat: {"bpm": 72}
     value: dict[str, float]
 
 
@@ -68,6 +69,43 @@ class LabelExtract(BaseModel):
     kcal: float | None = Field(default=None, ge=0)
 
 
+class LogCorrection(BaseModel):
+    """Pengguna mengoreksi atau membatalkan catatan sebelumnya ("ralat, tadi cuma setengah porsi", "itu makan siang,
+    bukan selingan", "hapus yang tadi"). Tidak boleh dicatat sebagai entri baru: itu membuat catatan dobel."""
+
+    action: Literal["update", "delete"] = "update"
+    target: Literal["meal", "drink", "sleep", "activity"] = "meal"
+    match_text: str | None = None  # nama makanan/minuman/aktivitas yang dimaksud; kosong = yang terbaru
+    day: Literal["today", "yesterday"] = "today"
+    # Perubahan (hanya yang disebut pengguna):
+    portion_scale: float | None = Field(default=None, gt=0, le=10)  # "setengah porsi" 0.5, "dua kali lipat" 2
+    meal_time: Literal["breakfast", "lunch", "dinner", "snack"] | None = None
+    replacement_items: list[FoodItem] = []  # "bukan nasi goreng, tapi mie goreng"
+    minutes: int | None = Field(default=None, ge=0, le=1440)
+    hours: float | None = Field(default=None, gt=0, le=24)
+    bed_time: str | None = TimeStr
+    wake_time: str | None = TimeStr
+    count: float | None = Field(default=None, gt=0, le=50)
+
+
+class RecordValue(BaseModel):
+    name: str = Field(min_length=1, max_length=80)  # "Kolesterol total"
+    value: str = Field(min_length=1, max_length=40)  # "210" (disalin apa adanya)
+    unit: str | None = Field(default=None, max_length=20)  # "mg/dL"
+
+
+class MedicalRecordExtract(BaseModel):
+    """Riwayat medis yang diceritakan pengguna (bukan makan/minum/tidur/olahraga): diagnosis, hasil lab, obat yang
+    sedang dipakai, alergi, tindakan, vaksin, kunjungan. Hanya menyalin yang disebut; tidak menilai."""
+
+    kind: Literal["diagnosis", "lab", "medication", "allergy", "procedure", "vaccination", "imaging", "visit", "other"]
+    title: str = Field(min_length=1, max_length=120)
+    recorded_on: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")  # YYYY-MM-DD bila disebut
+    provider: str | None = Field(default=None, max_length=120)
+    details: str | None = Field(default=None, max_length=1000)
+    values: list[RecordValue] = []
+
+
 class Extraction(BaseModel):
     items: list[FoodItem] = []
     drinks: list[DrinkItem] = []
@@ -75,5 +113,7 @@ class Extraction(BaseModel):
     activity: list[ActivityItem] = []
     clinical_result: ClinicalResultExtract | None = None
     label: LabelExtract | None = None
-    intent: Literal["log", "question_portion", "question_general", "result_input"] = "log"
+    correction: LogCorrection | None = None
+    medical_record: MedicalRecordExtract | None = None
+    intent: Literal["log", "question_portion", "question_general", "result_input", "correction", "medical_record"] = "log"
     summary: str | None = None
