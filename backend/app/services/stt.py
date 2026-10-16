@@ -35,10 +35,20 @@ class OpenAICompatibleStt:
                     f"{self._base_url}/audio/transcriptions",
                     headers={"Authorization": f"Bearer {self._api_key}"},
                     files={"file": (filename, audio)},
-                    data={"model": self._model, "language": "id", "response_format": "json"},
+                    data={"model": self._model, "language": "id", "response_format": "verbose_json", "temperature": "0"},
                 )
             resp.raise_for_status()
-            return str(resp.json().get("text", "")).strip()
+            payload = resp.json()
+            segments = payload.get("segments")
+            if isinstance(segments, list):
+                # Whisper can invent words over silence. Use audio confidence, not
+                # a phrase blacklist: a genuine "terima kasih" must remain valid.
+                # Token confidence can be high even for an invented phrase on
+                # silence; no_speech_prob must be checked independently.
+                speech = [segment for segment in segments
+                          if segment.get("no_speech_prob", 0) <= 0.6]
+                return " ".join(str(segment.get("text", "")).strip() for segment in speech).strip()
+            return str(payload.get("text", "")).strip()
         except (httpx.HTTPError, ValueError) as exc:
             raise SttError("transkripsi suara gagal") from exc
 

@@ -95,3 +95,27 @@ async def test_stt_network_failure_raises_stt_error():
 
     with pytest.raises(SttError):
         await _stt(handler).transcribe(b"audio", "v.m4a")
+
+
+@pytest.mark.parametrize("phrase", ["Terima kasih.", "tadi makan rendang"])
+@pytest.mark.parametrize("logprob", [-1.5, -0.19214307])
+async def test_stt_rejects_low_confidence_silence(phrase, logprob):
+    payload = {"text": phrase, "segments": [
+        {"text": phrase, "no_speech_prob": 0.7006836, "avg_logprob": logprob}
+    ]}
+    assert await _stt(lambda r: httpx.Response(200, json=payload)).transcribe(b"audio", "v.m4a") == ""
+
+
+async def test_stt_keeps_genuine_thanks_and_filters_silent_segments():
+    def handler(request):
+        assert b'verbose_json' in request.content
+        return httpx.Response(200, json={"text": "Terima kasih. subtitle", "segments": [
+            {"text": "Terima kasih.", "no_speech_prob": 0.05, "avg_logprob": -0.2},
+            {"text": "subtitle", "no_speech_prob": 0.9, "avg_logprob": -1.8},
+        ]})
+    assert await _stt(handler).transcribe(b"audio", "v.m4a") == "Terima kasih."
+
+
+async def test_stt_empty_segments_are_silence():
+    payload = {"text": "Terima kasih.", "segments": []}
+    assert await _stt(lambda r: httpx.Response(200, json=payload)).transcribe(b"audio", "v.m4a") == ""

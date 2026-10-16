@@ -28,7 +28,7 @@ class DevicePhotoPicker implements PhotoPicker {
   }
 }
 
-/// Perekam suara tahan-untuk-bicara. Audio diunggah apa adanya; STT dikerjakan backend.
+/// Perekam suara ketuk-untuk-mulai, ketuk-lagi-untuk-berhenti. Audio diunggah apa adanya; STT dikerjakan backend.
 abstract class VoiceRecorder {
   /// false bila izin mikrofon ditolak.
   Future<bool> start();

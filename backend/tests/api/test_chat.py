@@ -77,3 +77,24 @@ async def test_photo_flow_and_validation(client, auth_headers):
     assert empty.status_code == 422
     huge = await client.post("/chat/photo?kind=food", files={"image": ("s.jpg", b"0" * (9 * 1024 * 1024), "image/jpeg")}, headers=auth_headers)
     assert huge.status_code == 413
+
+
+async def test_silence_hallucination_never_reaches_chat_models(client, auth_headers, engine):
+    import httpx
+    from sqlalchemy import text
+
+    chat, ext = install_models()
+    stt.set_stt_for_tests(stt.OpenAICompatibleStt(
+        "https://stt.test/v1", "test", "whisper-large-v3-turbo",
+        transport=httpx.MockTransport(lambda request: httpx.Response(200, json={
+            "text": "Terima kasih.",
+            "segments": [{"text": "Terima kasih.", "no_speech_prob": 0.98, "avg_logprob": -1.5}],
+        })),
+    ))
+    r = await client.post("/chat/voice", files={"audio": ("v.m4a", b"audio", "audio/mp4")}, headers=auth_headers)
+    assert r.status_code == 422
+    assert "tidak terdengar jelas" in r.json()["detail"]
+    assert chat.call_count == 0 and ext.calls == []
+    async with engine.connect() as conn:
+        assert (await conn.execute(text("select count(*) from messages"))).scalar_one() == 0
+        assert (await conn.execute(text("select count(*) from logs"))).scalar_one() == 0

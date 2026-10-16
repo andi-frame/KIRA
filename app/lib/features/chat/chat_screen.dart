@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -30,9 +32,18 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _input = TextEditingController();
   bool _recording = false;
+  bool _voiceBusy = false;
+  late final VoiceRecorder _voiceRecorder;
+
+  @override
+  void initState() {
+    super.initState();
+    _voiceRecorder = ref.read(voiceRecorderProvider);
+  }
 
   @override
   void dispose() {
+    if (_recording) unawaited(_voiceRecorder.cancel());
     _input.dispose();
     super.dispose();
   }
@@ -67,24 +78,44 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     await ref.read(chatProvider.notifier).sendPhoto(kind, media.bytes, media.name);
   }
 
-  Future<void> _startRecording() async {
-    final ok = await ref.read(voiceRecorderProvider).start();
-    if (!mounted) return;
-    if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Izin mikrofon belum diberikan. Kamu tetap bisa mengetik atau kirim foto.')),
-      );
-      return;
+  Future<void> _toggleRecording() async {
+    if (_voiceBusy || ref.read(chatProvider).busy) return;
+    setState(() => _voiceBusy = true);
+    try {
+      if (_recording) {
+        final media = await _voiceRecorder.stop();
+        if (!mounted) return;
+        setState(() => _recording = false);
+        if (media == null) {
+          _voiceNotice('Suaranya tidak terdengar jelas, coba rekam lagi.');
+          return;
+        }
+        await ref.read(chatProvider.notifier).sendVoice(media.bytes, media.name);
+      } else {
+        final ok = await _voiceRecorder.start();
+        if (!mounted) {
+          if (ok) await _voiceRecorder.cancel();
+          return;
+        }
+        if (!ok) {
+          _voiceNotice('Izin mikrofon belum diberikan. Kamu tetap bisa mengetik atau kirim foto.');
+          return;
+        }
+        setState(() => _recording = true);
+      }
+    } catch (_) {
+      await _voiceRecorder.cancel();
+      if (mounted) {
+        setState(() => _recording = false);
+        _voiceNotice('Rekaman gagal. Coba rekam lagi atau ketik pesanmu.');
+      }
+    } finally {
+      if (mounted) setState(() => _voiceBusy = false);
     }
-    setState(() => _recording = true);
   }
 
-  Future<void> _stopRecording() async {
-    if (!_recording) return;
-    setState(() => _recording = false);
-    final media = await ref.read(voiceRecorderProvider).stop();
-    if (media == null) return;
-    await ref.read(chatProvider.notifier).sendVoice(media.bytes, media.name);
+  void _voiceNotice(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -163,8 +194,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               onChanged: () => setState(() {}),
               onSend: _send,
               onCamera: _pickPhoto,
-              onRecordStart: _startRecording,
-              onRecordEnd: _stopRecording,
+              onRecordToggle: _toggleRecording,
+              micEnabled: !_voiceBusy && !chat.busy,
             ),
           ],
         ),
@@ -271,14 +302,15 @@ class _InputBar extends StatelessWidget {
     required this.onChanged,
     required this.onSend,
     required this.onCamera,
-    required this.onRecordStart,
-    required this.onRecordEnd,
+    required this.onRecordToggle,
+    required this.micEnabled,
   });
 
   final TextEditingController controller;
   final bool hasText, recording;
   final VoidCallback onChanged, onSend, onCamera;
-  final Future<void> Function() onRecordStart, onRecordEnd;
+  final Future<void> Function() onRecordToggle;
+  final bool micEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -295,8 +327,8 @@ class _InputBar extends StatelessWidget {
                 const SizedBox(width: KiraSpace.md),
                 Icon(Icons.mic, color: scheme.primary),
                 const SizedBox(width: KiraSpace.sm),
-                Expanded(child: Text('Merekam... lepas untuk mengirim', style: context.text.bodyLarge)),
-                _MicButton(recording: true, onStart: onRecordStart, onEnd: onRecordEnd),
+                Expanded(child: Text('Merekam... ketuk stop untuk mengirim', style: context.text.bodyLarge)),
+                _MicButton(recording: true, onToggle: micEnabled ? onRecordToggle : null),
               ],
             )
           : Row(
@@ -321,7 +353,7 @@ class _InputBar extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: KiraSpace.xs),
-                _MicButton(recording: false, onStart: onRecordStart, onEnd: onRecordEnd),
+                _MicButton(recording: false, onToggle: micEnabled ? onRecordToggle : null),
                 IconButton.filled(
                   key: const Key('send_button'),
                   style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
@@ -336,32 +368,21 @@ class _InputBar extends StatelessWidget {
 }
 
 class _MicButton extends StatelessWidget {
-  const _MicButton({required this.recording, required this.onStart, required this.onEnd});
+  const _MicButton({required this.recording, required this.onToggle});
   final bool recording;
-  final Future<void> Function() onStart, onEnd;
+  final Future<void> Function()? onToggle;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onLongPressStart: (_) => onStart(),
-      onLongPressEnd: (_) => onEnd(),
-      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tahan tombol mikrofon sambil bicara, lepas untuk mengirim.')),
+    return IconButton(
+      key: const Key('mic_button'),
+      tooltip: recording ? 'Berhenti dan kirim rekaman' : 'Mulai rekam suara',
+      style: IconButton.styleFrom(
+        minimumSize: const Size(48, 48),
+        backgroundColor: recording ? context.scheme.primaryContainer : null,
       ),
-      child: Semantics(
-        button: true,
-        label: 'Tahan untuk bicara',
-        child: Container(
-          key: const Key('mic_button'),
-          width: 48,
-          height: 48,
-          alignment: Alignment.center,
-          decoration: recording
-              ? BoxDecoration(color: context.scheme.primaryContainer, shape: BoxShape.circle)
-              : null,
-          child: Icon(Icons.mic_none, color: recording ? context.scheme.primary : context.scheme.onSurfaceVariant),
-        ),
-      ),
+      onPressed: onToggle,
+      icon: Icon(recording ? Icons.stop : Icons.mic_none),
     );
   }
 }
