@@ -24,6 +24,7 @@ class ChatOut(BaseModel):
     log_ids: list[str] = []
     tool_calls: list[dict] = []
     transcript: str | None = None
+    meals: list["LogOut"] = []  # catatan makan dari pesan ini beserta item, gizi, dan kelompok hidangan (kartu koreksi)
 
 
 class WhatIfIn(BaseModel):
@@ -105,3 +106,6 @@ class LogOut(BaseModel):
 
 class CheckRespondIn(BaseModel):
     action: Literal["done", "snooze", "dismiss"]
+
+
+ChatOut.model_rebuild()

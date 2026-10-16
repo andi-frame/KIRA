@@ -17,7 +17,7 @@ from app.timeutil import local_date, utcnow
 router = APIRouter(prefix="/logs", tags=["logs"])
 
 
-def _out(log: Log, items: list[LogItem]) -> LogOut:
+def log_out(log: Log, items: list[LogItem]) -> LogOut:
     return LogOut(
         id=str(log.id), kind=log.kind, source=log.source, occurred_at=log.occurred_at, raw_text=log.raw_text,
         extracted=log.extracted, corrected=log.corrected,
@@ -35,7 +35,7 @@ async def list_logs(
 ) -> dict:
     day = date_ or local_date(utcnow())
     rows = await logs_repo.on_date(session, user_id, day)
-    return {"date": day.isoformat(), "logs": [_out(lg, items) for lg, items in rows]}
+    return {"date": day.isoformat(), "logs": [log_out(lg, items) for lg, items in rows]}
 
 
 FREQUENT_MIN_COUNT = 2
@@ -111,7 +111,7 @@ async def patch_log(
             item_data(p.name, catalog.find_food(p.name, p.food_id), p.portion_g, group_name=p.group) for p in patches
         ]
     rows = await logs_repo.replace_items(session, log, new_items)
-    return _out(log, rows)
+    return log_out(log, rows)
 
 
 async def _current_as_patches(session: AsyncSession, log: Log) -> list[ItemPatch]:

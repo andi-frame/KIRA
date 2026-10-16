@@ -114,6 +114,17 @@ async def replace_items(session: AsyncSession, log: Log, items: list[ItemData]) 
     return rows
 
 
+async def by_ids(session: AsyncSession, user_id: uuid.UUID, ids: list[str]) -> list[tuple[Log, list[LogItem]]]:
+    """Catatan milik pengguna dengan id tertentu (urut waktu), beserta itemnya."""
+    if not ids:
+        return []
+    wanted = [uuid.UUID(i) for i in ids]
+    logs = (await session.execute(
+        select(Log).where(Log.user_id == user_id, Log.id.in_(wanted)).order_by(Log.occurred_at, Log.id)
+    )).scalars().all()
+    return await _with_items(session, list(logs))
+
+
 async def get_owned(session: AsyncSession, user_id: uuid.UUID, log_id: uuid.UUID) -> Log | None:
     log = await session.get(Log, log_id)
     return log if log is not None and log.user_id == user_id else None

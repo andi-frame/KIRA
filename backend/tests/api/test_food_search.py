@@ -78,3 +78,11 @@ async def test_hapus_satu_komponen_dan_ubah_porsi_komponen(client, auth_headers)
 async def test_patch_tanpa_isi_ditolak(client, auth_headers):
     log_id, _ = await logged_geprek(client, auth_headers)
     assert (await client.patch(f"/logs/{log_id}", json={}, headers=auth_headers)).status_code == 422
+
+
+async def test_balasan_chat_membawa_catatan_makan_beserta_komponen(client, auth_headers):
+    install_models(extract=GEPREK)
+    body = (await client.post("/chat/message", json={"text": "makan ayam geprek"}, headers=auth_headers)).json()
+    assert len(body["meals"]) == 1 and body["meals"][0]["id"] == body["log_ids"][0]
+    items = body["meals"][0]["items"]
+    assert len(items) == 4 and all(i["kcal"] is not None and i["group"] == "Ayam geprek" for i in items)
