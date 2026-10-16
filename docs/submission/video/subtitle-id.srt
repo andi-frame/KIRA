@@ -1,0 +1,137 @@
+1
+00:00:01,570 --> 00:00:04,840
+Ini Raka, 28 tahun. Dia merasa sehat.
+
+2
+00:00:05,570 --> 00:00:08,840
+Ayahnya diabetes, tapi dia
+belum pernah cek gula darah.
+
+3
+00:00:09,590 --> 00:00:13,680
+Dan dia tidak sendiri. Menurut
+Survei Kesehatan Indonesia 2023,
+
+4
+00:00:14,150 --> 00:00:18,220
+11,7 persen penduduk punya kadar
+gula darah di rentang diabetes.
+
+5
+00:00:18,710 --> 00:00:22,100
+Padahal yang didiagnosis
+dokter hanya 2,2 persen.
+
+6
+00:00:22,650 --> 00:00:27,080
+Diabetes, hipertensi, dan penyakit
+kronis lain sering tak bergejala.
+
+7
+00:00:27,670 --> 00:00:32,480
+Karena itu, kami buat KIRA, teman ngobrol
+satu menit sehari yang multimodal.
+
+8
+00:00:33,230 --> 00:00:37,400
+Raka tinggal bercerita tentang
+makan, olahraga, dan tidurnya.
+
+9
+00:00:37,890 --> 00:00:42,360
+Ayam geprek dipecah jadi komponen,
+gizinya dihitung dari tabel pangan.
+
+10
+00:00:42,790 --> 00:00:47,960
+Salah catat? Raka bisa meralatnya lewat
+chat atau mengubahnya langsung di Riwayat.
+
+11
+00:00:48,670 --> 00:00:50,240
+Hitungannya ikut menyesuaikan.
+
+12
+00:00:50,730 --> 00:00:55,420
+Dari catatan dua minggu terakhir, KIRA
+memperkirakan risiko diabetes Raka
+
+13
+00:00:55,410 --> 00:00:57,580
+sepuluh tahun ke depan, dalam rentang.
+
+14
+00:00:58,090 --> 00:01:00,420
+Coba ubah satu kebiasaan
+dan lihat bedanya.
+
+15
+00:01:00,950 --> 00:01:03,460
+Lalu, apa yang perlu Raka lakukan?
+
+16
+00:01:04,150 --> 00:01:07,460
+KIRA menyarankan menu,
+olahraga, dan jam tidur
+
+17
+00:01:07,450 --> 00:01:10,460
+yang pas untuk kebiasaannya,
+lengkap dengan alasannya.
+
+18
+00:01:10,950 --> 00:01:15,220
+Bila risikonya naik, KIRA memberi
+tahu kapan Raka perlu cek
+
+19
+00:01:15,210 --> 00:01:17,520
+gula darah atau tensi, dan di mana.
+
+20
+00:01:18,170 --> 00:01:22,900
+Sebelum Raka masuk Instagram, KIRA
+menahannya sejenak dengan satu kartu.
+
+21
+00:01:23,190 --> 00:01:25,300
+Rencana olahraga dan makan di pagi hari,
+
+22
+00:01:25,870 --> 00:01:29,920
+pengingat mencatat dan tidur di
+malam hari, atau fakta kesehatan.
+
+23
+00:01:30,490 --> 00:01:33,660
+Di balik layar, pesan
+Raka diproses LangGraph.
+
+24
+00:01:33,650 --> 00:01:37,120
+Tanda bahaya ditangkap
+aturan sebelum LLM menjawab.
+
+25
+00:01:38,010 --> 00:01:42,300
+Angka klinis dihitung kode yang diuji,
+dan jawaban diperiksa guardrail.
+
+26
+00:01:42,790 --> 00:01:47,980
+Dan masih ada lagi, ringkasan PDF untuk
+dokter, rekam medis, keluarga yang ikut
+
+27
+00:01:47,970 --> 00:01:50,840
+mendukung, pengingat,
+serta mode pengelolaan.
+
+28
+00:01:51,530 --> 00:01:54,460
+Kira-kira, bagaimana
+kesehatanmu sepuluh tahun lagi?
+
+29
+00:01:55,030 --> 00:01:57,420
+Cari tahu bersama KIRA, mulai hari ini.

@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>KIRA: adegan masalah</title>
+<style>
+  @font-face { font-family: Figtree; src: url("../../../../app/assets/fonts/Figtree.ttf"); font-weight: 300 900; }
+  :root {
+    --ink: #F2F3F5; --muted: #B5BAC1; --teal: #6FD3CB; --teal-deep: #0B6E6A; --amber: #FEE75C;
+    --card: #2B2D31; --card-hi: #383A40; --bg: #1E1F22;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #000; font-family: Figtree, "Segoe UI", sans-serif; color: var(--ink); }
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+  .layer { position: absolute; inset: 0; }
+  svg { display: block; }
+
+  /* keterangan Raka */
+  .chip { position: absolute; display: flex; align-items: center; gap: 18px; padding: 16px 28px 16px 18px;
+          background: rgba(43,45,49,.92); border: 2px solid rgba(111,211,203,.35); border-radius: 22px;
+          font-size: 30px; font-weight: 600; box-shadow: 0 18px 40px rgba(0,0,0,.35); white-space: nowrap; transform-origin: left center; }
+  .chip .ic { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: #1F3F40; flex: none; }
+  .chip.amber .ic { background: #3C3518; }
+  .name { position: absolute; padding: 22px 34px; background: rgba(43,45,49,.92); border-radius: 26px; border: 2px solid rgba(111,211,203,.45);
+          box-shadow: 0 18px 40px rgba(0,0,0,.35); transform-origin: left center; }
+  .name b { display: block; font-size: 54px; font-weight: 800; letter-spacing: .5px; }
+  .name span { display: block; font-size: 28px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+
+  /* statistik */
+  #stats { background: radial-gradient(1200px 800px at 30% 45%, #24302F 0%, #1E1F22 60%); }
+  .src-top { position: absolute; left: 1010px; top: 150px; font-size: 30px; font-weight: 600; color: var(--teal); letter-spacing: .3px; }
+  .src-top small { display: block; font-size: 24px; font-weight: 500; color: var(--muted); margin-top: 6px; letter-spacing: 0; }
+  .big { position: absolute; left: 1010px; font-weight: 800; font-size: 168px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .big-label { position: absolute; left: 1014px; font-size: 40px; font-weight: 500; line-height: 1.25; color: var(--ink); }
+  .note { position: absolute; left: 1014px; top: 880px; font-size: 30px; font-weight: 600; color: var(--ink); }
+  .note small { display: block; font-size: 21px; font-weight: 400; color: var(--muted); margin-top: 6px; }
+  .src-bottom { position: absolute; left: 140px; bottom: 54px; font-size: 22px; color: var(--muted); }
+
+  /* penyakit */
+  #ill { background: radial-gradient(1300px 800px at 50% 40%, #252A2B 0%, #1E1F22 65%); }
+  .ill-card { position: absolute; top: 240px; width: 510px; height: 320px; border-radius: 28px; background: var(--card);
+              border: 2px solid rgba(255,255,255,.06); padding: 40px 40px; box-shadow: 0 24px 50px rgba(0,0,0,.35); }
+  .ill-card .ic { width: 84px; height: 84px; border-radius: 24px; display: grid; place-items: center; background: #3C3518; margin-bottom: 26px; }
+  .ill-card h3 { font-size: 42px; font-weight: 700; white-space: nowrap; }
+  .ill-card p { font-size: 27px; color: var(--muted); margin-top: 10px; line-height: 1.3; }
+  .quiet { position: absolute; left: 0; right: 0; top: 760px; text-align: center; font-size: 66px; font-weight: 700; }
+
+  /* KIRA */
+  #kira { background: radial-gradient(1100px 760px at 50% 42%, #138A83 0%, #0B6E6A 45%, #07403E 100%); }
+  .wordmark { position: absolute; left: 0; right: 0; top: 650px; text-align: center; font-size: 120px; font-weight: 800; letter-spacing: 10px; }
+  .tagline { position: absolute; left: 0; right: 0; top: 800px; text-align: center; font-size: 50px; font-weight: 500; color: #E6FBF8; }
+  .modes { position: absolute; left: 0; right: 0; top: 900px; display: flex; justify-content: center; gap: 26px; }
+  .mode { display: flex; align-items: center; gap: 14px; padding: 14px 30px 14px 18px; border-radius: 999px; background: rgba(255,255,255,.14);
+          border: 2px solid rgba(255,255,255,.28); font-size: 34px; font-weight: 600; }
+  .mode .ic { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.2); display: grid; place-items: center; }
+  .modes-label { position: absolute; left: 0; right: 0; top: 990px; text-align: center; font-size: 26px; letter-spacing: 6px; color: #BFEFEA; font-weight: 600; }
+
+  #fade { background: #000; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- ================= ADEGAN 1: kamar Raka ================= -->
+<div class="layer" id="room">
+<svg id="roomsvg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0D2627"/><stop offset="1" stop-color="#173A3B"/></linearGradient>
+    <radialGradient id="wallGlow" cx="0.61" cy="0.5" r="0.45"><stop offset="0" stop-color="#2A5A5A" stop-opacity=".55"/><stop offset="1" stop-color="#2A5A5A" stop-opacity="0"/></radialGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0A1B2D"/><stop offset="1" stop-color="#1A3E55"/></linearGradient>
+    <linearGradient id="desk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1F4D4C"/><stop offset=".08" stop-color="#173C3B"/><stop offset="1" stop-color="#0F2A29"/></linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3C9A0"/><stop offset="1" stop-color="#E3A87C"/></linearGradient>
+    <linearGradient id="hoodie" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34777A"/><stop offset="1" stop-color="#22585B"/></linearGradient>
+    <linearGradient id="lid" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E6EAEC"/><stop offset="1" stop-color="#AEB7BB"/></linearGradient>
+    <linearGradient id="lens" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#BFEFEA" stop-opacity=".30"/><stop offset="1" stop-color="#BFEFEA" stop-opacity=".08"/></linearGradient>
+    <linearGradient id="coffee" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F1E3C8"/><stop offset=".45" stop-color="#C9A274"/><stop offset="1" stop-color="#5C391D"/></linearGradient>
+    <radialGradient id="faceGlow" cx=".5" cy="1" r=".9"><stop offset="0" stop-color="#BFEFEA" stop-opacity=".55"/><stop offset="1" stop-color="#BFEFEA" stop-opacity="0"/></radialGradient>
+    <radialGradient id="deskGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#9FE6DE" stop-opacity=".35"/><stop offset="1" stop-color="#9FE6DE" stop-opacity="0"/></radialGradient>
+    <radialGradient id="phoneGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#6FD3CB" stop-opacity=".45"/><stop offset="1" stop-color="#6FD3CB" stop-opacity="0"/></radialGradient>
+    <clipPath id="faceClip"><ellipse cx="1180" cy="400" rx="90" ry="102"/></clipPath>
+    <clipPath id="glassClip"><path d="M752 650 H852 L841 798 H763 Z"/></clipPath>
+    <clipPath id="phoneClip"><rect x="1497" y="636" width="84" height="150" rx="12"/></clipPath>
+    <filter id="blur6"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="blur20" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="20"/></filter>
+  </defs>
+
+  <g id="cam">
+    <rect width="1920" height="1080" fill="url(#wall)"/>
+    <rect width="1920" height="1080" fill="url(#wallGlow)"/>
+
+    <!-- jendela -->
+    <g>
+      <rect x="150" y="120" width="540" height="480" rx="16" fill="url(#sky)"/>
+      <circle cx="580" cy="225" r="44" fill="#F2F3F5"/>
+      <circle cx="601" cy="209" r="40" fill="#0D2335"/>
+      <g fill="#F2F3F5" id="stars">
+        <circle cx="230" cy="190" r="3"/><circle cx="330" cy="160" r="2.4"/><circle cx="440" cy="215" r="3"/>
+        <circle cx="280" cy="268" r="2"/><circle cx="500" cy="160" r="2.4"/><circle cx="380" cy="300" r="2"/>
+      </g>
+      <g fill="#081624">
+        <rect x="150" y="450" width="70" height="150"/><rect x="226" y="400" width="96" height="200"/><rect x="330" y="470" width="58" height="130"/>
+        <rect x="396" y="420" width="104" height="180"/><rect x="508" y="490" width="66" height="110"/><rect x="580" y="430" width="110" height="170"/>
+      </g>
+      <g fill="#FEE75C" id="cityLights">
+        <rect x="246" y="425" width="12" height="15"/><rect x="276" y="460" width="12" height="15"/><rect x="246" y="500" width="12" height="15"/>
+        <rect x="418" y="450" width="12" height="15"/><rect x="458" y="500" width="12" height="15"/><rect x="600" y="460" width="12" height="15"/>
+        <rect x="640" y="510" width="12" height="15"/><rect x="348" y="505" width="12" height="15"/><rect x="430" y="545" width="12" height="15"/>
+        <rect x="290" y="540" width="12" height="15"/>
+      </g>
+      <rect x="150" y="120" width="540" height="480" rx="16" fill="none" stroke="#06181A" stroke-width="14"/>
+      <line x1="420" y1="120" x2="420" y2="600" stroke="#06181A" stroke-width="11"/>
+      <line x1="150" y1="365" x2="690" y2="365" stroke="#06181A" stroke-width="11"/>
+      <rect x="132" y="596" width="576" height="16" rx="6" fill="#0A2122"/>
+    </g>
+
+    <!-- jam dinding 23.47 -->
+    <g>
+      <circle cx="905" cy="215" r="66" fill="#F2F3F5" stroke="#06181A" stroke-width="9"/>
+      <g stroke="#14201F" stroke-width="4" stroke-linecap="round">
+        <line x1="905" y1="160" x2="905" y2="172"/><line x1="905" y1="258" x2="905" y2="270"/>
+        <line x1="850" y1="215" x2="862" y2="215"/><line x1="948" y1="215" x2="960" y2="215"/>
+      </g>
+      <line id="hourHand" x1="905" y1="215" x2="905" y2="180" stroke="#14201F" stroke-width="7" stroke-linecap="round"/>
+      <line id="minHand" x1="905" y1="215" x2="905" y2="166" stroke="#14201F" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="905" cy="215" r="6" fill="#14201F"/>
+    </g>
+
+    <!-- kursi -->
+    <rect x="975" y="395" width="410" height="430" rx="72" fill="#0B1E1F"/>
+
+    <!-- Raka -->
+    <g id="raka">
+      <g id="torso">
+        <path d="M935 830 C940 700 965 612 1035 584 C1085 562 1132 556 1180 556 C1228 556 1275 562 1325 584 C1395 612 1420 700 1425 830 Z" fill="url(#hoodie)"/>
+        <path d="M1035 584 C1012 650 1006 720 1010 830" stroke="#1E5053" stroke-width="6" fill="none" opacity=".7"/>
+        <path d="M1325 584 C1348 650 1354 720 1350 830" stroke="#1E5053" stroke-width="6" fill="none" opacity=".7"/>
+        <rect x="1150" y="478" width="60" height="92" rx="24" fill="#D69C71"/>
+        <path d="M1100 572 C1122 530 1238 530 1260 572 C1236 596 1124 596 1100 572 Z" fill="#285F63"/>
+        <path d="M1146 552 Q1180 592 1214 552" fill="#D69C71"/>
+        <g stroke="#E9EEF0" stroke-width="4.5" stroke-linecap="round">
+          <line x1="1160" y1="586" x2="1156" y2="652"/><line x1="1200" y1="586" x2="1204" y2="652"/>
+        </g>
+        <rect x="1151" y="648" width="9" height="16" rx="3" fill="#BFC7CB"/><rect x="1200" y="648" width="9" height="16" rx="3" fill="#BFC7CB"/>
+        <!-- headphone di leher -->
+        <path d="M1100 552 Q1180 620 1260 552" stroke="#1B1C21" stroke-width="15" fill="none" stroke-linecap="round"/>
+        <ellipse cx="1096" cy="556" rx="24" ry="32" fill="#25262C"/><ellipse cx="1096" cy="556" rx="13" ry="20" fill="#0B6E6A"/>
+        <ellipse cx="1264" cy="556" rx="24" ry="32" fill="#25262C"/><ellipse cx="1264" cy="556" rx="13" ry="20" fill="#0B6E6A"/>
+        <!-- lengan ke papan ketik di balik layar -->
+        <path d="M995 640 C958 700 952 760 990 812" stroke="#2C6D70" stroke-width="74" fill="none" stroke-linecap="round"/>
+        <path d="M1365 640 C1402 700 1408 760 1370 812" stroke="#2C6D70" stroke-width="74" fill="none" stroke-linecap="round"/>
+      </g>
+      <g id="head">
+        <ellipse cx="1180" cy="352" rx="104" ry="92" fill="#1F1B24"/>
+        <ellipse cx="1090" cy="410" rx="18" ry="27" fill="#E7AE83"/><ellipse cx="1093" cy="412" rx="8" ry="14" fill="#D3946A"/>
+        <ellipse cx="1270" cy="410" rx="18" ry="27" fill="#E7AE83"/><ellipse cx="1267" cy="412" rx="8" ry="14" fill="#D3946A"/>
+        <ellipse cx="1180" cy="400" rx="90" ry="102" fill="url(#skin)"/>
+        <!-- poni -->
+        <path d="M1090 380 C1084 304 1136 266 1196 270 C1256 274 1290 318 1274 384 C1266 356 1248 338 1226 332 C1216 350 1194 360 1166 362 C1178 350 1182 338 1180 326 C1156 348 1122 360 1090 380 Z" fill="#1F1B24"/>
+        <path d="M1130 300 C1150 286 1180 282 1204 288" stroke="#3B3443" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M1226 300 C1244 308 1256 322 1262 340" stroke="#3B3443" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <!-- alis (sedikit naik di dalam: lelah) -->
+        <path d="M1116 366 Q1140 352 1164 362" stroke="#1F1B24" stroke-width="8" fill="none" stroke-linecap="round"/>
+        <path d="M1196 362 Q1220 352 1244 366" stroke="#1F1B24" stroke-width="8" fill="none" stroke-linecap="round"/>
+        <!-- mata -->
+        <g id="eyeL"><ellipse cx="1143" cy="406" rx="10" ry="11.5" fill="#1D1A22"/><circle cx="1147" cy="401" r="3.2" fill="#fff"/>
+          <path d="M1129 404 Q1143 391 1157 404 L1157 390 L1129 390 Z" fill="#EDBC91"/>
+          <path d="M1129 404 Q1143 393 1157 404" stroke="#7A4E3A" stroke-width="3" fill="none" stroke-linecap="round"/></g>
+        <g id="eyeR"><ellipse cx="1217" cy="406" rx="10" ry="11.5" fill="#1D1A22"/><circle cx="1221" cy="401" r="3.2" fill="#fff"/>
+          <path d="M1203 404 Q1217 391 1231 404 L1231 390 L1203 390 Z" fill="#EDBC91"/>
+          <path d="M1203 404 Q1217 393 1231 404" stroke="#7A4E3A" stroke-width="3" fill="none" stroke-linecap="round"/></g>
+        <path d="M1131 424 Q1143 431 1156 424" stroke="#A86E7C" stroke-width="3.2" fill="none" opacity=".55" stroke-linecap="round"/>
+        <path d="M1204 424 Q1217 431 1230 424" stroke="#A86E7C" stroke-width="3.2" fill="none" opacity=".55" stroke-linecap="round"/>
+        <!-- kacamata -->
+        <rect x="1109" y="382" width="68" height="50" rx="19" fill="url(#lens)" stroke="#22232A" stroke-width="5.5"/>
+        <rect x="1183" y="382" width="68" height="50" rx="19" fill="url(#lens)" stroke="#22232A" stroke-width="5.5"/>
+        <path d="M1177 400 Q1180 394 1183 400" stroke="#22232A" stroke-width="5" fill="none"/>
+        <line x1="1109" y1="398" x2="1092" y2="392" stroke="#22232A" stroke-width="5"/><line x1="1251" y1="398" x2="1268" y2="392" stroke="#22232A" stroke-width="5"/>
+        <g id="reflect" fill="#E8FFFC">
+          <path d="M1122 426 L1146 388 L1156 388 L1132 426 Z" opacity=".22"/>
+          <path d="M1196 426 L1220 388 L1230 388 L1206 426 Z" opacity=".22"/>
+          <rect x="1150" y="412" width="18" height="10" rx="2" opacity=".35"/><rect x="1224" y="412" width="18" height="10" rx="2" opacity=".35"/>
+        </g>
+        <!-- hidung, mulut, pipi -->
+        <path d="M1183 424 Q1192 444 1177 450" stroke="#C4875F" stroke-width="4.2" fill="none" stroke-linecap="round"/>
+        <path d="M1164 474 Q1180 481 1196 474" stroke="#8C4A3C" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+        <ellipse cx="1124" cy="452" rx="17" ry="9" fill="#F0947F" opacity=".28"/><ellipse cx="1236" cy="452" rx="17" ry="9" fill="#F0947F" opacity=".28"/>
+        <!-- cahaya layar di wajah -->
+        <ellipse id="faceLight" cx="1180" cy="480" rx="110" ry="80" fill="url(#faceGlow)" clip-path="url(#faceClip)"/>
+      </g>
+    </g>
+
+    <!-- meja -->
+    <rect x="0" y="796" width="1920" height="284" fill="url(#desk)"/>
+    <rect x="0" y="794" width="1920" height="5" fill="#2C6967"/>
+    <ellipse id="deskGlowEl" cx="1180" cy="806" rx="360" ry="30" fill="url(#deskGlow)"/>
+
+    <!-- laptop (bagian belakang layar menghadap kita) -->
+    <g id="laptop">
+      <rect x="988" y="604" width="384" height="8" rx="4" fill="#BFEFEA" opacity=".55" filter="url(#blur6)"/>
+      <rect x="975" y="610" width="410" height="186" rx="18" fill="url(#lid)"/>
+      <rect x="975" y="610" width="410" height="186" rx="18" fill="none" stroke="#9AA4A9" stroke-width="2"/>
+      <circle cx="1180" cy="702" r="20" fill="#fff" opacity=".4"/>
+      <g><circle cx="1058" cy="672" r="28" fill="#0B6E6A"/><path d="M1046 684 C1046 662 1062 652 1074 654 C1074 670 1062 684 1046 684 Z" fill="#BFEFEA"/></g>
+      <g><rect x="1272" y="646" width="76" height="42" rx="9" fill="#2B2D31"/><text x="1310" y="676" font-family="Figtree, monospace" font-size="24" font-weight="800" fill="#6FD3CB" text-anchor="middle">{ }</text></g>
+      <polygon points="1300,736 1318,726 1336,736 1336,756 1318,766 1300,756" fill="#FEE75C" opacity=".9"/>
+      <rect x="955" y="790" width="450" height="14" rx="7" fill="#99A2A7"/>
+    </g>
+
+    <!-- kopi susu gula aren -->
+    <g id="coffeeCup">
+      <ellipse cx="802" cy="800" rx="58" ry="8" fill="#000" opacity=".25"/>
+      <path d="M752 650 H852 L841 798 H763 Z" fill="#CFE3E3" fill-opacity=".18"/>
+      <g clip-path="url(#glassClip)">
+        <rect x="740" y="684" width="130" height="120" fill="url(#coffee)"/>
+        <path d="M768 720 q22 14 15 44" stroke="#5C391D" stroke-width="6" fill="none" opacity=".75" stroke-linecap="round"/>
+        <rect x="772" y="692" width="28" height="28" rx="7" fill="#fff" fill-opacity=".5" transform="rotate(12 786 706)"/>
+        <rect x="806" y="704" width="26" height="26" rx="7" fill="#fff" fill-opacity=".45" transform="rotate(-10 819 717)"/>
+      </g>
+      <path d="M752 650 H852 L841 798 H763 Z" fill="none" stroke="#E3EFEF" stroke-opacity=".75" stroke-width="4"/>
+      <line x1="822" y1="590" x2="798" y2="760" stroke="#6FD3CB" stroke-width="10" stroke-linecap="round"/>
+      <g fill="#fff" fill-opacity=".55"><circle cx="766" cy="672" r="3"/><circle cx="836" cy="684" r="3"/><circle cx="840" cy="752" r="2.5"/></g>
+    </g>
+
+    <!-- ponsel di dudukan: maskot KIRA -->
+    <g id="phone">
+      <ellipse cx="1539" cy="711" rx="120" ry="120" fill="url(#phoneGlow)"/>
+      <path d="M1500 800 L1578 800 L1560 770 L1518 770 Z" fill="#0C1E1F"/>
+      <rect x="1489" y="628" width="100" height="166" rx="18" fill="#111214"/>
+      <rect x="1497" y="636" width="84" height="150" rx="12" fill="#0F6E69"/>
+      <image href="../../../../app/assets/icon/icon.png" x="1499" y="660" width="80" height="80" clip-path="url(#phoneClip)"/>
+      <rect x="1512" y="748" width="54" height="7" rx="3.5" fill="#BFEFEA" opacity=".7"/>
+      <rect x="1520" y="762" width="38" height="6" rx="3" fill="#BFEFEA" opacity=".4"/>
+    </g>
+
+    <!-- tanaman kecil -->
+    <g>
+      <path d="M1740 796 L1730 742 H1800 L1790 796 Z" fill="#0B1E1F"/>
+      <path d="M1765 742 C1740 700 1742 668 1758 650 C1770 680 1772 710 1765 742 Z" fill="#2E8A5E"/>
+      <path d="M1765 742 C1790 708 1812 696 1830 698 C1820 722 1796 738 1765 742 Z" fill="#3BA06C"/>
+      <path d="M1765 742 C1736 726 1716 704 1712 690 C1736 690 1756 712 1765 742 Z" fill="#2A7A54"/>
+    </g>
+  </g>
+</svg>
+
+<div class="name" id="c0" style="left:1335px; top:160px;"><b>Raka, 28 tahun</b><span>Software engineer</span></div>
+<div class="chip" id="c1" style="left:1335px; top:322px;"><div class="ic"><svg width="30" height="30" viewBox="0 0 30 30"><path d="M7 15.5 L12.5 21 L23 9.5" stroke="#6FD3CB" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>Merasa sehat</div>
+<div class="chip amber" id="c2" style="left:1335px; top:418px;"><div class="ic"><svg width="34" height="34" viewBox="0 0 34 34"><circle cx="12" cy="11" r="5" fill="#FEE75C"/><path d="M3 28 C3 20 8 17 12 17 C16 17 21 20 21 28 Z" fill="#FEE75C"/><circle cx="24" cy="14" r="3.6" fill="#FEE75C" opacity=".7"/><path d="M18 28 C18 23 21 20 24 20 C27 20 31 23 31 28 Z" fill="#FEE75C" opacity=".7"/></svg></div>Ayah: diabetes</div>
+<div class="chip amber" id="c3" style="left:1335px; top:514px;"><div class="ic"><svg width="30" height="30" viewBox="0 0 30 30"><path d="M15 4 C15 4 6 14 6 19 A9 9 0 0 0 24 19 C24 14 15 4 15 4 Z" fill="#FEE75C"/></svg></div>Belum pernah cek gula darah</div>
+</div>
+
+<!-- ================= ADEGAN 2: angka SKI 2023 ================= -->
+<div class="layer" id="stats">
+  <svg id="grid" width="840" height="840" viewBox="0 0 840 840" style="position:absolute; left:120px; top:130px;"></svg>
+  <div class="src-top" id="srcTop">Survei Kesehatan Indonesia 2023<small>Penduduk usia 15 tahun ke atas</small></div>
+  <div class="big" id="n1" style="top:250px; color:var(--amber);">0%</div>
+  <div class="big-label" id="l1" style="top:432px;">punya kadar gula darah<br>di rentang diabetes</div>
+  <div class="big" id="n2" style="top:570px; color:var(--teal);">0%</div>
+  <div class="big-label" id="l2" style="top:752px;">yang didiagnosis dokter</div>
+  <div class="note" id="note">Sekitar 4 dari 5 belum terdiagnosis<small>Hitungan tim dari dua angka di atas: (11,7 &minus; 2,2) / 11,7</small></div>
+  <div class="src-bottom" id="srcBottom">Sumber: Kemenkes, Hasil Utama SKI 2023. Satu ikon = 1% penduduk.</div>
+</div>
+
+<!-- ================= ADEGAN 3: sering tak bergejala ================= -->
+<div class="layer" id="ill">
+  <div class="ill-card" id="d1" style="left:150px;"><div class="ic"><svg width="44" height="44" viewBox="0 0 30 30"><path d="M15 4 C15 4 6 14 6 19 A9 9 0 0 0 24 19 C24 14 15 4 15 4 Z" fill="#FEE75C"/></svg></div><h3>Diabetes</h3><p>Gula darah tinggi</p></div>
+  <div class="ill-card" id="d2" style="left:705px;"><div class="ic"><svg width="48" height="48" viewBox="0 0 48 48"><path d="M8 30 A16 16 0 0 1 40 30" stroke="#FEE75C" stroke-width="5" fill="none" stroke-linecap="round"/><line x1="24" y1="30" x2="33" y2="19" stroke="#FEE75C" stroke-width="5" stroke-linecap="round"/><circle cx="24" cy="30" r="4" fill="#FEE75C"/></svg></div><h3>Hipertensi</h3><p>Tingkat diagnosis 26,9% (2023)</p></div>
+  <div class="ill-card" id="d3" style="left:1260px;"><div class="ic"><svg width="44" height="44" viewBox="0 0 44 44"><rect x="17" y="6" width="10" height="32" rx="4" fill="#FEE75C"/><rect x="6" y="17" width="32" height="10" rx="4" fill="#FEE75C"/></svg></div><h3>Penyakit kronis lain</h3><p>Jantung, ginjal, dan lainnya</p></div>
+  <svg id="pulse" width="1540" height="160" viewBox="0 0 1540 160" style="position:absolute; left:190px; top:610px;">
+    <path id="pulsePath" d="M0 80 H520 L548 80 L566 62 L584 98 L602 80 H1540" stroke="#6FD3CB" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/>
+  </svg>
+  <div class="quiet" id="quiet">sering <span style="color:var(--amber)">tak bergejala</span></div>
+  <div class="src-bottom" id="illSrc" style="left:190px;">Hipertensi: Muharram dkk., BMJ Open 2025 (data 2023)</div>
+</div>
+
+<!-- ================= ADEGAN 4: KIRA ================= -->
+<div class="layer" id="kira">
+  <svg id="spark" width="1920" height="1080" viewBox="0 0 1920 1080" style="position:absolute; inset:0;">
+    <g stroke="#BFEFEA" stroke-width="9" stroke-linecap="round" id="sparkLines">
+      <line x1="1150" y1="250" x2="1172" y2="214"/><line x1="1190" y1="300" x2="1230" y2="286"/><line x1="1182" y1="350" x2="1222" y2="356"/>
+      <line x1="770" y1="250" x2="748" y2="214"/><line x1="730" y1="300" x2="690" y2="286"/>
+    </g>
+  </svg>
+  <img id="kiraTile" src="../../../../app/assets/icon/icon.png" style="position:absolute; left:760px; top:170px; width:400px; height:400px; transform-origin:50% 60%;" alt="">
+  <div class="wordmark" id="wm">KIRA</div>
+  <div class="tagline" id="tg">Teman ngobrol 1 menit sehari</div>
+  <div class="modes" id="modes">
+    <div class="mode" id="m1"><div class="ic"><svg width="24" height="24" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="4" fill="#fff"/><path d="M8 17 L6 21 L12 17 Z" fill="#fff"/></svg></div>Teks</div>
+    <div class="mode" id="m2"><div class="ic"><svg width="24" height="24" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="13" rx="4" fill="#fff"/><path d="M5 11 A7 7 0 0 0 19 11" stroke="#fff" stroke-width="2.4" fill="none"/><line x1="12" y1="18" x2="12" y2="22" stroke="#fff" stroke-width="2.4"/></svg></div>Suara</div>
+    <div class="mode" id="m3"><div class="ic"><svg width="24" height="24" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="4" fill="#fff"/><circle cx="12" cy="13" r="4" fill="#0B6E6A"/><rect x="8" y="3" width="8" height="4" rx="1.5" fill="#fff"/></svg></div>Foto</div>
+  </div>
+  <div class="modes-label" id="mlabel">MULTIMODAL</div>
+</div>
+
+<div class="layer" id="fade"></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const easeOut = (x) => 1 - Math.pow(1 - x, 3);
+const easeInOut = (x) => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const back = (x) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+// masuk (pop) lalu keluar (fade)
+function popIn(el, t, start, dur = .45, exitStart = Infinity, exitDur = .4, dx = 0, dy = 24) {
+  const p = prog(t, start, start + dur), e = Number.isFinite(exitStart) ? prog(t, exitStart, exitStart + exitDur) : 0;
+  const s = .86 + .14 * back(p);
+  el.style.opacity = (easeOut(p) * (1 - e)).toFixed(3);
+  el.style.transform = `translate(${dx * (1 - easeOut(p))}px, ${dy * (1 - easeOut(p)) - 20 * e}px) scale(${p > 0 ? s : .86})`;
+}
+const show = (el, o) => { el.style.opacity = o.toFixed(3); el.style.visibility = o <= 0.001 ? 'hidden' : 'visible'; };
+
+// ---------- grid 10 x 10 (1 ikon = 1%) ----------
+const NS = 'http://www.w3.org/2000/svg';
+const grid = $('grid');
+const person = (x, y, fill) => `<g transform="translate(${x} ${y})"><circle cx="30" cy="16" r="13" fill="${fill}"/><path d="M8 66 C8 44 18 34 30 34 C42 34 52 44 52 66 Z" fill="${fill}"/></g>`;
+// sel diacak tetap (deterministik) supaya tidak tampak seperti batang
+const order = [];
+{ let s = 7; const idx = [...Array(100).keys()]; for (let i = 99; i > 0; i--) { s = (s * 9301 + 49297) % 233280; const j = Math.floor(s / 233280 * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; } order.push(...idx); }
+const AMBER = order.slice(0, 12);          // 11 penuh + 1 terisi 0,7
+const TEAL = [AMBER[0], AMBER[1], AMBER[2]]; // 2 penuh + 1 terisi 0,2
+let html = '<defs>';
+for (let k = 0; k < 100; k++) {
+  const x = (k % 10) * 82 + 10, y = Math.floor(k / 10) * 82 + 6;
+  html += `<clipPath id="ca${k}"><rect id="ra${k}" x="${x}" y="${y}" width="0" height="80"/></clipPath><clipPath id="ct${k}"><rect id="rt${k}" x="${x}" y="${y}" width="0" height="80"/></clipPath>`;
+}
+html += '</defs>';
+for (let k = 0; k < 100; k++) {
+  const x = (k % 10) * 82 + 10, y = Math.floor(k / 10) * 82 + 6;
+  html += `<g id="p${k}" opacity="0">${person(x, y, '#3F4249')}<g clip-path="url(#ca${k})">${person(x, y, '#FEE75C')}</g><g clip-path="url(#ct${k})">${person(x, y, '#6FD3CB')}</g></g>`;
+}
+grid.innerHTML = html;
+
+function fmtPct(v) { return v.toFixed(1).replace('.', ',') + '%'; }
+
+// ---------- render(t) ----------
+window.render = function (t) {
+  // global: masuk dari hitam
+  show($('fade'), 1 - easeOut(prog(t, 0, 1.3)));
+
+  // ===== kamar (0 - 10.2) =====
+  const roomOut = prog(t, 9.5, 10.4);
+  show($('room'), 1 - easeInOut(roomOut));
+  const zoom = 1 + .06 * easeInOut(prog(t, 0, 9.5)) + .08 * easeInOut(roomOut);
+  $('cam').setAttribute('transform', `translate(1180 520) scale(${zoom}) translate(-1180 -520)`);
+  // napas, kepala, mengetik
+  const breath = Math.sin(t * 2 * Math.PI / 3.6) * 2.2;
+  $('torso').setAttribute('transform', `translate(0 ${breath.toFixed(2)})`);
+  const tilt = Math.sin(t * .9) * 1.2 + (t > 3 && t < 4.6 ? 2.5 * Math.sin(prog(t, 3, 4.6) * Math.PI) : 0);
+  $('head').setAttribute('transform', `translate(0 ${(breath * .6).toFixed(2)}) rotate(${tilt.toFixed(2)} 1180 470)`);
+  // kedip
+  let blink = 1;
+  for (const b of [2.4, 6.2, 8.6]) { const q = prog(t, b, b + .16); if (q > 0 && q < 1) blink = Math.min(blink, Math.abs(1 - 2 * q) * .9 + .1); }
+  for (const [id, cx] of [['eyeL', 1143], ['eyeR', 1217]]) $(id).setAttribute('transform', `translate(0 406) scale(1 ${blink}) translate(0 -406)`);
+  // cahaya layar berdenyut halus
+  const flick = .85 + .08 * Math.sin(t * 5.3) + .05 * Math.sin(t * 13.1);
+  $('faceLight').setAttribute('opacity', flick.toFixed(3));
+  $('deskGlowEl').setAttribute('opacity', (flick * .95).toFixed(3));
+  // jam: 23.47 bergerak pelan
+  const minAng = 282 + t * .6, hourAng = 353.5 + t * .05;
+  $('minHand').setAttribute('transform', `rotate(${minAng} 905 215)`);
+  $('hourHand').setAttribute('transform', `rotate(${hourAng} 905 215)`);
+  // lampu kota berkedip
+  [...$('cityLights').children].forEach((r, i) => r.setAttribute('opacity', (Math.sin(t * (.7 + i * .13) + i) > -.85 ? .9 : .25)));
+  // keterangan
+  popIn($('c0'), t, 1.65, .5, 9.3, .35, -30, 0);
+  popIn($('c1'), t, 3.05, .45, 9.35, .35, -30, 0);
+  popIn($('c2'), t, 5.65, .45, 9.4, .35, -30, 0);
+  popIn($('c3'), t, 7.0, .45, 9.45, .35, -30, 0);
+
+  // ===== statistik (9.9 - 22.6) =====
+  const stIn = easeOut(prog(t, 9.9, 10.7)), stOut = easeInOut(prog(t, 22.25, 22.85));
+  show($('stats'), stIn * (1 - stOut));
+  for (let k = 0; k < 100; k++) {
+    const row = Math.floor(k / 10), col = k % 10;
+    const a = 10.1 + (row + col) * .07;
+    const p = easeOut(prog(t, a, a + .4));
+    const g = $('p' + k);
+    g.setAttribute('opacity', p.toFixed(3));
+    g.setAttribute('transform', `translate(0 ${(1 - p) * 14})`);
+  }
+  // amber: 11,7 ikon, mulai 14.3
+  const amberFill = 11.7 * easeInOut(prog(t, 14.3, 16.6));
+  AMBER.forEach((k, i) => { const f = clamp(amberFill - i); $('ra' + k).setAttribute('width', (80 * f).toFixed(1)); });
+  const tealFill = 2.2 * easeInOut(prog(t, 19.2, 20.6));
+  TEAL.forEach((k, i) => { const f = clamp(tealFill - i); $('rt' + k).setAttribute('width', (80 * f).toFixed(1)); });
+  popIn($('srcTop'), t, 11.2, .5);
+  popIn($('n1'), t, 14.2, .45); $('n1').textContent = fmtPct(11.7 * easeOut(prog(t, 14.3, 16.4)));
+  popIn($('l1'), t, 14.6, .45);
+  popIn($('n2'), t, 18.8, .45); $('n2').textContent = fmtPct(2.2 * easeOut(prog(t, 19.0, 20.4)));
+  popIn($('l2'), t, 19.2, .45);
+  popIn($('note'), t, 20.6, .5);
+  popIn($('srcBottom'), t, 11.6, .5);
+
+  // ===== sering tak bergejala (22.5 - 27.5) =====
+  const ilIn = easeOut(prog(t, 22.45, 23.0)), ilOut = easeInOut(prog(t, 27.15, 27.65));
+  show($('ill'), ilIn * (1 - ilOut));
+  popIn($('d1'), t, 22.7, .5);
+  popIn($('d2'), t, 23.55, .5);
+  popIn($('d3'), t, 24.45, .5);
+  const pl = $('pulsePath'), len = 1580;
+  pl.style.strokeDasharray = len; pl.style.strokeDashoffset = (len * (1 - easeInOut(prog(t, 25.3, 26.6)))).toFixed(1);
+  popIn($('quiet'), t, 25.55, .5);
+  popIn($('illSrc'), t, 23.8, .5);
+
+  // ===== KIRA (27.4 - akhir) =====
+  const kIn = easeOut(prog(t, 27.35, 27.9));
+  show($('kira'), kIn);
+  const tp = prog(t, 27.75, 28.45);
+  const tile = $('kiraTile');
+  const bob = t > 28.5 ? Math.sin((t - 28.5) * 2.2) * 6 : 0;
+  tile.style.opacity = easeOut(tp).toFixed(3);
+  tile.style.transform = `translateY(${(bob + 40 * (1 - easeOut(tp))).toFixed(2)}px) scale(${(tp > 0 ? .55 + .45 * back(tp) : .55).toFixed(3)}) rotate(${(-6 * (1 - easeOut(tp)) + (t > 28.5 ? Math.sin((t - 28.5) * 1.6) * 1.5 : 0)).toFixed(2)}deg)`;
+  const sp = $('sparkLines');
+  sp.setAttribute('opacity', (easeOut(prog(t, 28.2, 28.6)) * (.75 + .25 * Math.sin(t * 6))).toFixed(3));
+  popIn($('wm'), t, 28.75, .5);
+  popIn($('tg'), t, 30.3, .5);
+  popIn($('m1'), t, 31.25, .4);
+  popIn($('m2'), t, 31.5, .4);
+  popIn($('m3'), t, 31.75, .4);
+  popIn($('mlabel'), t, 31.9, .45);
+};
+window.render(0);
+</script>
+</body>
+</html>
