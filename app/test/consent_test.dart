@@ -26,7 +26,7 @@ Future<void> pumpReset(WidgetTester tester, FakeApi api) async {
 }
 
 Future<void> fillRegister(WidgetTester tester) async {
-  await tester.tap(find.text('Daftar').first);
+  await tester.tap(find.byKey(const Key('auth_toggle')));
   await tester.pumpAndSettle();
   await tester.enterText(find.byKey(const Key('register_username')), 'raka_dev');
   await tester.enterText(find.byKey(const Key('register_phone')), '081234567890');
@@ -59,7 +59,7 @@ void main() {
 
     testWidgets('isi persetujuan bisa dibaca sebelum menyetujui', (tester) async {
       await pumpLogin(tester, FakeApi());
-      await tester.tap(find.text('Daftar').first);
+      await tester.tap(find.byKey(const Key('auth_toggle')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('consent_read')));
       await tester.pumpAndSettle();
