@@ -1,9 +1,14 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
     <!-- Build rilis tidak mewarisi INTERNET dari manifest debug; tanpa ini aplikasi tidak bisa memanggil API. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- Jeda sosmed (opsional, pengguna yang menyalakan): tahu aplikasi mana yang di depan dan tampil di atasnya. -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <!-- Health Connect: hanya baca langkah dan tidur. -->
@@ -20,6 +25,20 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
+        <service
+            android:name=".jeda.JedaService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Menampilkan kartu pengingat kesehatan sebelum aplikasi media sosial yang dipilih pengguna dibuka"/>
+        </service>
+        <receiver android:name=".jeda.JedaBootReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
             </intent-filter>
         </receiver>
         <activity
@@ -71,6 +90,17 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <package android:name="com.instagram.android"/>
+        <package android:name="com.twitter.android"/>
+        <package android:name="com.facebook.katana"/>
+        <package android:name="com.zhiliaoapp.musically"/>
+        <package android:name="com.ss.android.ugc.trill"/>
+        <package android:name="com.instagram.barcelona"/>
+        <package android:name="com.snapchat.android"/>
+        <package android:name="com.reddit.frontpage"/>
+        <package android:name="com.pinterest"/>
+        <package android:name="com.linkedin.android"/>
+        <package android:name="com.google.android.youtube"/>
         <package android:name="com.google.android.apps.healthdata"/>
         <intent>
             <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE"/>
