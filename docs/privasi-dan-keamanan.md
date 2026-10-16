@@ -47,6 +47,17 @@ menghapus data. Dokumen ini bukan nasihat hukum; peninjauan oleh konsultan hukum
 - **Katalog makanan** (sekitar 1.400 token daftar nama) ikut terkirim ke penyedia model bahasa bersama pesan pengguna supaya
   makanan bisa dipetakan; katalog itu bukan data pribadi.
 
+## Jeda sosmed (Android, opsional)
+
+- Mati secara bawaan. Setelah dinyalakan butuh dua izin yang diberikan sendiri oleh pengguna di pengaturan Android: **akses penggunaan**
+  (agar tahu aplikasi mana yang di depan) dan **tampil di atas aplikasi lain** (agar kartu bisa muncul).
+- KIRA hanya membaca **nama paket** aplikasi yang sedang di depan, tidak membaca isi layar, dan tidak mengirimnya ke server. Hanya
+  aplikasi yang dicentang pengguna yang ditahan; WhatsApp tidak ada di daftar.
+- Isi kartu (usulan makan, olahraga, jam tidur, status "belum tercatat") disimpan di penyimpanan pribadi aplikasi di ponsel, bukan di
+  server, dan terhapus saat Jeda dimatikan atau pengguna keluar akun. Berbeda dari notifikasi, kartu memuat nama usulan makan dan
+  olahraga karena tampil saat pengguna sedang memegang ponsel; tidak pernah memuat hasil pemeriksaan (tensi, gula darah).
+- Pengguna bisa melewati kartu sampai besok, dan satu jenis kartu tampil paling banyak tiga kali sehari.
+
 ## Sesi dan PIN
 
 - Token akses berlaku 60 menit; perangkat memperbaruinya dengan token penyegar (30 hari, berputar tiap dipakai, hanya hash SHA-256 yang disimpan).

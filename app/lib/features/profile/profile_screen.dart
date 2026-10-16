@@ -108,6 +108,15 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 const Divider(),
                 ListTile(
+                  key: const Key('tile_jeda'),
+                  leading: const Icon(Icons.hourglass_bottom),
+                  title: const Text('Jeda sosmed'),
+                  subtitle: const Text('Kartu singkat sebelum Instagram, X, dan sejenisnya: rencana pagi, catat malam, tidur'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/jeda'),
+                ),
+                const Divider(),
+                ListTile(
                   key: const Key('tile_privacy'),
                   leading: const Icon(Icons.privacy_tip_outlined),
                   title: const Text('Data dan privasi'),

@@ -19,6 +19,7 @@ import '../features/onboarding/onboarding_screen.dart';
 import '../features/plan/plan_preferences_screen.dart';
 import '../features/plan/plan_screen.dart';
 import '../features/profile/profile_screen.dart';
+import '../features/jeda/jeda_screen.dart';
 import '../features/reminders/reminders_screen.dart';
 import '../features/home/home_screen.dart';
 import '../shared/app_shell.dart';
@@ -52,6 +53,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
       GoRoute(path: '/reminders', builder: (_, _) => const RemindersScreen()),
+      GoRoute(path: '/jeda', builder: (_, _) => const JedaScreen()),
       GoRoute(path: '/goals', builder: (_, _) => const GoalsScreen()),
       GoRoute(path: '/bp-protocol', builder: (_, _) => const BpProtocolScreen()),
       GoRoute(path: '/barcode', builder: (_, _) => const BarcodeScreen()),

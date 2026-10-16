@@ -8,6 +8,8 @@ import '../core/outbox.dart';
 import '../core/providers.dart';
 import '../features/health/health_sync.dart';
 import '../features/home/home_screen.dart';
+import '../features/jeda/jeda_bridge.dart';
+import '../features/jeda/jeda_controller.dart';
 import '../features/privacy/consent_gate.dart';
 import '../features/reminders/reminders_controller.dart';
 
@@ -38,7 +40,23 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
       ref.invalidate(dashboardProvider); // kondisi hari ini bisa berubah selama aplikasi tertutup
       unawaited(_flushOutbox());
       unawaited(ref.read(remindersProvider.notifier).reschedule());
+      unawaited(_afterResumeFromJeda());
     }
+  }
+
+  /// Kartu Jeda Sosmed: bila tombolnya yang membuka KIRA, pindah ke layar yang diminta; lalu susun ulang isinya.
+  Future<void> _afterResumeFromJeda() async {
+    final jeda = ref.read(jedaProvider.notifier);
+    final route = await ref.read(jedaBridgeProvider).takeLaunchRoute();
+    if (route != null && mounted) {
+      if (route == '/plan') {
+        unawaited(context.push(route));
+      } else {
+        context.go(route);
+      }
+    }
+    await jeda.load();
+    await jeda.refresh();
   }
 
   @override
@@ -64,6 +82,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     WidgetsBinding.instance.addObserver(this);
     Future.microtask(_flushOutbox);
     Future.microtask(() => ref.read(remindersProvider.notifier).load());
+    Future.microtask(_afterResumeFromJeda); // dibuka lewat tombol kartu Jeda sosmed, atau menyusun ulang isi kartu
     _retry = Timer.periodic(const Duration(seconds: 30), (_) {
       if (ref.read(outboxProvider).isNotEmpty) unawaited(_flushOutbox());
     });
