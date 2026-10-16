@@ -88,7 +88,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
           onRetry: () => ref.invalidate(familyProvider),
         ),
         data: (f) => ListView(
-          padding: const EdgeInsets.all(KiraSpace.lg),
+          padding: context.pagePadding,
           children: [
             const SoftNote(
               key: Key('family_intro'),

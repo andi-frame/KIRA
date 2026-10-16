@@ -19,6 +19,7 @@ import '../features/onboarding/onboarding_screen.dart';
 import '../features/plan/plan_preferences_screen.dart';
 import '../features/plan/plan_screen.dart';
 import '../features/profile/profile_screen.dart';
+import '../features/records/records_screen.dart';
 import '../features/jeda/jeda_screen.dart';
 import '../features/reminders/reminders_screen.dart';
 import '../features/home/home_screen.dart';
@@ -62,6 +63,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
       GoRoute(path: '/family', builder: (_, _) => const FamilyScreen()),
       GoRoute(path: '/doctor', builder: (_, _) => const DoctorSummaryScreen()),
+      GoRoute(path: '/records', builder: (_, _) => const RecordsScreen()),
       GoRoute(path: '/health', builder: (_, _) => const HealthScreen()),
       GoRoute(path: '/trends', builder: (_, _) => const TrendsScreen()),
       GoRoute(path: '/plan', builder: (_, _) => const PlanScreen()),

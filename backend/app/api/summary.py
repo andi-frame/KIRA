@@ -11,6 +11,7 @@ from app.db import get_session
 from app.models import ClinicalResult, Log, LogItem, User, WeeklySummary
 from app.repos import profiles
 from app.security import current_user_id
+from app.services import medical_records
 from app.services import risk
 from app.services.jobs import _metrics, _summary_text, week_bounds, weekly_changes
 from app.services.projection_view import hypertension_payload
@@ -21,6 +22,7 @@ from app.timeutil import local_date, utcnow
 router = APIRouter(tags=["summary"])
 
 MIN_SAMPLES = 3
+MAX_SUMMARY_RECORDS = 15
 MEAL_WINDOW = timedelta(hours=3)
 CATEGORY_ID = {
     "low": "rendah", "slightly_elevated": "sedikit meningkat", "moderate": "sedang",
@@ -29,6 +31,7 @@ CATEGORY_ID = {
 KIND_ID = {
     "fasting_glucose": "Gula darah puasa", "random_glucose": "Gula darah sewaktu",
     "blood_pressure": "Tekanan darah", "hba1c": "HbA1c", "waist": "Lingkar perut",
+    "resting_heart_rate": "Detak jantung istirahat",
 }
 
 
@@ -44,8 +47,10 @@ def _value_text(kind: str, value: dict) -> str:
     if kind == "blood_pressure" and value.get("protocol"):
         return f"{_n(value.get('avg_sys', value.get('sys')))}/{_n(value.get('avg_dia', value.get('dia')))} mmHg ({value.get('readings')} bacaan)"
     if kind == "blood_pressure":
-        return f"{_n(value.get('sys'))}/{_n(value.get('dia'))} mmHg"
-    unit = {"fasting_glucose": "mg/dL", "random_glucose": "mg/dL", "hba1c": "%", "waist": "cm"}.get(kind, "")
+        pulse = f", nadi {_n(value['pulse'])}" if value.get("pulse") else ""
+        return f"{_n(value.get('sys'))}/{_n(value.get('dia'))} mmHg{pulse}"
+    unit = {"fasting_glucose": "mg/dL", "random_glucose": "mg/dL", "hba1c": "%", "waist": "cm",
+            "resting_heart_rate": "kali/menit"}.get(kind, "")
     number = next(iter(value.values()), "")
     return f"{_n(number)} {unit}".strip()
 
@@ -90,6 +95,11 @@ def _render_text(s: dict) -> str:
             lines.append(f"- {r['label']}: {r['display']} ({r['measured_on']}, {r['source']})")
     else:
         lines.append("Belum ada hasil pemeriksaan yang dicatat di KIRA.")
+    if s.get("medical_records"):
+        lines.append("Rekam medis yang dicatat pasien sendiri (tidak diverifikasi KIRA):")
+        for r in s["medical_records"]:
+            extra = "; ".join(f"{v['name']} {v['value']}{(' ' + v['unit']) if v.get('unit') else ''}" for v in r["values"])
+            lines.append(f"- {r['recorded_on']} {r['kind_label']}: {r['title']}" + (f" ({extra})" if extra else ""))
     return "\n".join(lines)
 
 
@@ -124,6 +134,7 @@ async def compute_doctor_summary(session: AsyncSession, user_id: uuid.UUID, days
         )
     ).scalars().all()
     user = await session.get(User, user_id)
+    records = await medical_records.list_records(session, user_id)
     summary = {
         "generated_at": utcnow().isoformat(),
         "period_days": days,
@@ -153,6 +164,8 @@ async def compute_doctor_summary(session: AsyncSession, user_id: uuid.UUID, days
         ],
         "weekly_summaries": [w.summary_text for w in weekly if w.summary_text],
         "triage": trends["triage"],
+        # Riwayat medis yang dicatat pasien sendiri; diurutkan terbaru dulu dan dibatasi agar ringkasan tetap satu halaman.
+        "medical_records": [medical_records.record_out(r) for r in records[:MAX_SUMMARY_RECORDS]],
     }
     summary["text"] = _render_text(summary)
     return summary

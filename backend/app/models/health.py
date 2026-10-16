@@ -69,6 +69,8 @@ class Message(Base):
     tool_calls: Mapped[list | None] = mapped_column(JSONB)
     channel: Mapped[str] = mapped_column(Text, nullable=False)  # app | whatsapp
     created_at: Mapped[datetime] = created_at()
+    # Untuk memulihkan obrolan di aplikasi: {"log_ids": [...], "red_flag": ...}. Tidak berisi angka kesehatan.
+    meta: Mapped[dict | None] = mapped_column(JSONB)
 
 
 class Faskes(Base):
@@ -107,6 +109,7 @@ class BpReading(Base):
     sys: Mapped[int] = mapped_column(Integer, nullable=False)
     dia: Mapped[int] = mapped_column(Integer, nullable=False)
     session: Mapped[str] = mapped_column(Text, nullable=False)  # morning | evening
+    pulse: Mapped[int | None] = mapped_column(Integer)  # detak jantung (kali/menit) saat bacaan itu, bila diukur
 
 
 class WhatIfScenario(Base):

@@ -28,7 +28,7 @@ class FakeJedaBridge implements JedaBridge {
   final List<JedaApp> installed;
   final applied = <({JedaSettings settings, JedaPayload? payload})>[];
   final previews = <String>[];
-  int stops = 0, usageOpened = 0, overlayOpened = 0;
+  int stops = 0, usageOpened = 0, overlayOpened = 0, appInfoOpened = 0;
   String? launchRoute;
 
   @override
@@ -39,6 +39,9 @@ class FakeJedaBridge implements JedaBridge {
 
   @override
   Future<void> openOverlay() async => overlayOpened++;
+
+  @override
+  Future<void> openAppInfo() async => appInfoOpened++;
 
   @override
   Future<List<JedaApp>> installedApps() async => installed;

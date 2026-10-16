@@ -10,6 +10,9 @@ from app.graph.kira_graph import RunResult, run_kira_graph
 from app.schemas.api import ChatIn, ChatOut
 from app.security import limit_llm_calls
 from app.repos import logs as logs_repo
+from app.repos import messages as messages_repo
+from app.security import current_user_id
+from app.timeutil import local_date, utcnow
 from app.services import idempotency
 from app.services.stt import SttError, get_stt
 
@@ -24,6 +27,38 @@ async def _out(session: AsyncSession, user_id: uuid.UUID, result: RunResult, tra
              if lg.kind == "meal"]
     return ChatOut(reply=result.reply, extraction=result.extraction, red_flag=result.red_flag,
                    log_ids=result.log_ids, tool_calls=result.tool_calls, transcript=transcript, meals=meals)
+
+
+@router.get("/history")
+async def history(
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Obrolan hari ini (satu riwayat per hari). Obrolan hari-hari sebelumnya dibersihkan saat hari berganti.
+    Catatan makan yang dibuat dari sebuah balasan ikut dikirim dengan isinya yang TERKINI (bukan salinan lama)."""
+    await messages_repo.purge_before_today(session, user_id)
+    rows = await messages_repo.today(session, user_id)
+    ids = list(dict.fromkeys(i for m in rows for i in ((m.meta or {}).get("log_ids") or [])))
+    meals = {str(lg.id): log_out(lg, items) for lg, items in await logs_repo.by_ids(session, user_id, ids) if lg.kind == "meal"}
+    return {
+        "date": local_date(utcnow()).isoformat(),
+        "messages": [
+            {"id": str(m.id), "role": m.role, "text": m.content or "", "channel": m.channel,
+             "at": m.created_at.isoformat(), "red_flag": (m.meta or {}).get("red_flag"),
+             "tool_calls": m.tool_calls or [],
+             "meals": [meals[i] for i in ((m.meta or {}).get("log_ids") or []) if i in meals]}
+            for m in rows
+        ],
+    }
+
+
+@router.delete("/history", status_code=status.HTTP_204_NO_CONTENT)
+async def clear_history(
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    """Hapus obrolan hari ini. Catatan makan/minum/tidur yang sudah tersimpan tidak ikut terhapus."""
+    await messages_repo.clear_today(session, user_id)
 
 
 @router.post("/message", response_model=ChatOut)

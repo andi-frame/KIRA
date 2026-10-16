@@ -30,13 +30,17 @@ abstract class JedaBridge {
   Future<JedaPermissions> permissions();
   Future<void> openUsageAccess();
   Future<void> openOverlay();
+
+  /// Halaman "Info aplikasi" KIRA di pengaturan Android. Di sana ada menu ⋮ > "Izinkan setelan terbatas" yang dibutuhkan
+  /// aplikasi hasil pasang manual (bukan dari toko) sebelum izin akses penggunaan dan tampil di atas aplikasi lain bisa diberikan.
+  Future<void> openAppInfo();
   Future<List<JedaApp>> installedApps();
 
   /// Menyimpan pengaturan + isi kartu di perangkat dan menyalakan atau mematikan layanan sesuai `enabled`.
   Future<void> apply(JedaSettings settings, JedaPayload? payload);
   Future<void> stop();
 
-  /// Menampilkan kartu [kind] (morning | evening | night | other) sekarang, sebagai contoh. Tidak dicatat sebagai tampil.
+  /// Menampilkan kartu [kind] (morning | evening | night | other | fact) sekarang, sebagai contoh. Tidak dicatat sebagai tampil.
   Future<void> preview(String kind);
 
   /// Rute yang diminta tombol kartu (mis. /chat), sekali ambil.
@@ -73,6 +77,9 @@ class MethodChannelJedaBridge implements JedaBridge {
   Future<void> openOverlay() => _call<bool>('openOverlay', false);
 
   @override
+  Future<void> openAppInfo() => _call<bool>('openAppInfo', false);
+
+  @override
   Future<List<JedaApp>> installedApps() async {
     final raw = await _call<List<Object?>>('installedApps', const []);
     return [
@@ -83,7 +90,7 @@ class MethodChannelJedaBridge implements JedaBridge {
 
   @override
   Future<void> apply(JedaSettings settings, JedaPayload? payload) => _call<bool>('apply', false, {
-        'settings': jsonEncode(settings.toMap()),
+        'settings': jsonEncode(settings.toBridgeMap()),
         'payload': payload == null ? null : jsonEncode(payload.toMap()),
       });
 

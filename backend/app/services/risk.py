@@ -3,13 +3,14 @@
 Semua angka berasal dari core_calc; modul ini hanya menyambungkan data pengguna ke fungsi murni itu.
 """
 import uuid
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core_calc.bp import bp_category, validate_glucose
+from app.core_calc.heart_rate import validate_bpm
 from app.core_calc.check_trigger import CheckRecommendation as CheckRec
 from app.core_calc.check_trigger import evaluate_check
 from app.core_calc.constants import GLUCOSE_HIGH_FASTING, GLUCOSE_HIGH_HBA1C, GLUCOSE_HIGH_RANDOM
@@ -27,6 +28,9 @@ VEG_FRUIT_FOOD_IDS = {
     "sayur_asem", "sayur_sop", "tumis_kangkung", "capcay", "gado_gado", "pecel", "lalapan", "urap",
     "sayur_lodeh", "karedok", "gulai_nangka", "pisang", "apel", "jeruk", "semangka", "pepaya",
     "mangga", "salak", "melon", "anggur", "alpukat",
+    # Hidangan dipecah menjadi komponen (seed/components.json): sayur di dalam gado-gado, nasi uduk, soto, dst. ikut terhitung.
+    "timun", "tomat", "kol", "selada", "tauge", "daun_singkong_rebus", "kangkung_rebus", "bayam_rebus",
+    "wortel_rebus", "kacang_panjang_rebus", "buncis_rebus", "labu_siam", "terong", "sawi",
 }
 ACTIVE_MINUTES_PER_DAY = 30
 VEG_FRUIT_DAY_SHARE = 0.7
@@ -71,6 +75,7 @@ class RiskState:
     mode: str
     last_bp_category: str | None
     hypertension: HypertensionRisk
+    basis: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -105,18 +110,27 @@ def _covered_days(recent: list) -> int:
     return max(1, min(WINDOW_DAYS, (utcnow() - earliest).days + 1))
 
 
-def _activity_flag(profile: HealthProfile | None, recent: list) -> bool | None:
+def _activity_basis(profile: HealthProfile | None, recent: list) -> tuple[bool | None, dict]:
+    """(aktif 30 menit/hari?, dasar). Dasar menjelaskan dari mana jawabannya: catatan, profil, atau belum diketahui."""
     baseline = profile.usual_active_30min if profile is not None else None
     covered = _covered_days(recent)
     has_activity_logs = any(log.kind == "activity" for log, _ in recent)
     # Log baru belum cukup mewakili kebiasaan: pakai baseline onboarding sampai ada beberapa hari log.
     if not has_activity_logs or covered < MIN_LOGGED_DAYS:
-        return baseline
+        return baseline, {"source": "profile" if baseline is not None else "unknown", "answer": baseline,
+                          "avg_minutes_per_day": None, "days_covered": covered, "target_minutes": ACTIVE_MINUTES_PER_DAY}
     minutes = sum(float(log.extracted.get("minutes", 0) or 0) for log, _ in recent if log.kind == "activity")
-    return minutes / covered >= ACTIVE_MINUTES_PER_DAY
+    avg = minutes / covered
+    return avg >= ACTIVE_MINUTES_PER_DAY, {"source": "log", "answer": avg >= ACTIVE_MINUTES_PER_DAY,
+                                           "avg_minutes_per_day": round(avg, 1), "days_covered": covered,
+                                           "target_minutes": ACTIVE_MINUTES_PER_DAY}
 
 
-def _veg_fruit_flag(profile: HealthProfile | None, recent: list) -> bool | None:
+def _activity_flag(profile: HealthProfile | None, recent: list) -> bool | None:
+    return _activity_basis(profile, recent)[0]
+
+
+def _veg_fruit_basis(profile: HealthProfile | None, recent: list) -> tuple[bool | None, dict]:
     meal_days: dict = {}
     for log, items in recent:
         if log.kind != "meal":
@@ -126,8 +140,17 @@ def _veg_fruit_flag(profile: HealthProfile | None, recent: list) -> bool | None:
         if any(i.food_id in VEG_FRUIT_FOOD_IDS for i in items):
             meal_days[day] = True
     if len(meal_days) >= MIN_LOGGED_DAYS:
-        return sum(meal_days.values()) / len(meal_days) >= VEG_FRUIT_DAY_SHARE
-    return profile.usual_veg_fruit if profile is not None else None
+        share = sum(meal_days.values()) / len(meal_days)
+        return share >= VEG_FRUIT_DAY_SHARE, {
+            "source": "log", "answer": share >= VEG_FRUIT_DAY_SHARE, "days_with": sum(meal_days.values()),
+            "days_logged": len(meal_days), "target_share": VEG_FRUIT_DAY_SHARE}
+    baseline = profile.usual_veg_fruit if profile is not None else None
+    return baseline, {"source": "profile" if baseline is not None else "unknown", "answer": baseline,
+                      "days_with": sum(meal_days.values()), "days_logged": len(meal_days), "target_share": VEG_FRUIT_DAY_SHARE}
+
+
+def _veg_fruit_flag(profile: HealthProfile | None, recent: list) -> bool | None:
+    return _veg_fruit_basis(profile, recent)[0]
 
 
 def _sweet_drink_stats(recent: list) -> tuple[float, float]:
@@ -198,13 +221,15 @@ async def compute_risk_state(session: AsyncSession, user_id: uuid.UUID) -> RiskS
         )
     ).first() is not None
 
+    active_flag, activity_basis = _activity_basis(profile, recent)
+    veg_flag, veg_basis = _veg_fruit_basis(profile, recent)
     inputs = FindriscInputs(
         age=age_from(profile.birth_date) if profile else None,
         bmi=bmi,
         sex=profile.sex if profile else None,
         waist_cm=waist,
-        active_30min=_activity_flag(profile, recent),
-        daily_veg_fruit=_veg_fruit_flag(profile, recent),
+        active_30min=active_flag,
+        daily_veg_fruit=veg_flag,
         on_bp_medication=profile.on_bp_medication if profile else None,
         history_high_glucose=_glucose_flag(profile, results),
         family_history=profile.family_history_diabetes if profile else None,
@@ -237,6 +262,16 @@ async def compute_risk_state(session: AsyncSession, user_id: uuid.UUID) -> RiskS
         mode=user.mode if user else "prevention",
         last_bp_category=last_bp,
         hypertension=_hypertension_risk(profile, bp_results, bmi, has_diabetes),
+        basis={
+            "window_days": WINDOW_DAYS,
+            "logged_days": len({local_date(lg.occurred_at) for lg, _ in recent}),
+            "activity": activity_basis,
+            "veg_fruit": veg_basis,
+            "unknown": [name for name, value in (
+                ("berat/tinggi badan", bmi), ("lingkar perut", waist),
+                ("riwayat gula darah tinggi", inputs.history_high_glucose), ("riwayat keluarga", inputs.family_history),
+                ("obat tekanan darah", inputs.on_bp_medication)) if value is None],
+        },
     )
 
 
@@ -250,6 +285,20 @@ async def save_snapshot(session: AsyncSession, user_id: uuid.UUID, state: RiskSt
     )
     if commit:
         await session.commit()
+
+
+async def save_snapshot_if_changed(session: AsyncSession, user_id: uuid.UUID, state: RiskState, *, commit: bool = True) -> bool:
+    """Seperti save_snapshot, tetapi tidak menambah baris bila skor dan masukannya sama dengan snapshot terakhir
+    (koreksi catatan berulang tidak boleh menggembungkan riwayat)."""
+    last = (await session.execute(
+        select(RiskSnapshot).where(RiskSnapshot.user_id == user_id, RiskSnapshot.model == "findrisc")
+        .order_by(RiskSnapshot.computed_at.desc()).limit(1)
+    )).scalar_one_or_none()
+    if last is not None and (last.score_low, last.score_high) == (state.rng.low, state.rng.high) \
+            and last.inputs == asdict(state.inputs):
+        return False
+    await save_snapshot(session, user_id, state, commit=commit)
+    return True
 
 
 async def open_recommendations(session: AsyncSession, user_id: uuid.UUID) -> list[CheckRecommendation]:
@@ -291,7 +340,12 @@ def _validate(kind: str, value: dict) -> tuple[RedFlag | None, str | None]:
             return detect_red_flags(glucose_mg_dl=mg), None
         if kind == "blood_pressure":
             sys_, dia = int(value["sys"]), int(value["dia"])
+            if "pulse" in value:
+                validate_bpm(float(value["pulse"]))
             return detect_red_flags(bp=(sys_, dia)), bp_category(sys_, dia)
+        if kind == "resting_heart_rate":
+            validate_bpm(float(value["bpm"]))
+            return None, None
         if kind == "hba1c":
             if not 3.0 <= float(value["percent"]) <= 20.0:
                 raise ValueError("HbA1c tidak masuk akal")

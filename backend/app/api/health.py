@@ -5,10 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core_calc.heart_rate import classify_resting
 from app.core_calc.red_flags import RedFlag
 from app.db import get_session
 from app.models import Diagnosis, User, WhatIfScenario
-from app.repos import faskes as faskes_repo
+from app.services import faskes_lookup
 from app.schemas.api import CheckRespondIn, DiagnosisIn, ResultIn, ScenarioIn, WhatIfIn
 from app.security import current_user_id
 from app.services import check_followup, idempotency, risk
@@ -167,6 +168,7 @@ async def post_result(
         "saved": outcome.saved,
         "red_flag": _flag(outcome.red_flag),
         "bp_category": outcome.bp_category,
+        "hr_range": classify_resting(body.value["bpm"]) if body.kind == "resting_heart_rate" and outcome.saved else None,
         "projection": projection_payload(outcome.state),
     }
     await idempotency.remember(session, user_id, key, out)
@@ -192,4 +194,4 @@ async def faskes_nearby(
     _: uuid.UUID = Depends(current_user_id),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
-    return {"faskes": await faskes_repo.nearby(session, lat, lng)}
+    return await faskes_lookup.nearby(session, lat, lng)

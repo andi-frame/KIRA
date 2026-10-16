@@ -60,9 +60,25 @@ object JedaCodec {
                 nightStart = o.optInt("night_start", 21 * 60 + 30).coerceIn(0, 1439),
                 graceMinutes = o.optInt("grace_minutes", 30).coerceIn(5, 240),
                 showOther = o.optBoolean("show_other", true),
+                funFact = o.optBoolean("fun_fact", false),
+                useGrace = o.optBoolean("use_grace", true),
+                facts = facts(o.optJSONArray("facts")),
             )
         } catch (_: Exception) {
             Settings()
+        }
+    }
+
+    private fun facts(a: JSONArray?): List<Fact> {
+        if (a == null) return emptyList()
+        return (0 until a.length()).mapNotNull {
+            try {
+                val f = a.getJSONObject(it)
+                val text = f.str("text")
+                if (text.isEmpty()) null else Fact(f.str("id"), f.str("category"), text, f.str("source"))
+            } catch (_: Exception) {
+                null
+            }
         }
     }
 
@@ -96,6 +112,7 @@ object JedaCodec {
                 skipDay = if (o.isNull("skip_day")) null else o.optString("skip_day"),
                 countDay = if (o.isNull("count_day")) null else o.optString("count_day"),
                 counts = counts?.keys()?.asSequence()?.associateWith { counts.optInt(it, 0) } ?: emptyMap(),
+                factIndex = o.optInt("fact_index", 0).coerceAtLeast(0),
             )
         } catch (_: Exception) {
             GateState()
@@ -107,5 +124,6 @@ object JedaCodec {
         .put("skip_day", s.skipDay ?: JSONObject.NULL)
         .put("count_day", s.countDay ?: JSONObject.NULL)
         .put("counts", JSONObject(s.counts as Map<*, *>))
+        .put("fact_index", s.factIndex)
         .toString()
 }

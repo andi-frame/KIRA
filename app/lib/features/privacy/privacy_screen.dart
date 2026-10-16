@@ -59,7 +59,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Data dan privasi')),
       body: ListView(
-        padding: const EdgeInsets.all(KiraSpace.lg),
+        padding: context.pagePadding,
         children: [
           Text(
             'Datamu milikmu. Di sini kamu bisa melihat siapa yang membukanya, mengunduhnya, atau menghapusnya.',

@@ -4,6 +4,7 @@ Semua kata-katanya menandai pembacaan terhadap ambang pedoman, bukan menetapkan 
 Ambang: BP (KMK 303/2026), glukosa dan HbA1c (PERKENI 2021); lihat constants.py.
 """
 from app.core_calc.bp import bp_category
+from app.core_calc.heart_rate import RESTING_HIGH, RESTING_LOW, classify_resting
 from app.core_calc.constants import (
     BP_THRESHOLDS,
     GLUCOSE_DIABETES_FASTING,
@@ -70,6 +71,18 @@ def triage_flags(latest: dict, diabetes_category_high: str | None) -> list[dict]
         elif category == "prehypertension":
             flags.append(_flag("pantau", "blood_pressure",
                                f"Tekanan darah terakhir {sys}/{dia} mmHg berada di rentang normal-tinggi (130-139/85-89): pantau dan ukur ulang."))
+    bpm = latest.get("resting_heart_rate")
+    if bpm is not None:
+        rng = classify_resting(bpm)
+        if rng == "above_range":
+            flags.append(_flag("pantau", "resting_heart_rate",
+                               f"Detak jantung istirahat terakhir {bpm:g} kali/menit, di atas {RESTING_HIGH} (rentang normal dewasa "
+                               f"{RESTING_LOW}-{RESTING_HIGH}, AHA). Ukur ulang setelah duduk tenang 5 menit; bila tetap tinggi, "
+                               "bicarakan dengan dokter. Kafein, kurang tidur, demam, dan stres bisa menaikkannya."))
+        elif rng == "below_range":
+            flags.append(_flag("info", "resting_heart_rate",
+                               f"Detak jantung istirahat terakhir {bpm:g} kali/menit, di bawah {RESTING_LOW}. Ini sering wajar pada "
+                               "orang yang rutin berolahraga; bila bukan, atau disertai pusing atau pingsan, bicarakan dengan dokter."))
     for kind, label in (("fasting_glucose", "Gula darah puasa"), ("random_glucose", "Gula darah sewaktu")):
         mg = latest.get(kind)
         if mg is None:

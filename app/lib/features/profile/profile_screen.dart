@@ -20,7 +20,7 @@ class ProfileScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator.adaptive()),
         error: (_, _) => const Center(child: Text('Profil belum bisa dimuat.')),
         data: (p) => ListView(
-          padding: const EdgeInsets.all(KiraSpace.lg),
+          padding: context.pagePadding,
           children: [
             Card(
               child: Padding(
@@ -60,6 +60,15 @@ class ProfileScreen extends ConsumerWidget {
                   subtitle: const Text('Pola makan, tidur, dan hasil cek dalam satu halaman'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/doctor'),
+                ),
+                const Divider(),
+                ListTile(
+                  key: const Key('tile_records'),
+                  leading: const Icon(Icons.folder_shared_outlined),
+                  title: const Text('Rekam medis'),
+                  subtitle: const Text('Diagnosis, hasil lab, obat, alergi, dan riwayat lain, bisa lewat cerita di Ngobrol'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/records'),
                 ),
                 const Divider(),
                 ListTile(

@@ -66,7 +66,7 @@ class _TodayTab extends ConsumerWidget {
         onRefresh: () => ref.refresh(planTodayProvider.future),
         child: ListView(
           key: const Key('plan_today_list'),
-          padding: const EdgeInsets.all(KiraSpace.lg),
+          padding: context.pagePadding,
           children: [
             Text('Energi hari ini sekitar ${nutrientNumber(plan.kcalTarget)} kkal', style: context.text.titleMedium),
             Text(plan.energySource, style: context.text.bodySmall),
@@ -253,7 +253,7 @@ class _WeekTab extends ConsumerWidget {
       error: (e, _) => LoadError(message: friendlyError(e), onRetry: () => ref.invalidate(planWeekProvider)),
       data: (days) => ListView(
         key: const Key('plan_week_list'),
-        padding: const EdgeInsets.all(KiraSpace.lg),
+        padding: context.pagePadding,
         children: [
           for (final d in days)
             Card(

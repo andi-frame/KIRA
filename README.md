@@ -180,6 +180,14 @@ Spesifikasi: [`docs/spesifikasi-beranda-perencana.md`](docs/spesifikasi-beranda-
   `POST /plan/today/swap`. Penanda tensi "perhatian" menahan latihan baru. Tool agen baca-saja: `rencana_hari_ini`, `rencana_minggu`, `riwayat_makan`.
 - **Pengingat rencana:** WhatsApp (job tiap 5 menit, per preferensi, jam tenang, satu kali per bagian, maksimal 4 pesan/hari,
   "stop pengingat") dan notifikasi lokal opsional tanpa angka kesehatan yang tidak menggandakan pengingat WhatsApp.
+- **Ubah dan hapus apa saja:** makan, minuman, olahraga, dan tidur bisa diubah atau dihapus dari Riwayat atau lewat chat
+  ("ralat, tadi cuma setengah porsi"; koreksi mengubah catatan yang ada, tidak membuat catatan dobel). "Setengah porsi" adalah
+  saklar. Bila waktu makan hanya bisa ditebak dari jam, KIRA bertanya (sarapan, makan siang, selingan, atau makan malam).
+- **Detak jantung dan rekam medis:** detak jantung istirahat (dan nadi pada tensi) tercatat dan tampil di tren; rekam medis
+  pribadi (diagnosis, hasil lab, obat, alergi) bisa dicatat lewat formulir atau cerita di chat, dan ikut di ringkasan dokter.
+- **Obrolan tersimpan satu hari:** obrolan hari ini pulih saat aplikasi dibuka lagi; hari berganti, obrolan mulai bersih.
+- **Tempat cek terdekat dari data peta** (OpenStreetMap atau Google Places) dengan rute Google Maps.
+- **Pengguna demo:** tujuh persona dengan data berbeda, `uv run python -m seed.demo_users --reset` (lihat `docs/deploy.md`).
 - **Jeda sosmed (Android, opsional):** sebelum Instagram, X, Facebook, TikTok, dan aplikasi lain yang dicentang pengguna terbuka, KIRA
   menampilkan satu kartu: rencana pagi (olahraga, makan beserta contoh dan alasannya, tidur), ajakan mencatat malam hari (hanya bila ada
   yang belum tercatat), pengingat tidur, dan info "sudah sempat cek?". Detail, izin, batasan, dan cara uji di `docs/jeda-sosmed.md`.

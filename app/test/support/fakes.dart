@@ -24,6 +24,7 @@ import 'package:kira/shared/family_models.dart';
 import 'package:kira/shared/goal_models.dart';
 import 'package:kira/shared/insight_models.dart';
 import 'package:kira/shared/models.dart';
+import 'package:kira/shared/record_models.dart';
 
 List<double> _curve(double p10) => [for (var t = 0; t <= 10; t++) 1 - _pow(1 - p10, t / 10)];
 double _pow(double base, double exp) => base <= 0 ? 0 : (exp == 0 ? 1 : _exp(exp * _ln(base)));
@@ -64,6 +65,7 @@ Projection sampleProjection({
   double p10Low = 0.04,
   double p10High = 0.33,
   HypertensionRisk hypertension = const HypertensionRisk(status: 'needs_bp'),
+  ProjectionBasis basis = const ProjectionBasis(),
 }) =>
     Projection(
       scoreLow: low,
@@ -78,6 +80,7 @@ Projection sampleProjection({
       mode: 'prevention',
       mostImpactful: mostImpactful,
       hypertension: hypertension,
+      basis: basis,
     );
 
 WhatIfResult sampleWhatIf({int afterLow = 9, int afterHigh = 16}) => WhatIfResult(
@@ -305,12 +308,118 @@ class FakeApi implements KiraApi {
   Future<ChatReply> sendPhoto(String kind, Uint8List image, String filename) =>
       (onPhoto ?? (k) async => const ChatReply(reply: 'Foto diterima.'))(kind);
 
+  /// Semua argumen PATCH selain items/scale/group, untuk dicek per tes: half, meal_slot, menit, jam, dst.
+  final List<({String id, Map<String, Object?> fields})> patchFields = [];
+  final List<String> deletedLogs = [];
+  Object? deleteLogError;
+
   @override
-  Future<MealLog> patchLog(String logId, {List<Map<String, dynamic>>? items, double? scale, String? group}) async {
+  Future<MealLog> patchLog(
+    String logId, {
+    List<Map<String, dynamic>>? items,
+    double? scale,
+    String? group,
+    bool? half,
+    String? mealSlot,
+    int? minutes,
+    String? activityKind,
+    double? hours,
+    String? bedTime,
+    String? wakeTime,
+    double? count,
+  }) async {
     patches.add((id: logId, items: items ?? const []));
     patchScales.add((scale: scale, group: group));
+    patchFields.add((id: logId, fields: {
+      'half': ?half,
+      'group': ?group,
+      'meal_slot': ?mealSlot,
+      'minutes': ?minutes,
+      'activity_kind': ?activityKind,
+      'hours': ?hours,
+      'bed_time': ?bedTime,
+      'wake_time': ?wakeTime,
+      'count': ?count,
+    }));
     if (patchError != null) throw patchError!;
     return patchResult ?? MealLog(id: logId, corrected: true);
+  }
+
+  @override
+  Future<void> deleteLog(String logId) async {
+    if (deleteLogError != null) throw deleteLogError!;
+    deletedLogs.add(logId);
+  }
+
+  List<ChatHistoryMessage> chatHistory = const [];
+  int chatHistoryCalls = 0, chatClears = 0;
+  Object? chatHistoryError;
+
+  @override
+  Future<List<ChatHistoryMessage>> getChatHistory() async {
+    chatHistoryCalls++;
+    if (chatHistoryError != null) throw chatHistoryError!;
+    return chatHistory;
+  }
+
+  @override
+  Future<void> clearChatHistory() async {
+    chatClears++;
+    chatHistory = const [];
+  }
+
+  List<MedicalRecord> records = [];
+  final List<Map<String, dynamic>> createdRecords = [];
+  final List<({String id, Map<String, dynamic> fields})> updatedRecords = [];
+  final List<String> deletedRecords = [];
+  Object? recordsError;
+
+  @override
+  Future<List<MedicalRecord>> listRecords({String? kind}) async {
+    if (recordsError != null) throw recordsError!;
+    return [
+      for (final r in records)
+        if (kind == null || r.kind == kind) r,
+    ];
+  }
+
+  @override
+  Future<MedicalRecord> createRecord(Map<String, dynamic> fields) async {
+    createdRecords.add(fields);
+    final record = MedicalRecord(
+      id: 'rec-${createdRecords.length}',
+      kind: fields['kind'] as String,
+      title: fields['title'] as String,
+      recordedOn: DateTime.parse((fields['recorded_on'] as String?) ?? '2026-10-16'),
+      provider: fields['provider'] as String?,
+      details: fields['details'] as String?,
+      values: [for (final v in (fields['values'] as List? ?? const [])) RecordValue.fromJson(v as Map<String, dynamic>)],
+    );
+    records = [record, ...records];
+    return record;
+  }
+
+  @override
+  Future<MedicalRecord> updateRecord(String id, Map<String, dynamic> fields) async {
+    updatedRecords.add((id: id, fields: fields));
+    final old = records.firstWhere((r) => r.id == id);
+    final updated = MedicalRecord(
+      id: id,
+      kind: (fields['kind'] as String?) ?? old.kind,
+      title: (fields['title'] as String?) ?? old.title,
+      recordedOn: fields['recorded_on'] == null ? old.recordedOn : DateTime.parse(fields['recorded_on'] as String),
+      provider: fields.containsKey('provider') ? fields['provider'] as String? : old.provider,
+      details: fields.containsKey('details') ? fields['details'] as String? : old.details,
+      values: old.values,
+    );
+    records = [for (final r in records) r.id == id ? updated : r];
+    return updated;
+  }
+
+  @override
+  Future<void> deleteRecord(String id) async {
+    deletedRecords.add(id);
+    records = [for (final r in records) if (r.id != id) r];
   }
 
   @override
@@ -491,6 +600,7 @@ class FakeApi implements KiraApi {
   BpProtocolView bpView = const BpProtocolView();
   Object? bpError;
   final List<({int sys, int dia, String session})> bpReadings = [];
+  final List<int?> bpPulses = [];
   int bpStarts = 0, bpFinishes = 0, bpCancels = 0;
   BpProtocolView Function(int sys, int dia, String session)? onBpReading;
 
@@ -508,7 +618,8 @@ class FakeApi implements KiraApi {
   }
 
   @override
-  Future<BpProtocolView> addBpReading(int sys, int dia, String session) async {
+  Future<BpProtocolView> addBpReading(int sys, int dia, String session, {int? pulse}) async {
+    bpPulses.add(pulse);
     if (bpError != null) throw bpError!;
     bpReadings.add((sys: sys, dia: dia, session: session));
     return bpView = (onBpReading ?? (a, b, c) => bpView)(sys, dia, session);
@@ -550,8 +661,13 @@ class FakeApi implements KiraApi {
   @override
   Future<void> postDiagnosis(String condition) async => diagnoses.add(condition);
 
+  Object? faskesError;
+
   @override
-  Future<List<Faskes>> nearbyFaskes(double lat, double lng) async => faskes;
+  Future<List<Faskes>> nearbyFaskes(double lat, double lng) async {
+    if (faskesError != null) throw faskesError!;
+    return faskes;
+  }
 
   FamilyOverview family = const FamilyOverview();
   final List<({String phone, FamilyPermissions permissions})> invites = [];

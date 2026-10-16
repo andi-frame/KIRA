@@ -10,12 +10,12 @@ import '../../shared/clinical_extras_models.dart';
 import '../../shared/labels.dart';
 import 'trends_widgets.dart' show niceScale;
 
-final riskHistoryProvider = FutureProvider<RiskHistory>((ref) {
+final riskHistoryProvider = FutureProvider.autoDispose<RiskHistory>((ref) {
   ref.watch(authProvider.select((s) => s.token));
   return ref.read(apiProvider).getRiskHistory(180);
 });
 
-final sleepPatternsProvider = FutureProvider<SleepPatterns>((ref) {
+final sleepPatternsProvider = FutureProvider.autoDispose<SleepPatterns>((ref) {
   ref.watch(authProvider.select((s) => s.token));
   return ref.read(apiProvider).getPatterns(60);
 });

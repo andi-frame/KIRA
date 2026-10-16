@@ -71,7 +71,7 @@ class _Content extends ConsumerWidget {
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(KiraSpace.lg),
+      padding: context.pagePadding,
       children: [
         ...leading,
         if (p.needsProfile)
@@ -128,6 +128,8 @@ class _Content extends ConsumerWidget {
             ),
           ),
         ),
+        const SizedBox(height: KiraSpace.lg),
+        ProjectionBasisCard(basis: p.basis),
         if (wide) ...[
           const SizedBox(height: KiraSpace.lg),
           _CheckHint(),
@@ -437,6 +439,78 @@ class _Controls extends ConsumerWidget {
         weightDeltaKg: c.weightDeltaKg,
         sweetDrinksDeltaPerDay: c.sweetDrinksDeltaPerDay,
       );
+}
+
+String _n(num v) => v == v.roundToDouble() ? v.round().toString() : v.toStringAsFixed(1).replaceAll('.', ',');
+
+/// "Dasar angka ini": kebiasaan yang dibaca dari catatanmu (dan karena itu ikut berubah saat kamu mencatat, mengubah, atau
+/// menghapus), kebiasaan yang masih dari jawaban profil, dan faktor yang belum diketahui.
+class ProjectionBasisCard extends StatelessWidget {
+  const ProjectionBasisCard({super.key, required this.basis});
+  final ProjectionBasis basis;
+
+  String _activity() {
+    final a = basis.activity;
+    if (a.fromLog) {
+      return 'Aktif: rata-rata ${_n(a.detail['avg_minutes_per_day'] as num? ?? 0)} menit per hari dari catatanmu '
+          '(batas ${_n(a.detail['target_minutes'] as num? ?? 30)} menit).';
+    }
+    if (a.source == 'profile') {
+      return 'Aktif: dari jawabanmu saat mendaftar (${a.answer == true ? 'ya' : 'belum'}). Berubah setelah ada catatan olahraga '
+          'selama minimal 3 hari.';
+    }
+    return 'Aktif: belum diketahui, jadi dihitung untuk dua kemungkinan.';
+  }
+
+  String _veg() {
+    final v = basis.vegFruit;
+    if (v.fromLog) {
+      return 'Sayur dan buah: muncul di ${v.detail['days_with']} dari ${v.detail['days_logged']} hari makan tercatat '
+          '(perlu hampir tiap hari).';
+    }
+    if (v.source == 'profile') {
+      return 'Sayur dan buah: dari jawabanmu saat mendaftar (${v.answer == true ? 'tiap hari' : 'belum tiap hari'}). Berubah '
+          'setelah minimal 3 hari makan tercatat.';
+    }
+    return 'Sayur dan buah: belum diketahui, jadi dihitung untuk dua kemungkinan.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      key: const Key('projection_basis'),
+      child: Padding(
+        padding: const EdgeInsets.all(KiraSpace.lg),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(Icons.fact_check_outlined, size: 20, color: context.scheme.primary),
+            const SizedBox(width: KiraSpace.sm),
+            Text('Dasar angka ini', style: context.text.titleSmall),
+          ]),
+          const SizedBox(height: KiraSpace.sm),
+          Text(
+            'Dihitung ulang setiap kali kamu mencatat, mengubah, atau menghapus catatan. Kebiasaan dibaca dari '
+            '${basis.windowDays} hari terakhir (${basis.loggedDays} hari ada catatan).',
+            style: context.text.bodyMedium,
+          ),
+          const SizedBox(height: KiraSpace.sm),
+          Text(_activity(), key: const Key('basis_activity'), style: context.text.bodyMedium),
+          Text(_veg(), key: const Key('basis_veg'), style: context.text.bodyMedium),
+          if (basis.unknown.isNotEmpty) ...[
+            const SizedBox(height: KiraSpace.xs),
+            Text('Belum diketahui: ${basis.unknown.join(', ')}. Karena itu rentangnya melebar.',
+                key: const Key('basis_unknown'), style: context.text.bodyMedium),
+          ],
+          const SizedBox(height: KiraSpace.sm),
+          Text(
+            'Skor ini hanya membaca aktivitas, sayur dan buah, serta data profil dan hasil cek. Gula, garam, dan tidur tidak '
+            'mengubahnya; itu dipantau di Tren dan penanda.',
+            style: context.text.bodySmall,
+          ),
+        ]),
+      ),
+    );
+  }
 }
 
 class _HowCalculated extends StatelessWidget {

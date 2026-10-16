@@ -20,6 +20,7 @@ from app.core_calc.constants import (
     HBA1C_DIABETES,
 )
 from app.core_calc.constants import FINDRISC_CATEGORIES
+from app.core_calc.heart_rate import RESTING_HIGH, RESTING_LOW, classify_resting
 from app.core_calc.patterns import SHORT_SLEEP_HOURS, compare_by_sleep
 from app.core_calc.triage import glucose_range, hba1c_range, trend_label, triage_flags
 from app.models import ClinicalResult, Log, LogItem, RiskSnapshot
@@ -46,6 +47,10 @@ REFERENCES = {
         {"label": "Rentang diabetes mulai", "value": HBA1C_DIABETES},
     ],
     "waist": [],
+    "resting_heart_rate": [
+        {"label": "Batas bawah normal istirahat", "value": RESTING_LOW},
+        {"label": "Batas atas normal istirahat", "value": RESTING_HIGH},
+    ],
 }
 
 
@@ -62,6 +67,8 @@ def _point(kind: str, r: ClinicalResult) -> dict:
         return {**base, "value": v["mg_dl"], "range": glucose_range(kind, v["mg_dl"])}
     if kind == "hba1c":
         return {**base, "value": v["percent"], "range": hba1c_range(v["percent"])}
+    if kind == "resting_heart_rate":
+        return {**base, "value": v["bpm"], "range": classify_resting(v["bpm"])}
     return {**base, "value": v.get("cm")}
 
 
@@ -144,7 +151,7 @@ def latest_for_triage(clinical: dict) -> dict:
         latest["home_bp_average"] = (bp.get("avg_sys") or bp["sys"], bp.get("avg_dia") or bp["dia"], bp.get("readings") or 0)
     elif bp:
         latest["blood_pressure"] = (bp["sys"], bp["dia"])
-    for kind in ("fasting_glucose", "random_glucose", "hba1c"):
+    for kind in ("fasting_glucose", "random_glucose", "hba1c", "resting_heart_rate"):
         point = clinical[kind]["latest"]
         if point:
             latest[kind] = point["value"]

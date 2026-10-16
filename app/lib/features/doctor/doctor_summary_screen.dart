@@ -69,7 +69,7 @@ class _DoctorSummaryScreenState extends ConsumerState<DoctorSummaryScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Ringkasan untuk dokter')),
       body: ListView(
-        padding: const EdgeInsets.all(KiraSpace.lg),
+        padding: context.pagePadding,
         children: [
           Text('Satu halaman untuk dibawa ke dokter atau ahli gizi: pola makan, tidur, dan hasil pemeriksaanmu.',
               style: context.text.bodyLarge?.copyWith(color: context.scheme.onSurfaceVariant)),

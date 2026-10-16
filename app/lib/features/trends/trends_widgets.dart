@@ -12,6 +12,7 @@ const _kindTitle = {
   'random_glucose': 'Gula darah sewaktu',
   'hba1c': 'HbA1c',
   'waist': 'Lingkar perut',
+  'resting_heart_rate': 'Detak jantung istirahat',
 };
 const _kindUnit = {
   'blood_pressure': 'mmHg',
@@ -19,6 +20,7 @@ const _kindUnit = {
   'random_glucose': 'mg/dL',
   'hba1c': '%',
   'waist': 'cm',
+  'resting_heart_rate': 'kali/menit',
 };
 const _bandWord = {
   'normal': 'normal',
@@ -27,6 +29,9 @@ const _bandWord = {
   'prediabetes': 'rentang prediabetes',
   'diabetes_range': 'rentang diabetes',
   'below_cutoff': 'di bawah ambang',
+  'below_range': 'di bawah 60',
+  'normal_range': 'normal',
+  'above_range': 'di atas 100',
 };
 
 /// Skala sumbu dengan batas bulat (kelipatan 1, 2, atau 5 x 10^n) agar tiap garis bantu punya angka sendiri
@@ -425,7 +430,7 @@ class TrendsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const kinds = ['blood_pressure', 'fasting_glucose', 'random_glucose', 'hba1c'];
+    const kinds = ['blood_pressure', 'resting_heart_rate', 'fasting_glucose', 'random_glucose', 'hba1c'];
     final withData = [for (final k in kinds) if (data.series(k).points.isNotEmpty) k];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       if (showTriage) ...[TriageCard(flags: data.triage), const SizedBox(height: KiraSpace.lg)],

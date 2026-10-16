@@ -8,6 +8,7 @@ import '../../core/api_client.dart';
 import '../../core/link_opener.dart';
 import '../../core/outbox.dart';
 import '../../core/providers.dart';
+import '../../core/refresh.dart';
 import '../../core/theme.dart';
 import '../../shared/app_shell.dart';
 import '../../shared/diagnosis_dialog.dart';
@@ -17,6 +18,7 @@ import '../../shared/widgets.dart';
 import '../chat/media.dart';
 import '../projection/projection_providers.dart';
 import 'check_providers.dart';
+import 'location.dart';
 
 /// Validasi isian hasil cek. Mengembalikan pesan kesalahan, atau null bila valid.
 String? validateGlucose(String raw) {
@@ -33,6 +35,17 @@ String? validatePressure(String sysRaw, String diaRaw) {
   if (dia >= sys) return 'Angka bawah (diastolik) harus lebih kecil dari angka atas (sistolik).';
   return null;
 }
+
+/// Detak jantung istirahat (kali/menit). Batas 25-250 hanya penyaring salah ketik, bukan batas klinis.
+String? validateHeartRate(String raw) {
+  final v = int.tryParse(raw.trim());
+  if (v == null) return 'Isi angka detak jantung dalam kali per menit, misalnya 72.';
+  if (v < 25 || v > 250) return 'Angkanya tampak tidak mungkin (antara 25 dan 250 kali/menit). Hitung lagi ya.';
+  return null;
+}
+
+/// Nadi yang menyertai tensi: boleh kosong.
+String? validatePulse(String raw) => raw.trim().isEmpty ? null : validateHeartRate(raw);
 
 class CheckScreen extends ConsumerWidget {
   const CheckScreen({super.key});
@@ -51,17 +64,26 @@ class CheckScreen extends ConsumerWidget {
         data: (rec) => RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(faskesProvider);
-            ref.invalidate(checkProvider);
+            refreshHealthData(ref.invalidate);
             await ref.read(checkProvider.future);
           },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(KiraSpace.lg),
+            padding: context.pagePadding,
             children: [
               rec == null ? const _EmptyState() : _RecommendationCard(rec: rec),
               const SizedBox(height: KiraSpace.xl),
               const _FaskesSection(),
               const SizedBox(height: KiraSpace.lg),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const Key('heart_rate_button'),
+                  icon: const Icon(Icons.favorite_border),
+                  label: const Text('Catat detak jantung'),
+                  onPressed: () => showResultSheet(context, initial: 'hr'),
+                ),
+              ),
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
@@ -97,11 +119,12 @@ class CheckScreen extends ConsumerWidget {
   }
 }
 
-Future<void> showResultSheet(BuildContext context) => showModalBottomSheet<void>(
+/// [initial]: 'glucose' | 'bp' | 'hr' (jenis hasil yang sudah terpilih saat sheet dibuka).
+Future<void> showResultSheet(BuildContext context, {String initial = 'glucose'}) => showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => const _ResultSheet(),
+      builder: (_) => _ResultSheet(initial: initial),
     );
 
 class _EmptyState extends StatelessWidget {
@@ -233,6 +256,12 @@ class _RecommendationCard extends ConsumerWidget {
 class _FaskesSection extends ConsumerWidget {
   const _FaskesSection();
 
+  Future<void> _search(BuildContext context, WidgetRef ref, double lat, double lng) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await ref.read(linkOpenerProvider).open(faskesSearchUri(lat, lng));
+    if (!ok) messenger.showSnackBar(const SnackBar(content: Text('Aplikasi peta belum bisa dibuka di perangkat ini.')));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final faskes = ref.watch(faskesProvider);
@@ -243,11 +272,20 @@ class _FaskesSection extends ConsumerWidget {
         const SizedBox(height: KiraSpace.md),
         faskes.when(
           loading: () => const Padding(padding: EdgeInsets.all(KiraSpace.lg), child: Center(child: CircularProgressIndicator.adaptive())),
-          error: (e, _) => SoftNote(
-            icon: Icons.location_off_outlined,
-            text: 'Daftar tempat cek belum bisa dimuat. Puskesmas atau Posyandu terdekat juga bisa mengukur tensi dan gula darah.',
-          ),
-          data: (data) => Column(children: [
+          error: (e, _) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const SoftNote(
+              icon: Icons.location_off_outlined,
+              text: 'Daftar tempat cek belum bisa dimuat. Puskesmas atau Posyandu terdekat juga bisa mengukur tensi dan gula darah.',
+            ),
+            const SizedBox(height: KiraSpace.sm),
+            OutlinedButton.icon(
+              key: const Key('faskes_search_maps'),
+              icon: const Icon(Icons.map_outlined),
+              label: const Text('Cari puskesmas di Google Maps'),
+              onPressed: () => _search(context, ref, defaultLat, defaultLng),
+            ),
+          ]),
+          data: (data) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             if (data.approximate)
               const Padding(
                 padding: EdgeInsets.only(bottom: KiraSpace.md),
@@ -262,6 +300,24 @@ class _FaskesSection extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: KiraSpace.sm),
                 child: _FaskesTile(f),
               ),
+            if (data.faskes.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: KiraSpace.sm),
+                child: Text(
+                  data.faskes.first.source == 'seed'
+                      ? 'Daftar contoh karena data peta belum bisa dimuat. Gunakan tombol di bawah untuk mencari langsung di peta.'
+                      : 'Data dari ${data.faskes.first.source == 'google' ? 'Google Maps' : 'OpenStreetMap'}. Jam buka dan layanan '
+                          'bisa berubah, jadi konfirmasi dulu sebelum berangkat.',
+                  key: const Key('faskes_source'),
+                  style: context.text.bodySmall,
+                ),
+              ),
+            OutlinedButton.icon(
+              key: const Key('faskes_search_maps'),
+              icon: const Icon(Icons.map_outlined),
+              label: const Text('Cari puskesmas lain di Google Maps'),
+              onPressed: () => _search(context, ref, data.lat, data.lng),
+            ),
           ]),
         ),
       ],
@@ -269,13 +325,27 @@ class _FaskesSection extends ConsumerWidget {
   }
 }
 
+/// Pencarian "puskesmas" di Google Maps di sekitar titik pengguna (tanpa kunci apa pun).
+Uri faskesSearchUri(double lat, double lng, {String query = 'puskesmas'}) =>
+    Uri.parse('https://www.google.com/maps/search/${Uri.encodeComponent(query)}/@$lat,$lng,15z');
+
+String faskesKindLabel(String kind) => switch (kind) {
+      'puskesmas' => 'Puskesmas',
+      'posyandu' => 'Posyandu',
+      'rumah_sakit' => 'Rumah sakit',
+      _ => 'Klinik',
+    };
+
 class _FaskesTile extends ConsumerWidget {
   const _FaskesTile(this.f);
   final Faskes f;
 
   Future<void> _openMap(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
-    final ok = await ref.read(linkOpenerProvider).open(mapsUri(f.lat!, f.lng!, label: f.name));
+    // Rute di Google Maps dari lokasi pengguna; bila tautan rute tidak ada, titiknya saja.
+    final route = f.routeUrl;
+    final uri = route != null ? Uri.parse(route) : mapsUri(f.lat!, f.lng!, label: f.name);
+    final ok = await ref.read(linkOpenerProvider).open(uri);
     if (!ok) messenger.showSnackBar(const SnackBar(content: Text('Aplikasi peta belum bisa dibuka di perangkat ini.')));
   }
 
@@ -287,18 +357,29 @@ class _FaskesTile extends ConsumerWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: KiraSpace.lg, vertical: KiraSpace.xs),
         leading: CircleAvatar(
           backgroundColor: context.scheme.primaryContainer,
-          child: Icon(f.kind == 'puskesmas' ? Icons.local_hospital_outlined : Icons.volunteer_activism_outlined,
+          child: Icon(
+              switch (f.kind) {
+                'puskesmas' => Icons.local_hospital_outlined,
+                'rumah_sakit' => Icons.emergency_outlined,
+                'klinik' => Icons.medical_services_outlined,
+                _ => Icons.volunteer_activism_outlined,
+              },
               color: context.scheme.onPrimaryContainer),
         ),
         title: Text(f.name, style: context.text.titleSmall),
-        subtitle: Text('${f.kind == 'puskesmas' ? 'Puskesmas' : 'Posyandu'}, $km km${f.address == null ? '' : '\n${f.address}'}'),
-        isThreeLine: f.address != null,
+        subtitle: Text([
+          '${faskesKindLabel(f.kind)}, $km km',
+          if (f.address != null) f.address!,
+          if (f.openingHours != null) 'Buka: ${f.openingHours}',
+          if (f.phone != null) f.phone!,
+        ].join('\n')),
+        isThreeLine: f.address != null || f.phone != null || f.openingHours != null,
         trailing: f.lat == null || f.lng == null
             ? null
             : IconButton(
                 key: Key('map_${f.name}'),
-                tooltip: 'Buka ${f.name} di peta',
-                icon: const Icon(Icons.map_outlined),
+                tooltip: 'Rute ke ${f.name} di Google Maps',
+                icon: const Icon(Icons.directions_outlined),
                 onPressed: () => _openMap(context, ref),
               ),
       ),
@@ -307,7 +388,8 @@ class _FaskesTile extends ConsumerWidget {
 }
 
 class _ResultSheet extends ConsumerStatefulWidget {
-  const _ResultSheet();
+  const _ResultSheet({this.initial = 'glucose'});
+  final String initial;
 
   @override
   ConsumerState<_ResultSheet> createState() => _ResultSheetState();
@@ -317,7 +399,10 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
   final _glucose = TextEditingController();
   final _sys = TextEditingController();
   final _dia = TextEditingController();
-  bool _bp = false;
+  final _pulse = TextEditingController();
+  final _hr = TextEditingController();
+  late bool _bp = widget.initial == 'bp';
+  late bool _heart = widget.initial == 'hr';
   bool _fasting = true; // gula puasa vs sewaktu/setelah makan (ambang risikonya berbeda)
   bool _busy = false;
   String? _error;
@@ -332,11 +417,17 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
     _glucose.dispose();
     _sys.dispose();
     _dia.dispose();
+    _pulse.dispose();
+    _hr.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
-    final error = _bp ? validatePressure(_sys.text, _dia.text) : validateGlucose(_glucose.text);
+    final error = _heart
+        ? validateHeartRate(_hr.text)
+        : _bp
+            ? validatePressure(_sys.text, _dia.text) ?? validatePulse(_pulse.text)
+            : validateGlucose(_glucose.text);
     if (error != null) {
       setState(() => _error = error);
       return;
@@ -350,16 +441,20 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
     } catch (_) {
       _before = null; // tanpa pembanding, hasil tetap disimpan
     }
-    final kind = _bp ? 'blood_pressure' : (_fasting ? 'fasting_glucose' : 'random_glucose');
-    final Map<String, num> value = _bp
-        ? {'sys': int.parse(_sys.text.trim()), 'dia': int.parse(_dia.text.trim())}
-        : {'mg_dl': double.parse(_glucose.text.trim().replaceAll(',', '.'))};
+    final kind = _heart ? 'resting_heart_rate' : (_bp ? 'blood_pressure' : (_fasting ? 'fasting_glucose' : 'random_glucose'));
+    final Map<String, num> value = _heart
+        ? {'bpm': int.parse(_hr.text.trim())}
+        : _bp
+            ? {
+                'sys': int.parse(_sys.text.trim()),
+                'dia': int.parse(_dia.text.trim()),
+                if (_pulse.text.trim().isNotEmpty) 'pulse': int.parse(_pulse.text.trim()),
+              }
+            : {'mg_dl': double.parse(_glucose.text.trim().replaceAll(',', '.'))};
     final key = newOutboxId();
     try {
       final outcome = await ref.read(apiProvider).postResult(kind, value, idempotencyKey: key);
-      ref
-        ..invalidate(projectionProvider)
-        ..invalidate(checkProvider);
+      refreshHealthData(ref.invalidate); // proyeksi, saran cek, tren dan penanda ikut dihitung ulang
       if (mounted) setState(() => _outcome = outcome);
     } on ApiException catch (e) {
       if (e.isNetwork) {
@@ -401,9 +496,7 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
     });
     try {
       final reply = await ref.read(apiProvider).sendPhoto('result', media.bytes, media.name);
-      ref
-        ..invalidate(projectionProvider)
-        ..invalidate(checkProvider);
+      refreshHealthData(ref.invalidate);
       if (mounted) {
         setState(() {
           _photoReply = reply.reply;
@@ -443,9 +536,10 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
           ChoiceChip(
             key: const Key('result_kind_glucose'),
             label: const Text('Gula darah'),
-            selected: !_bp,
+            selected: !_bp && !_heart,
             onSelected: (_) => setState(() {
               _bp = false;
+              _heart = false;
               _error = null;
             }),
           ),
@@ -455,12 +549,36 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
             selected: _bp,
             onSelected: (_) => setState(() {
               _bp = true;
+              _heart = false;
+              _error = null;
+            }),
+          ),
+          ChoiceChip(
+            key: const Key('result_kind_hr'),
+            label: const Text('Detak jantung'),
+            selected: _heart,
+            onSelected: (_) => setState(() {
+              _heart = true;
+              _bp = false;
               _error = null;
             }),
           ),
         ]),
         const SizedBox(height: KiraSpace.lg),
-        if (!_bp) ...[
+        if (_heart) ...[
+          TextField(
+            key: const Key('hr_input'),
+            controller: _hr,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(3)],
+            decoration: const InputDecoration(
+              labelText: 'Detak jantung istirahat',
+              suffixText: 'kali/menit',
+              helperText: 'Duduk tenang 5 menit, lalu hitung nadi di pergelangan selama 1 menit (atau baca dari tensimeter/jam tangan).',
+              helperMaxLines: 3,
+            ),
+          ),
+        ] else if (!_bp) ...[
           Wrap(spacing: KiraSpace.sm, children: [
             ChoiceChip(
               key: const Key('glucose_fasting_chip'),
@@ -504,6 +622,16 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
               ),
             ),
           ]),
+        if (_bp) ...[
+          const SizedBox(height: KiraSpace.md),
+          TextField(
+            key: const Key('pulse_input'),
+            controller: _pulse,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(3)],
+            decoration: const InputDecoration(labelText: 'Nadi (boleh dikosongkan)', suffixText: 'kali/menit'),
+          ),
+        ],
         if (_error != null)
           Padding(
             padding: const EdgeInsets.only(top: KiraSpace.md),
@@ -539,6 +667,17 @@ class _ResultSheetState extends ConsumerState<_ResultSheet> {
   }
 }
 
+/// Kalimat untuk hasil detak jantung istirahat. Mengacu pada rentang normal dewasa 60-100 kali/menit (AHA); bukan diagnosis.
+String heartRateSentence(String range) => switch (range) {
+      'below_range' =>
+        'Detak jantung istirahatmu di bawah 60. Ini sering wajar pada orang yang rutin berolahraga; bila kamu bukan atlet, '
+            'atau merasa pusing, bicarakan dengan tenaga kesehatan.',
+      'above_range' =>
+        'Detak jantung istirahatmu di atas 100. Ukur ulang setelah duduk tenang 5 menit; kafein, kurang tidur, dan stres bisa '
+            'menaikkannya. Bila tetap tinggi, bicarakan dengan tenaga kesehatan.',
+      _ => 'Detak jantung istirahatmu ada di rentang 60-100 kali/menit, rentang yang umum untuk dewasa saat istirahat.',
+    };
+
 class _OutcomeView extends StatelessWidget {
   const _OutcomeView({required this.outcome, required this.before});
   final ResultOutcome outcome;
@@ -571,9 +710,13 @@ class _OutcomeView extends StatelessWidget {
               Text('Tersimpan', style: context.text.titleMedium?.copyWith(color: kira.onImproveContainer)),
             ]),
             const SizedBox(height: KiraSpace.sm),
-            Text('Proyeksimu sudah dikalibrasi ulang dengan hasil nyata.',
+            Text(
+                outcome.hrRange != null
+                    ? 'Muncul di Tren dan penanda serta ringkasan untuk dokter. Detak jantung tidak mengubah proyeksi diabetes.'
+                    : 'Proyeksimu sudah dikalibrasi ulang dengan hasil nyata.',
+                key: const Key('outcome_note'),
                 style: context.text.bodyLarge?.copyWith(color: kira.onImproveContainer)),
-            if (after != null && before != null)
+            if (after != null && before != null && outcome.hrRange == null)
               Padding(
                 padding: const EdgeInsets.only(top: KiraSpace.xs),
                 child: Text(
@@ -587,6 +730,12 @@ class _OutcomeView extends StatelessWidget {
                 padding: const EdgeInsets.only(top: KiraSpace.xs),
                 child: Text('Tekanan darahmu tergolong ${bpLabel(outcome.bpCategory)}.',
                     style: context.text.bodyLarge?.copyWith(color: kira.onImproveContainer)),
+              ),
+            if (outcome.hrRange != null)
+              Padding(
+                padding: const EdgeInsets.only(top: KiraSpace.xs),
+                child: Text(heartRateSentence(outcome.hrRange!),
+                    key: const Key('hr_outcome'), style: context.text.bodyLarge?.copyWith(color: kira.onImproveContainer)),
               ),
           ]),
         ),

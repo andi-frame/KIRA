@@ -52,6 +52,8 @@ def projection_payload(state: RiskState) -> dict:
         "mode": state.mode,
         "bp_category": state.last_bp_category,
         "most_impactful": most_impactful_habit(state),
+        # Dari mana angka ini: yang berubah bila pengguna mencatat (aktivitas, sayur/buah) dan yang tidak.
+        "basis": state.basis,
     }
 
 

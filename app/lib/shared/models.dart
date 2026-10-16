@@ -215,6 +215,44 @@ class HypertensionRisk {
   }
 }
 
+/// Dari mana jawaban satu faktor proyeksi: catatanmu (`log`), jawaban profilmu (`profile`), atau belum diketahui (`unknown`).
+class FactorBasis {
+  const FactorBasis({required this.source, this.answer, this.detail = const {}});
+  final String source;
+  final bool? answer;
+  final Map<String, dynamic> detail;
+
+  bool get fromLog => source == 'log';
+
+  factory FactorBasis.fromJson(Map<String, dynamic>? j) => j == null
+      ? const FactorBasis(source: 'unknown')
+      : FactorBasis(source: (j['source'] as String?) ?? 'unknown', answer: j['answer'] as bool?, detail: j);
+}
+
+/// Dasar perhitungan proyeksi, supaya terlihat apa yang ikut berubah saat pengguna mencatat dan apa yang belum diketahui.
+class ProjectionBasis {
+  const ProjectionBasis({
+    this.windowDays = 14,
+    this.loggedDays = 0,
+    this.activity = const FactorBasis(source: 'unknown'),
+    this.vegFruit = const FactorBasis(source: 'unknown'),
+    this.unknown = const [],
+  });
+  final int windowDays, loggedDays;
+  final FactorBasis activity, vegFruit;
+  final List<String> unknown;
+
+  factory ProjectionBasis.fromJson(Map<String, dynamic>? j) => j == null || j.isEmpty
+      ? const ProjectionBasis()
+      : ProjectionBasis(
+          windowDays: (j['window_days'] as num?)?.toInt() ?? 14,
+          loggedDays: (j['logged_days'] as num?)?.toInt() ?? 0,
+          activity: FactorBasis.fromJson(j['activity'] as Map<String, dynamic>?),
+          vegFruit: FactorBasis.fromJson(j['veg_fruit'] as Map<String, dynamic>?),
+          unknown: (j['unknown'] as List? ?? const []).cast<String>(),
+        );
+}
+
 class Projection {
   const Projection({
     required this.scoreLow,
@@ -230,9 +268,11 @@ class Projection {
     this.bpCategory,
     this.mostImpactful,
     this.hypertension = const HypertensionRisk(status: 'needs_bp'),
+    this.basis = const ProjectionBasis(),
   });
 
   final HypertensionRisk hypertension;
+  final ProjectionBasis basis;
   final int scoreLow, scoreHigh;
   final String categoryLow, categoryHigh;
   final double p10Low, p10High;
@@ -258,6 +298,7 @@ class Projection {
         bpCategory: j['bp_category'] as String?,
         mostImpactful: j['most_impactful'] as String?,
         hypertension: HypertensionRisk.fromJson(j['hypertension'] as Map<String, dynamic>?),
+        basis: ProjectionBasis.fromJson(j['basis'] as Map<String, dynamic>?),
       );
 }
 
@@ -350,11 +391,34 @@ class CheckRecommendation {
 }
 
 class Faskes {
-  const Faskes({required this.name, required this.kind, required this.distanceKm, this.address, this.lat, this.lng});
+  const Faskes({
+    required this.name,
+    required this.kind,
+    required this.distanceKm,
+    this.address,
+    this.lat,
+    this.lng,
+    this.source = 'seed',
+    this.phone,
+    this.openingHours,
+    this.directionsUrl,
+    this.mapsUrl,
+  });
   final String name, kind;
   final double distanceKm;
   final String? address;
   final double? lat, lng;
+
+  /// google | osm | seed (data contoh). Menentukan keterangan sumber di bawah daftar.
+  final String source;
+  final String? phone, openingHours;
+
+  /// Tautan Google Maps: rute ke tempat itu, dan tempatnya.
+  final String? directionsUrl, mapsUrl;
+
+  /// Rute di Google Maps; dibuat dari koordinat bila server tidak mengirim tautan.
+  String? get routeUrl => directionsUrl ??
+      (lat == null || lng == null ? null : 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving');
 
   factory Faskes.fromJson(Map<String, dynamic> j) => Faskes(
         name: j['name'] as String,
@@ -363,20 +427,29 @@ class Faskes {
         address: j['address'] as String?,
         lat: (j['lat'] as num?)?.toDouble(),
         lng: (j['lng'] as num?)?.toDouble(),
+        source: (j['source'] as String?) ?? 'seed',
+        phone: j['phone'] as String?,
+        openingHours: j['opening_hours'] as String?,
+        directionsUrl: j['directions_url'] as String?,
+        mapsUrl: j['maps_url'] as String?,
       );
 }
 
 class ResultOutcome {
-  const ResultOutcome({required this.saved, this.redFlagMessage, this.bpCategory, this.projection});
+  const ResultOutcome({required this.saved, this.redFlagMessage, this.bpCategory, this.hrRange, this.projection});
   final bool saved;
   final String? redFlagMessage;
   final String? bpCategory;
+
+  /// Untuk detak jantung istirahat: below_range (< 60) | normal_range (60-100) | above_range (> 100).
+  final String? hrRange;
   final Projection? projection;
 
   factory ResultOutcome.fromJson(Map<String, dynamic> j) => ResultOutcome(
         saved: j['saved'] as bool,
         redFlagMessage: (j['red_flag'] as Map<String, dynamic>?)?['message'] as String?,
         bpCategory: j['bp_category'] as String?,
+        hrRange: j['hr_range'] as String?,
         projection: j['projection'] == null ? null : Projection.fromJson(j['projection'] as Map<String, dynamic>),
       );
 }

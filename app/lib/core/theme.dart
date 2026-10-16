@@ -96,6 +96,12 @@ class KiraColors extends ThemeExtension<KiraColors> {
 }
 
 extension KiraThemeX on BuildContext {
+  /// Padding halaman biasa. Ruang bawah ditambah tinggi bilah navigasi sistem (tombol Home/Back atau bilah gestur) bila
+  /// ada, supaya baris terakhir tidak tertutup; Android 15+ menggambar aplikasi sampai ke bawah bilah itu. Di dalam
+  /// kerangka dengan bilah navigasi aplikasi nilainya sudah nol karena bilah itu yang menanggungnya.
+  EdgeInsets get pagePadding =>
+      EdgeInsets.fromLTRB(KiraSpace.lg, KiraSpace.lg, KiraSpace.lg, KiraSpace.lg + MediaQuery.paddingOf(this).bottom);
+
   KiraColors get kira => Theme.of(this).extension<KiraColors>()!;
   ColorScheme get scheme => Theme.of(this).colorScheme;
   TextTheme get text => Theme.of(this).textTheme;

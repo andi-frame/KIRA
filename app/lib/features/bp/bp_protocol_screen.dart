@@ -5,14 +5,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
 import '../../core/providers.dart';
+import '../../core/refresh.dart';
 import '../../core/theme.dart';
 import '../../shared/engagement_models.dart';
 import '../../shared/labels.dart';
 import '../../shared/widgets.dart';
-import '../check/check_providers.dart';
-import '../check/check_screen.dart' show validatePressure;
-import '../projection/projection_providers.dart';
-import '../trends/trends_screen.dart';
+import '../check/check_screen.dart' show validatePressure, validatePulse;
 
 final bpProtocolProvider = FutureProvider<BpProtocolView>((ref) {
   ref.watch(authProvider.select((s) => s.token));
@@ -42,10 +40,7 @@ class _BpProtocolScreenState extends ConsumerState<BpProtocolScreen> {
       final view = await call();
       ref.invalidate(bpProtocolProvider);
       if (finishing && view.redFlag == null) {
-        ref
-          ..invalidate(projectionProvider)
-          ..invalidate(checkProvider)
-          ..invalidate(trendsProvider);
+        refreshHealthData(ref.invalidate); // hasil protokol menjadi hasil tensi: proyeksi, saran cek, tren, penanda
       }
       if (mounted) setState(() => _flag = view.redFlag);
     } on ApiException catch (e) {
@@ -96,7 +91,7 @@ class _BpProtocolScreenState extends ConsumerState<BpProtocolScreen> {
           onRetry: () => ref.invalidate(bpProtocolProvider),
         ),
         data: (v) => ListView(
-          padding: const EdgeInsets.all(KiraSpace.lg),
+          padding: context.pagePadding,
           children: [
             if (_flag != null) ...[
               EmergencyCard(message: _flag!),
@@ -289,6 +284,7 @@ class _ReadingSheet extends ConsumerStatefulWidget {
 class _ReadingSheetState extends ConsumerState<_ReadingSheet> {
   final _sys = TextEditingController();
   final _dia = TextEditingController();
+  final _pulse = TextEditingController();
   late String _session = DateTime.now().hour < 12 ? 'morning' : 'evening';
   bool _busy = false;
   String? _error;
@@ -297,11 +293,12 @@ class _ReadingSheetState extends ConsumerState<_ReadingSheet> {
   void dispose() {
     _sys.dispose();
     _dia.dispose();
+    _pulse.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
-    final problem = validatePressure(_sys.text, _dia.text);
+    final problem = validatePressure(_sys.text, _dia.text) ?? validatePulse(_pulse.text);
     if (problem != null) {
       setState(() => _error = problem);
       return;
@@ -311,7 +308,12 @@ class _ReadingSheetState extends ConsumerState<_ReadingSheet> {
       _error = null;
     });
     try {
-      final view = await ref.read(apiProvider).addBpReading(int.parse(_sys.text.trim()), int.parse(_dia.text.trim()), _session);
+      final view = await ref.read(apiProvider).addBpReading(
+            int.parse(_sys.text.trim()),
+            int.parse(_dia.text.trim()),
+            _session,
+            pulse: _pulse.text.trim().isEmpty ? null : int.parse(_pulse.text.trim()),
+          );
       if (mounted) Navigator.pop(context, view);
     } on ApiException catch (e) {
       if (mounted) {
@@ -360,11 +362,23 @@ class _ReadingSheetState extends ConsumerState<_ReadingSheet> {
                 controller: _dia,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(3)],
-                onSubmitted: (_) => _save(),
                 decoration: const InputDecoration(labelText: 'Bawah (diastolik)', suffixText: 'mmHg'),
               ),
             ),
           ]),
+          const SizedBox(height: KiraSpace.md),
+          TextField(
+            key: const Key('bp_pulse'),
+            controller: _pulse,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(3)],
+            onSubmitted: (_) => _save(),
+            decoration: const InputDecoration(
+              labelText: 'Detak jantung / nadi (boleh dikosongkan)',
+              suffixText: 'kali/menit',
+              helperText: 'Biasanya tampil di layar tensimeter.',
+            ),
+          ),
           if (_error != null) ...[
             const SizedBox(height: KiraSpace.md),
             Semantics(

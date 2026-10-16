@@ -205,8 +205,10 @@ class JedaOverlay private constructor(private val context: Context, val target: 
     }
 
     private fun grace() {
+        val settings = store.settings()
+        if (!settings.useGrace) return // tanpa masa bebas: kartu muncul lagi tiap kali sosmed dibuka
         val now = System.currentTimeMillis()
-        store.saveState(store.state().copy(graceUntil = now + store.settings().graceMinutes * 60_000L))
+        store.saveState(store.state().copy(graceUntil = now + settings.graceMinutes * 60_000L))
     }
 
     /** Membuka KIRA di layar yang diminta kartu. Dihitung sebagai kartu sudah dibaca, jadi jeda berlaku. */

@@ -61,4 +61,30 @@ class JedaCodecTest {
         val cards = listOf(Card("night", "Tidur", listOf(Section("a", "b")), "Buka", "/plan", "catatan"))
         assertEquals(cards, JedaCodec.cards(JedaCodec.cardsJson(cards)))
     }
+
+    @Test fun `pengaturan lama tanpa kolom baru memakai nilai bawaan`() {
+        val s = JedaCodec.settings(settingsJson)
+        assertFalse(s.funFact)
+        assertEquals(true, s.useGrace)
+        assertEquals(emptyList<Fact>(), s.facts)
+    }
+
+    @Test fun `fun fact dan daftar fakta dari Dart terbaca, fakta rusak dilewati`() {
+        val json = """{"enabled":true,"apps":["com.instagram.android"],"fun_fact":true,"use_grace":false,
+            "facts":[{"id":"a","category":"Tidur","text":"Tidur 7 jam.","source":"AASM"},
+                     {"id":"b","category":"X","text":"","source":"kosong dibuang"},
+                     {"id":"c","category":"Makan","text":"400 gram.","source":"WHO"}, 5]}"""
+        val s = JedaCodec.settings(json)
+        assertEquals(true, s.funFact)
+        assertEquals(false, s.useGrace)
+        assertEquals(listOf("a", "c"), s.facts.map { it.id })
+        assertEquals("WHO", s.facts[1].source)
+    }
+
+    @Test fun `indeks fakta tersimpan dan terbaca, nilai rusak jatuh ke nol`() {
+        val back = JedaCodec.state(JedaCodec.stateJson(GateState(factIndex = 4, counts = mapOf("fact" to 4))))
+        assertEquals(4, back.factIndex)
+        assertEquals(0, JedaCodec.state("""{"fact_index":-3}""").factIndex)
+        assertEquals(0, JedaCodec.state("bukan json").factIndex)
+    }
 }

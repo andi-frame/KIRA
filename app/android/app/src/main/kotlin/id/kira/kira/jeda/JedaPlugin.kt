@@ -30,6 +30,7 @@ class JedaPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             )
             "openUsageAccess" -> result.success(openSettings(AndroidSettings.ACTION_USAGE_ACCESS_SETTINGS, withPackage = false))
             "openOverlay" -> result.success(openSettings(AndroidSettings.ACTION_MANAGE_OVERLAY_PERMISSION, withPackage = true))
+            "openAppInfo" -> result.success(openSettings(AndroidSettings.ACTION_APPLICATION_DETAILS_SETTINGS, withPackage = true))
             "installedApps" -> result.success(installedApps())
             "apply" -> {
                 store.saveConfig(call.argument<String>("settings") ?: "{}", call.argument<String>("payload"))
@@ -75,14 +76,18 @@ class JedaPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     }
 
     private fun preview(store: JedaStore, kind: String): Boolean {
-        val p = store.payload() ?: return false
         val now = System.currentTimeMillis()
-        val card = when (kind) {
-            "morning" -> p.morningByDate[JedaStore.dateKey(now)] ?: p.morningGeneric
-            "evening" -> p.evening ?: p.eveningGeneric
-            "night" -> p.night
-            "other" -> p.other
-            else -> null
+        val card = if (kind == "fact") {
+            JedaDecider.factCard(store.settings(), store.state())
+        } else {
+            val p = store.payload() ?: return false
+            when (kind) {
+                "morning" -> p.morningByDate[JedaStore.dateKey(now)] ?: p.morningGeneric
+                "evening" -> p.evening ?: p.eveningGeneric
+                "night" -> p.night
+                "other" -> p.other
+                else -> null
+            }
         } ?: return false
         JedaOverlay.show(context, listOf(card), target = context.packageName, targetLabel = null, preview = true)
         return true

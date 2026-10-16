@@ -96,6 +96,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          key: const Key('chat_history_button'),
+          tooltip: 'Riwayat obrolan',
+          icon: const Icon(Icons.history),
+          onPressed: () => showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            showDragHandle: true,
+            builder: (_) => const _ChatHistorySheet(),
+          ),
+        ),
         title: const Text('KIRA'),
         actions: [
           if (profile?.isManagement ?? false)
@@ -113,6 +124,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         top: false,
         child: Column(
           children: [
+            if (chat.restoring) const LinearProgressIndicator(key: Key('chat_restoring'), minHeight: 2),
             Expanded(
               child: ListView.builder(
                 reverse: true,
@@ -155,6 +167,96 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               onRecordEnd: _stopRecording,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Riwayat obrolan hari ini. Satu riwayat per hari: saat hari berganti obrolan dibersihkan dan mulai dari nol; catatan
+/// makan, tidur, dan olahraga yang sudah tersimpan tidak ikut hilang (ada di Riwayat).
+class _ChatHistorySheet extends ConsumerWidget {
+  const _ChatHistorySheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(chatProvider).items;
+    final lines = [
+      for (final i in items)
+        if (i.kind == ChatKind.user || i.kind == ChatKind.pending) (mine: true, text: i.text)
+        else if (i.kind == ChatKind.kira || i.kind == ChatKind.emergency) (mine: false, text: i.text),
+    ];
+    final empty = lines.length <= 1; // hanya sapaan
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.8),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(KiraSpace.lg, 0, KiraSpace.lg, KiraSpace.lg),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Riwayat obrolan hari ini', style: context.text.titleLarge),
+            const SizedBox(height: KiraSpace.xs),
+            Text(
+              'Satu riwayat untuk satu hari. Besok obrolan ini dibersihkan otomatis; catatan makan, tidur, dan olahragamu '
+              'tetap ada di Riwayat.',
+              key: const Key('chat_history_note'),
+              style: context.text.bodySmall,
+            ),
+            const SizedBox(height: KiraSpace.md),
+            Flexible(
+              child: empty
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: KiraSpace.lg),
+                      child: Text('Belum ada obrolan hari ini.', key: const Key('chat_history_empty'), style: context.text.bodyMedium),
+                    )
+                  : ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: lines.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: KiraSpace.sm),
+                      itemBuilder: (_, i) => Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Icon(lines[i].mine ? Icons.person_outline : Icons.favorite_outline,
+                            size: 18, color: context.scheme.onSurfaceVariant),
+                        const SizedBox(width: KiraSpace.sm),
+                        Expanded(
+                          child: Text(lines[i].text,
+                              style: lines[i].mine
+                                  ? context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w600)
+                                  : context.text.bodyMedium),
+                        ),
+                      ]),
+                    ),
+            ),
+            const SizedBox(height: KiraSpace.md),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                key: const Key('chat_clear_today'),
+                onPressed: empty
+                    ? null
+                    : () async {
+                        final ok = await showDialog<bool>(
+                          context: context,
+                          builder: (dialog) => AlertDialog(
+                            title: const Text('Hapus obrolan hari ini?'),
+                            content: const Text('Hanya obrolannya yang dihapus. Catatan makan, tidur, dan olahraga tetap tersimpan.'),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(dialog, false), child: const Text('Batal')),
+                              FilledButton(
+                                key: const Key('chat_clear_confirm'),
+                                onPressed: () => Navigator.pop(dialog, true),
+                                child: const Text('Hapus'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (ok != true) return;
+                        await ref.read(chatProvider.notifier).clearToday();
+                        if (context.mounted) Navigator.pop(context);
+                      },
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Hapus obrolan hari ini'),
+              ),
+            ),
+          ]),
         ),
       ),
     );
@@ -304,10 +406,12 @@ class _ItemView extends ConsumerWidget {
           onEdit: (index, grams) => chat.correctPortion(item, index, grams),
           mealActions: MealCardActions(
             correct: (food, grams) => chat.correctItem(item, food, grams),
-            halve: (group) => chat.halveGroup(item, group),
+            halve: (group, {required half}) => chat.halveGroup(item, group, half: half),
             remove: (food) => chat.removeItem(item, food),
             replace: (food, found) => chat.replaceItem(item, food, found),
             search: chat.searchFoods,
+            setSlot: (slot) => chat.setMealSlot(item, slot),
+            deleteLog: () => chat.deleteMeal(item),
           ),
         );
       case ChatKind.error:

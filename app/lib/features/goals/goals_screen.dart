@@ -156,7 +156,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
           onRetry: () => ref.invalidate(goalsProvider),
         ),
         data: (data) => ListView(
-          padding: const EdgeInsets.all(KiraSpace.lg),
+          padding: context.pagePadding,
           children: [
             Text(
               'Target kecil yang bisa dicapai, dihitung otomatis dari catatanmu Senin sampai Minggu. '

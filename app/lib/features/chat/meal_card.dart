@@ -13,13 +13,24 @@ class MealCardActions {
     required this.remove,
     required this.replace,
     required this.search,
+    this.setSlot,
+    this.deleteLog,
   });
 
   final Future<void> Function(LoggedItem item, double grams) correct;
-  final Future<void> Function(String group) halve;
+
+  /// Saklar "setengah porsi" untuk satu hidangan. `half` = true menjadikannya setengah, false mengembalikannya.
+  /// Keadaan sebenarnya dipegang server, jadi menekan berulang tidak menurunkan angkanya terus-menerus.
+  final Future<void> Function(String group, {required bool half}) halve;
   final Future<void> Function(LoggedItem item) remove;
   final Future<void> Function(LoggedItem item, FoodSuggestion food) replace;
   final Future<List<FoodSuggestion>> Function(String query) search;
+
+  /// Ubah waktu makan (sarapan/makan siang/selingan/makan malam). Null = tidak ditawarkan.
+  final Future<void> Function(String slot)? setSlot;
+
+  /// Hapus seluruh catatan ini. Null = tidak ditawarkan.
+  final Future<void> Function()? deleteLog;
 }
 
 /// Hidangan tampil sebagai kelompok dengan komponennya; makanan tunggal satu baris. Gizi ditulis dengan kata dan
@@ -45,19 +56,118 @@ class MealGroupsView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (meal.kind == 'meal' && actions.setSlot != null)
+          MealSlotPicker(meal: meal, onPick: (slot) => _guard(context, () => actions.setSlot!(slot))),
         for (var g = 0; g < groups.length; g++) ...[
           if (g > 0) const Divider(height: KiraSpace.lg),
-          _GroupView(group: groups[g], index: g, actions: actions, guard: _guard),
+          _GroupView(group: groups[g], index: g, halved: meal.isHalved(groups[g].title), actions: actions, guard: _guard),
         ],
+        if (actions.deleteLog != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              key: const Key('delete_log'),
+              onPressed: () => _confirmDelete(context),
+              icon: const Icon(Icons.delete_outline, size: 18),
+              label: const Text('Hapus catatan ini'),
+            ),
+          ),
       ],
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: const Text('Hapus catatan ini?'),
+        content: const Text('Catatan hilang dari Riwayat dan angka hari ini, proyeksi, dan tren dihitung ulang.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialog, false), child: const Text('Batal')),
+          FilledButton(key: const Key('delete_log_confirm'), onPressed: () => Navigator.pop(dialog, true), child: const Text('Hapus')),
+        ],
+      ),
+    );
+    if (ok == true && context.mounted) await _guard(context, actions.deleteLog!);
+  }
+}
+
+/// Waktu makan catatan ini. Bila KIRA hanya menebaknya dari jam, tampil sebagai pertanyaan dengan pilihan satu ketukan;
+/// bila sudah pasti, tampil sebagai label kecil yang bisa diubah.
+class MealSlotPicker extends StatelessWidget {
+  const MealSlotPicker({super.key, required this.meal, required this.onPick});
+  final MealLog meal;
+  final void Function(String slot) onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = meal.mealSlot;
+    if (meal.needsSlotConfirmation) {
+      return Container(
+        key: const Key('slot_question'),
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: KiraSpace.md),
+        padding: const EdgeInsets.all(KiraSpace.md),
+        decoration: BoxDecoration(
+          color: context.scheme.secondaryContainer.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(KiraRadius.card),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Ini waktu makan yang mana?', style: context.text.titleSmall),
+          Text(
+            current == null
+                ? 'Aku belum yakin dari jamnya.'
+                : 'Aku baru menebak ${mealSlotLabels[current]!.toLowerCase()} dari jamnya. Ketuk yang benar ya.',
+            style: context.text.bodySmall,
+          ),
+          const SizedBox(height: KiraSpace.sm),
+          Wrap(spacing: KiraSpace.sm, runSpacing: KiraSpace.xs, children: [
+            for (final slot in mealSlots)
+              ActionChip(
+                key: Key('slot_$slot'),
+                label: Text(mealSlotLabels[slot]!),
+                onPressed: () => onPick(slot),
+              ),
+          ]),
+        ]),
+      );
+    }
+    if (current == null) return const SizedBox.shrink();
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: PopupMenuButton<String>(
+        key: const Key('slot_menu'),
+        tooltip: 'Ubah waktu makan',
+        onSelected: onPick,
+        itemBuilder: (_) => [
+          for (final slot in mealSlots)
+            CheckedPopupMenuItem(value: slot, checked: slot == current, child: Text(mealSlotLabels[slot]!)),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: KiraSpace.sm),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.schedule, size: 16, color: context.scheme.onSurfaceVariant),
+            const SizedBox(width: KiraSpace.xs),
+            Text(mealSlotLabels[current]!, key: const Key('slot_label'), style: context.text.labelLarge),
+            Icon(Icons.arrow_drop_down, size: 20, color: context.scheme.onSurfaceVariant),
+          ]),
+        ),
+      ),
     );
   }
 }
 
 class _GroupView extends StatelessWidget {
-  const _GroupView({required this.group, required this.index, required this.actions, required this.guard});
+  const _GroupView({
+    required this.group,
+    required this.index,
+    required this.halved,
+    required this.actions,
+    required this.guard,
+  });
   final MealGroup group;
   final int index;
+  final bool halved;
   final MealCardActions actions;
   final Future<void> Function(BuildContext, Future<void> Function()) guard;
 
@@ -75,13 +185,19 @@ class _GroupView extends StatelessWidget {
           Expanded(
             child: Text(group.title, style: context.text.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),
           ),
+          // Saklar: ketuk sekali menjadi setengah porsi, ketuk lagi kembali ke porsi biasa.
           TextButton(
             key: Key('halve_group_$index'),
-            onPressed: () => guard(context, () => actions.halve(group.title)),
-            child: const Text('Setengah porsi'),
+            onPressed: () => guard(context, () => actions.halve(group.title, half: !halved)),
+            child: Text(halved ? 'Porsi biasa' : 'Setengah porsi'),
           ),
         ]),
-        Text('Perkiraan resep, gram tiap bagian bisa kamu ubah.', style: context.text.bodySmall),
+        Text(
+          halved
+              ? 'Sekarang setengah porsi. Ketuk "Porsi biasa" untuk mengembalikan.'
+              : 'Perkiraan resep, gram tiap bagian bisa kamu ubah.',
+          style: context.text.bodySmall,
+        ),
         for (final item in group.items)
           _ItemRow(item: item, actions: actions, guard: guard, removable: group.items.length > 1),
         Padding(

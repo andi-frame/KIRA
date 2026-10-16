@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kira/core/api_client.dart';
 import 'package:kira/core/providers.dart';
 import 'package:kira/features/history/history_screen.dart';
+import 'package:kira/features/home/home_screen.dart';
+import 'package:kira/features/projection/projection_providers.dart';
+import 'package:kira/features/trends/trends_screen.dart';
 import 'package:kira/shared/models.dart';
 
 import 'support/fakes.dart';
@@ -88,8 +92,106 @@ void main() {
 
     await tester.tap(find.byKey(const Key('halve_group_0')));
     await tester.pumpAndSettle();
-    expect(api.patchScales.single, (scale: 0.5, group: 'Ayam geprek'));
+    expect(api.patchFields.single.fields, {'half': true, 'group': 'Ayam geprek'});
     expect(api.historyCalls, hasLength(2)); // dimuat ulang supaya total harian ikut berubah
+    expect(api.dashboardCalls, greaterThanOrEqualTo(0));
+  });
+
+  testWidgets('koreksi dari Riwayat membuat proyeksi, Beranda, dan tren dimuat ulang, bukan tertahan angka lama', (tester) async {
+    final api = FakeApi()..onHistory = (d, b) => _page();
+    await tester.pumpWidget(_app(api));
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(tester.element(find.byType(HistoryScreen)));
+    await container.read(projectionProvider.future);
+    await container.read(dashboardProvider.future);
+    await container.read(trendsProvider(30).future);
+    final calls = (projection: api.projectionCalls, dashboard: api.dashboardCalls);
+
+    await tester.scrollUntilVisible(find.byKey(const Key('history_entry_log1')), 200);
+    await tester.ensureVisible(find.byKey(const Key('history_entry_log1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ayam geprek'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.byKey(const Key('delete_log')), 200);
+    await tester.ensureVisible(find.byKey(const Key('delete_log')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('delete_log')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('delete_log_confirm')));
+    await tester.pumpAndSettle();
+    expect(api.deletedLogs, ['log1']);
+
+    await container.read(projectionProvider.future);
+    await container.read(dashboardProvider.future);
+    expect(api.projectionCalls, calls.projection + 1);
+    expect(api.dashboardCalls, calls.dashboard + 1);
+    expect(container.read(trendsProvider(30)).isLoading || container.read(trendsProvider(30)).hasValue, isTrue);
+  });
+
+  testWidgets('olahraga dan tidur tampil di Riwayat dan bisa diubah atau dihapus', (tester) async {
+    final api = FakeApi()
+      ..onHistory = (d, b) => HistoryPage(nextBefore: '2026-10-03', days: [
+            HistoryDay(
+              date: DateTime(2026, 10, 16),
+              logged: true,
+              sleepHours: 6,
+              activityMinutes: 20,
+              activities: [HistoryActivity(logId: 'act1', kind: 'jalan kaki', minutes: 20, time: DateTime(2026, 10, 16, 7))],
+              sleeps: [HistorySleep(logId: 'slp1', time: DateTime(2026, 10, 16, 6), hours: 6, bedTime: '23:00', wakeTime: '05:00')],
+            ),
+            for (var i = 1; i < 14; i++) _day(i),
+          ]);
+    await tester.pumpWidget(_app(api));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Olahraga dan aktivitas'), 200);
+    expect(find.text('Olahraga dan aktivitas'), findsOneWidget);
+    expect(find.text('jalan kaki · 20 menit'), findsOneWidget);
+    expect(find.text('6 jam tidur'), findsOneWidget);
+    expect(find.text('tidur 23:00, bangun 05:00'), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('edit_activity_act1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('edit_activity_act1')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('activity_minutes')), '45');
+    await tester.tap(find.byKey(const Key('activity_save')));
+    await tester.pumpAndSettle();
+    expect(api.patchFields.single.id, 'act1');
+    expect(api.patchFields.single.fields, {'minutes': 45, 'activity_kind': 'jalan kaki'});
+
+    await tester.ensureVisible(find.byKey(const Key('delete_sleep_slp1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('delete_sleep_slp1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirm_delete')));
+    await tester.pumpAndSettle();
+    expect(api.deletedLogs, ['slp1']);
+  });
+
+  testWidgets('ubah tidur lewat jam tidur dan bangun, atau lamanya saja bila jam tidak dicatat', (tester) async {
+    final api = FakeApi()
+      ..onHistory = (d, b) => HistoryPage(nextBefore: '2026-10-03', days: [
+            HistoryDay(
+              date: DateTime(2026, 10, 16),
+              logged: true,
+              sleepHours: 5,
+              sleeps: [HistorySleep(logId: 'slp1', time: DateTime(2026, 10, 16, 6), hours: 5)],
+            ),
+            for (var i = 1; i < 14; i++) _day(i),
+          ]);
+    await tester.pumpWidget(_app(api));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.byKey(const Key('edit_sleep_slp1')), 200);
+    await tester.ensureVisible(find.byKey(const Key('edit_sleep_slp1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('edit_sleep_slp1')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('sleep_hours')), '7,5');
+    await tester.tap(find.byKey(const Key('sleep_save')));
+    await tester.pumpAndSettle();
+    expect(api.patchFields.single.id, 'slp1');
+    expect(api.patchFields.single.fields, {'hours': 7.5});
   });
 
   testWidgets('muat 14 hari sebelumnya memakai next_before', (tester) async {

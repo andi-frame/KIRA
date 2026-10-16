@@ -47,6 +47,23 @@ menghapus data. Dokumen ini bukan nasihat hukum; peninjauan oleh konsultan hukum
 - **Katalog makanan** (sekitar 1.400 token daftar nama) ikut terkirim ke penyedia model bahasa bersama pesan pengguna supaya
   makanan bisa dipetakan; katalog itu bukan data pribadi.
 
+## Obrolan dan rekam medis
+
+- **Obrolan disimpan satu hari.** Agar obrolan tidak hilang saat aplikasi ditutup, pesan hari ini disimpan di server dan dipulihkan
+  saat aplikasi dibuka lagi. Saat hari berganti (WIB), obrolan hari sebelumnya dihapus otomatis (tengah malam, dan juga saat
+  riwayat diminta). Pengguna juga bisa menghapus obrolan hari ini sendiri dari tombol riwayat. Catatan makan, tidur, dan
+  olahraga yang sudah tersimpan tidak ikut terhapus. Pesan disimpan apa adanya (termasuk yang diketik pengguna) bersama id
+  catatan; angka di kartu "Yang kucatat" diambil ulang dari catatannya, jadi selalu terkini.
+- **Rekam medis** (diagnosis, hasil lab, obat yang dipakai, alergi, dst.) ditulis sendiri oleh pengguna, di formulir atau lewat
+  cerita di Ngobrol. KIRA hanya menyimpan dan menggolongkan; tidak menilai isinya, tidak mendiagnosis, tidak menyarankan obat.
+  Rekam medis ikut di unduhan data dan terhapus bersama akun.
+- **Ringkasan untuk dokter** (dan tautan/PDF-nya) memuat rekam medis yang tercatat (15 terbaru), berlabel "ditulis sendiri oleh
+  pasien, tidak diverifikasi KIRA". Pengguna yang tidak ingin membagikannya cukup tidak memasukkan rekam medis, atau
+  menghapusnya sebelum membagikan tautan.
+- **Fasilitas kesehatan terdekat**: koordinat pengguna dikirim ke server KIRA, lalu (tanpa identitas pengguna) ke OpenStreetMap
+  Overpass atau, bila kunci diisi, Google Places untuk mencari tempat terdekat. Hasilnya disimpan sementara di memori server
+  per sel sekitar 1 km (6 jam), bukan per pengguna.
+
 ## Jeda sosmed (Android, opsional)
 
 - Mati secara bawaan. Setelah dinyalakan butuh dua izin yang diberikan sendiri oleh pengguna di pengaturan Android: **akses penggunaan**

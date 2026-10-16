@@ -71,6 +71,7 @@ async def add_reading(
     dia: int,
     session_name: str,
     measured_at: datetime | None = None,
+    pulse: int | None = None,
 ) -> tuple[BpReading | None, RedFlag | None]:
     """Menyimpan satu bacaan. Bacaan berbahaya TIDAK disimpan; red flag dikembalikan agar pengguna diarahkan ke faskes."""
     protocol = await active(session, user_id)
@@ -99,7 +100,8 @@ async def add_reading(
     if len(same) >= MAX_PER_SESSION:
         raise ProtocolError(f"Sudah {MAX_PER_SESSION} bacaan untuk sesi ini. Cukup 2 bacaan per sesi.")
 
-    row = BpReading(protocol_id=protocol.id, user_id=user_id, measured_at=at, sys=sys, dia=dia, session=session_name)
+    row = BpReading(protocol_id=protocol.id, user_id=user_id, measured_at=at, sys=sys, dia=dia, session=session_name,
+                    pulse=pulse)
     session.add(row)
     await session.commit()
     return row, None
@@ -140,9 +142,13 @@ async def status(session: AsyncSession, user_id: uuid.UUID) -> dict:
     }
     if protocol is None:
         return {"protocol": None, "guide": guide}
-    summary = summarize(_as_core(await _readings(session, protocol.id)))
+    rows = await _readings(session, protocol.id)
+    summary = summarize(_as_core(rows))
     today = local_date(utcnow())
+    pulses = [r.pulse for r in rows if r.pulse]
     out = {
+        "avg_pulse": round(sum(pulses) / len(pulses)) if pulses else None,
+        "pulse_readings": len(pulses),
         "id": str(protocol.id),
         "status": protocol.status,
         "started_at": protocol.started_at.isoformat(),
@@ -167,14 +173,18 @@ async def finish(session: AsyncSession, user_id: uuid.UUID) -> tuple[BpProtocol,
     protocol = await active(session, user_id)
     if protocol is None:
         raise ProtocolError("Belum ada putaran ukur tensi yang berjalan.")
-    summary = summarize(_as_core(await _readings(session, protocol.id)))
+    rows = await _readings(session, protocol.id)
+    summary = summarize(_as_core(rows))
     if not summary.valid:
         raise ProtocolError(summary.missing or "Belum cukup bacaan.")
+    pulses = [r.pulse for r in rows if r.pulse]
     value = {
         "sys": round(summary.avg_sys), "dia": round(summary.avg_dia),
         "avg_sys": summary.avg_sys, "avg_dia": summary.avg_dia,
         "protocol": str(protocol.id), "readings": summary.readings_used,
     }
+    if pulses:
+        value["pulse"] = round(sum(pulses) / len(pulses))
     outcome = await risk.record_result(session, user_id, "blood_pressure", value, "self", commit=False)
     if outcome.red_flag is not None:
         await session.rollback()

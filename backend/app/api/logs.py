@@ -7,12 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.models import Log, LogItem
-from app.repos import foods as foods_repo
 from app.repos import logs as logs_repo
-from app.schemas.api import ItemPatch, LogItemOut, LogOut, LogPatch
+from app.schemas.api import LogItemOut, LogOut, LogPatch
 from app.security import current_user_id
 from app.services import history as history_service
-from app.services.nutrition_items import item_data
+from app.services import log_edit
 from app.timeutil import local_date, utcnow
 
 router = APIRouter(prefix="/logs", tags=["logs"])
@@ -21,7 +20,8 @@ router = APIRouter(prefix="/logs", tags=["logs"])
 def log_out(log: Log, items: list[LogItem]) -> LogOut:
     return LogOut(
         id=str(log.id), kind=log.kind, source=log.source, occurred_at=log.occurred_at, raw_text=log.raw_text,
-        extracted=log.extracted, corrected=log.corrected,
+        extracted=log.extracted, corrected=log.corrected, meal_slot=log.meal_slot, slot_confirmed=log.slot_confirmed,
+        halved_groups=log_edit.halved_groups(log),
         items=[LogItemOut(id=str(i.id), name=i.name, portion_g=i.portion_g, sugar_g=i.sugar_g,
                           sodium_mg=i.sodium_mg, fat_g=i.fat_g, kcal=i.kcal, food_id=i.food_id, group=i.group_name)
                for i in items],
@@ -85,21 +85,20 @@ async def frequent_foods(
     }
 
 
-async def _scaled_label_items(session: AsyncSession, log: Log, patches: list) -> list[logs_repo.ItemData]:
-    """Log dari label kemasan: angkanya tercetak, bukan dari tabel pangan. Koreksi porsi menskalakan angka itu
-    secara proporsional (nama tidak dicocokkan ulang, supaya gizi tidak hilang)."""
-    existing = {i.name.lower(): i for i in (await logs_repo._with_items(session, [log]))[0][1]}
-    out: list[logs_repo.ItemData] = []
-    for p in patches:
-        old = existing.get(p.name.lower())
-        if old is None or p.portion_g is None or not old.portion_g:
-            out.append(logs_repo.ItemData(name=p.name, portion_g=p.portion_g))
-            continue
-        ratio = p.portion_g / old.portion_g
-        scale = lambda v: None if v is None else v * ratio  # noqa: E731
-        out.append(logs_repo.ItemData(name=old.name, portion_g=p.portion_g, sugar_g=scale(old.sugar_g),
-                                      sodium_mg=scale(old.sodium_mg), fat_g=scale(old.fat_g), kcal=scale(old.kcal)))
-    return out
+@router.get("/batch")
+async def logs_batch(
+    ids: str = Query(description="id catatan dipisah koma (maksimal 50)"),
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Catatan milik pengguna dengan id tertentu (untuk memulihkan kartu di obrolan). Id yang bukan miliknya atau sudah
+    dihapus diabaikan."""
+    wanted = [i for i in ids.split(",") if i][:50]
+    try:
+        rows = await logs_repo.by_ids(session, user_id, wanted)
+    except ValueError:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Id catatan tidak valid") from None
+    return {"logs": [log_out(lg, items) for lg, items in rows]}
 
 
 @router.patch("/{log_id}", response_model=LogOut)
@@ -112,24 +111,40 @@ async def patch_log(
     log = await logs_repo.get_owned(session, user_id, log_id)
     if log is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Catatan tidak ditemukan")
-    patches = body.items if body.items is not None else await _current_as_patches(session, log)
-    if body.scale is not None:
-        patches = [_scaled(p, body.scale) if body.group is None or p.group == body.group else p for p in patches]
-    if log.source in {"photo_label", "barcode"}:  # angka tercetak di kemasan, bukan dari tabel pangan
-        new_items = await _scaled_label_items(session, log, patches)
-    else:
-        catalog = await foods_repo.catalog(session)
-        new_items = [
-            item_data(p.name, catalog.find_food(p.name, p.food_id), p.portion_g, group_name=p.group) for p in patches
-        ]
-    rows = await logs_repo.replace_items(session, log, new_items)
-    return log_out(log, rows)
+    try:
+        if log.kind in {"meal", "drink"} and (body.items is not None or body.scale is not None or body.half is not None):
+            await log_edit.edit_meal_items(session, log, items=body.items, scale=body.scale, group=body.group, half=body.half)
+        if body.meal_slot is not None:
+            log_edit.set_meal_slot(log, body.meal_slot)
+        if body.count is not None:
+            await log_edit.set_drink_count(session, log, body.count)
+        if any(v is not None for v in (body.minutes, body.activity_kind, body.hours, body.bed_time, body.wake_time)):
+            log_edit.update_fields(log, minutes=body.minutes, activity_kind=body.activity_kind, hours=body.hours,
+                                   bed_time=body.bed_time, wake_time=body.wake_time)
+        if body.occurred_at is not None:
+            if body.occurred_at > utcnow() + timedelta(minutes=5):
+                raise log_edit.EditError("Waktu catatan tidak boleh di masa depan.")
+            log_edit.move_to(log, body.occurred_at)
+    except log_edit.EditError as exc:
+        await session.rollback()
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from None
+    log.corrected = True
+    await log_edit.refresh_after_change(session, user_id)
+    await session.commit()
+    await session.refresh(log)
+    return log_out(log, (await logs_repo._with_items(session, [log]))[0][1])
 
 
-async def _current_as_patches(session: AsyncSession, log: Log) -> list[ItemPatch]:
-    items = (await logs_repo._with_items(session, [log]))[0][1]
-    return [ItemPatch(name=i.name, portion_g=i.portion_g, food_id=i.food_id, group=i.group_name) for i in items]
-
-
-def _scaled(p: ItemPatch, scale: float) -> ItemPatch:
-    return p.model_copy(update={"portion_g": None if p.portion_g is None else p.portion_g * scale})
+@router.delete("/{log_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_log(
+    log_id: uuid.UUID,
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    """Hapus satu catatan. Proyeksi, total harian, tren, dan rencana dihitung dari catatan, jadi ikut berubah."""
+    log = await logs_repo.get_owned(session, user_id, log_id)
+    if log is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Catatan tidak ditemukan")
+    await log_edit.delete_log(session, log)
+    await log_edit.refresh_after_change(session, user_id)
+    await session.commit()
