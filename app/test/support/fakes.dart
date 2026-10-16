@@ -115,6 +115,11 @@ class FakeApi implements KiraApi {
   final List<String> diagnoses = [];
   final List<({String kind, Map<String, num> value})> results = [];
   final List<({String id, List<Map<String, dynamic>> items})> patches = [];
+  final List<({double? scale, String? group})> patchScales = [];
+  MealLog? patchResult;
+  Object? patchError;
+  final List<String> searches = [];
+  List<FoodSuggestion> foodSuggestions = const [];
   int projectionCalls = 0;
 
   final List<({String phone, String username, String pin, bool consent})> registrations = [];
@@ -283,8 +288,17 @@ class FakeApi implements KiraApi {
       (onPhoto ?? (k) async => const ChatReply(reply: 'Foto diterima.'))(kind);
 
   @override
-  Future<void> patchLog(String logId, List<Map<String, dynamic>> items) async {
-    patches.add((id: logId, items: items));
+  Future<MealLog> patchLog(String logId, {List<Map<String, dynamic>>? items, double? scale, String? group}) async {
+    patches.add((id: logId, items: items ?? const []));
+    patchScales.add((scale: scale, group: group));
+    if (patchError != null) throw patchError!;
+    return patchResult ?? MealLog(id: logId, corrected: true);
+  }
+
+  @override
+  Future<List<FoodSuggestion>> searchFoods(String query) async {
+    searches.add(query);
+    return foodSuggestions;
   }
 
   @override

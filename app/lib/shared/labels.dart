@@ -43,3 +43,13 @@ String formatDate(DateTime d) => '${d.day} ${_monthNames[d.month - 1]} ${d.year}
 /// "12 Okt 2026, 14.05"
 String formatDateTime(DateTime d) =>
     '${formatDate(d)}, ${d.hour.toString().padLeft(2, '0')}.${d.minute.toString().padLeft(2, '0')}';
+
+/// Angka gizi gaya Indonesia: desimal koma untuk nilai kecil ("2,7"), titik pemisah ribuan ("1.987").
+String nutrientNumber(double v) {
+  if (v.abs() < 10 && (v * 10).round() != v.round() * 10) return v.toStringAsFixed(1).replaceAll('.', ',');
+  return v.round().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '.');
+}
+
+/// "gula 2,7 g, natrium 225 mg, lemak 1,2 g" (urutan sama di semua layar).
+String nutrientLine({required double sugarG, required double sodiumMg, required double fatG}) =>
+    'gula ${nutrientNumber(sugarG)} g, natrium ${nutrientNumber(sodiumMg)} mg, lemak ${nutrientNumber(fatG)} g';

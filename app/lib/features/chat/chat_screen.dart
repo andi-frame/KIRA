@@ -10,6 +10,7 @@ import '../../shared/models.dart';
 import '../../shared/widgets.dart';
 import 'chat_controller.dart';
 import 'frequent_foods.dart';
+import 'meal_card.dart';
 import 'media.dart';
 import 'tool_trace.dart';
 
@@ -297,9 +298,17 @@ class _ItemView extends ConsumerWidget {
       case ChatKind.emergency:
         return EmergencyCard(message: item.text);
       case ChatKind.extraction:
+        final chat = ref.read(chatProvider.notifier);
         return ExtractionCard(
           item: item,
-          onEdit: (index, grams) => ref.read(chatProvider.notifier).correctPortion(item, index, grams),
+          onEdit: (index, grams) => chat.correctPortion(item, index, grams),
+          mealActions: MealCardActions(
+            correct: (food, grams) => chat.correctItem(item, food, grams),
+            halve: (group) => chat.halveGroup(item, group),
+            remove: (food) => chat.removeItem(item, food),
+            replace: (food, found) => chat.replaceItem(item, food, found),
+            search: chat.searchFoods,
+          ),
         );
       case ChatKind.error:
         return _ErrorBubble(item: item);
@@ -359,9 +368,12 @@ class _ErrorBubble extends StatelessWidget {
 
 /// Kartu hasil ekstraksi: apa yang dicatat KIRA, dengan porsi yang bisa dikoreksi.
 class ExtractionCard extends StatelessWidget {
-  const ExtractionCard({super.key, required this.item, required this.onEdit});
+  const ExtractionCard({super.key, required this.item, required this.onEdit, this.mealActions});
   final ChatItem item;
   final Future<void> Function(int index, double grams) onEdit;
+
+  /// Koreksi per komponen; dipakai bila balasan membawa rincian catatan makan (item.meal).
+  final MealCardActions? mealActions;
 
   Future<void> _edit(BuildContext context, int index, FoodEntry entry) async {
     final grams = await showDialog<double>(context: context, builder: (_) => _PortionDialog(entry: entry));
@@ -389,6 +401,9 @@ class ExtractionCard extends StatelessWidget {
             Text('Yang kucatat', style: context.text.titleSmall),
           ]),
           const SizedBox(height: KiraSpace.sm),
+          if (item.meal != null && item.meal!.items.isNotEmpty && mealActions != null)
+            MealGroupsView(meal: item.meal!, actions: mealActions!)
+          else
           for (var i = 0; i < data.items.length; i++)
             Row(
               children: [

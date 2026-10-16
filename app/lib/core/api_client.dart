@@ -49,7 +49,9 @@ abstract class KiraApi {
   Future<ChatReply> sendMessage(String text, {String? idempotencyKey});
   Future<ChatReply> sendVoice(Uint8List audio, String filename);
   Future<ChatReply> sendPhoto(String kind, Uint8List image, String filename);
-  Future<void> patchLog(String logId, List<Map<String, dynamic>> items);
+  /// Koreksi catatan: ganti item (yang tidak dikirim = dihapus) dan/atau skalakan porsi (seluruh catatan atau satu hidangan).
+  Future<MealLog> patchLog(String logId, {List<Map<String, dynamic>>? items, double? scale, String? group});
+  Future<List<FoodSuggestion>> searchFoods(String query);
   Future<Projection> getProjection();
   Future<WhatIfResult> whatIf(WhatIfChange change);
   Future<CheckRecommendation?> getCheck();
@@ -287,8 +289,18 @@ class DioKiraApi implements KiraApi {
       );
 
   @override
-  Future<void> patchLog(String logId, List<Map<String, dynamic>> items) =>
-      _run(() => _dio.patch('/logs/$logId', data: {'items': items}), (_) {});
+  Future<MealLog> patchLog(String logId, {List<Map<String, dynamic>>? items, double? scale, String? group}) => _run(
+        () => _dio.patch('/logs/$logId', data: {'items': ?items, 'scale': ?scale, 'group': ?group}),
+        (d) => MealLog.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<List<FoodSuggestion>> searchFoods(String query) => _run(
+        () => _dio.get('/foods/search', queryParameters: {'q': query}),
+        (d) => ((d as Map<String, dynamic>)['results'] as List)
+            .map((e) => FoodSuggestion.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
 
   @override
   Future<Projection> getProjection() =>
