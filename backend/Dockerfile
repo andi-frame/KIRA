@@ -13,7 +13,8 @@ RUN uv sync --frozen --no-dev
 COPY . .
 
 # Proses aplikasi tidak perlu hak root.
-RUN useradd --system --no-create-home kira && chown -R kira /srv
+# Perlu direktori home yang bisa ditulis: uv menaruh cache-nya di ~/.cache saat CMD memakai `uv run`.
+RUN useradd --system --create-home kira && chown -R kira /srv
 USER kira
 
 EXPOSE 8000
