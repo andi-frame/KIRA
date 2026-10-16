@@ -98,15 +98,18 @@ class ChatBubble extends StatelessWidget {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.82),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: KiraSpace.lg, vertical: KiraSpace.md),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: mine ? scheme.primaryContainer : scheme.surfaceContainerLowest,
             borderRadius: radius,
-            border: mine ? null : Border.all(color: scheme.outlineVariant),
+            border: mine ? null : Border.all(color: scheme.outlineVariant.withValues(alpha: 0.25), width: 1),
           ),
           child: Text(
             text,
-            style: context.text.bodyLarge?.copyWith(color: mine ? scheme.onPrimaryContainer : scheme.onSurface),
+            style: context.text.bodyLarge?.copyWith(
+              color: mine ? scheme.onPrimaryContainer : scheme.onSurface,
+              height: 1.35,
+            ),
           ),
         ),
       ),
