@@ -154,10 +154,10 @@ class ClinicalSeries {
 }
 
 class DailyPoint {
-  const DailyPoint({required this.date, required this.logged, this.sugarG, this.sleepHours, this.activeMinutes});
+  const DailyPoint({required this.date, required this.logged, this.sugarG, this.sleepHours, this.activeMinutes, this.kcal});
   final String date;
   final bool logged;
-  final double? sugarG, sleepHours, activeMinutes;
+  final double? sugarG, sleepHours, activeMinutes, kcal;
 
   factory DailyPoint.fromJson(Map<String, dynamic> j) => DailyPoint(
         date: j['date'] as String,

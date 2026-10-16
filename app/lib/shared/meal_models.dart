@@ -153,3 +153,103 @@ class FoodSuggestion {
         portionG: _d(j['portion_g']),
       );
 }
+
+/// Batas harian gula/natrium/lemak sesuai mode pengguna (pencegahan atau pengelolaan).
+class DailyLimits {
+  const DailyLimits({this.sugarG = 50, this.sodiumMg = 2000, this.fatG = 67});
+  final double sugarG;
+  final double sodiumMg;
+  final double fatG;
+
+  factory DailyLimits.fromJson(Map<String, dynamic> j) => DailyLimits(
+        sugarG: _d(j['sugar_g']) ?? 50,
+        sodiumMg: _d(j['sodium_mg']) ?? 2000,
+        fatG: _d(j['fat_g']) ?? 67,
+      );
+}
+
+/// Satu catatan makan/minum di Riwayat.
+class HistoryEntry {
+  const HistoryEntry({
+    required this.logId,
+    required this.kind,
+    required this.time,
+    required this.source,
+    required this.title,
+    this.items = const [],
+    this.totals = const NutrientTotals(),
+    this.uncounted = 0,
+    this.corrected = false,
+  });
+
+  final String logId;
+  final String kind; // meal | drink
+  final DateTime time;
+  final String source;
+  final String title;
+  final List<LoggedItem> items;
+  final NutrientTotals totals;
+  final int uncounted;
+  final bool corrected;
+
+  MealLog get asMeal => MealLog(id: logId, kind: kind, source: source, occurredAt: time, corrected: corrected, items: items);
+
+  factory HistoryEntry.fromJson(Map<String, dynamic> j) => HistoryEntry(
+        logId: j['log_id'] as String,
+        kind: j['kind'] as String,
+        time: DateTime.parse(j['time'] as String),
+        source: j['source'] as String,
+        title: j['title'] as String,
+        items: (j['items'] as List? ?? const []).map((e) => LoggedItem.fromJson(e as Map<String, dynamic>)).toList(),
+        totals: NutrientTotals.fromJson(j['totals'] as Map<String, dynamic>),
+        uncounted: (j['uncounted'] as int?) ?? 0,
+        corrected: (j['corrected'] as bool?) ?? false,
+      );
+}
+
+class HistoryDay {
+  const HistoryDay({
+    required this.date,
+    required this.logged,
+    this.totals = const NutrientTotals(),
+    this.limits = const DailyLimits(),
+    this.meals = const [],
+    this.drinks = const [],
+    this.activityMinutes,
+    this.sleepHours,
+  });
+
+  final DateTime date;
+  final bool logged;
+  final NutrientTotals totals;
+  final DailyLimits limits;
+  final List<HistoryEntry> meals;
+  final List<HistoryEntry> drinks;
+  final double? activityMinutes;
+  final double? sleepHours;
+
+  /// Makan dan minum hari ini, urut waktu.
+  List<HistoryEntry> get entries => [...meals, ...drinks]..sort((a, b) => a.time.compareTo(b.time));
+
+  factory HistoryDay.fromJson(Map<String, dynamic> j) => HistoryDay(
+        date: DateTime.parse(j['date'] as String),
+        logged: j['logged'] as bool,
+        totals: NutrientTotals.fromJson(j['totals'] as Map<String, dynamic>),
+        limits: DailyLimits.fromJson(j['limits'] as Map<String, dynamic>),
+        meals: (j['meals'] as List? ?? const []).map((e) => HistoryEntry.fromJson(e as Map<String, dynamic>)).toList(),
+        drinks: (j['drinks'] as List? ?? const []).map((e) => HistoryEntry.fromJson(e as Map<String, dynamic>)).toList(),
+        activityMinutes: _d(j['activity_minutes']),
+        sleepHours: _d(j['sleep_hours']),
+      );
+}
+
+class HistoryPage {
+  const HistoryPage({required this.days, required this.nextBefore});
+  final List<HistoryDay> days; // terbaru dulu
+  final String nextBefore;
+
+  factory HistoryPage.fromJson(Map<String, dynamic> j) => HistoryPage(
+        days: (j['days'] as List).map((e) => HistoryDay.fromJson(e as Map<String, dynamic>)).toList(),
+        nextBefore: j['next_before'] as String,
+      );
+}

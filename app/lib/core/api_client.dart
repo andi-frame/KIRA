@@ -52,6 +52,7 @@ abstract class KiraApi {
   /// Koreksi catatan: ganti item (yang tidak dikirim = dihapus) dan/atau skalakan porsi (seluruh catatan atau satu hidangan).
   Future<MealLog> patchLog(String logId, {List<Map<String, dynamic>>? items, double? scale, String? group});
   Future<List<FoodSuggestion>> searchFoods(String query);
+  Future<HistoryPage> getHistory({int days = 14, String? before});
   Future<Projection> getProjection();
   Future<WhatIfResult> whatIf(WhatIfChange change);
   Future<CheckRecommendation?> getCheck();
@@ -292,6 +293,12 @@ class DioKiraApi implements KiraApi {
   Future<MealLog> patchLog(String logId, {List<Map<String, dynamic>>? items, double? scale, String? group}) => _run(
         () => _dio.patch('/logs/$logId', data: {'items': ?items, 'scale': ?scale, 'group': ?group}),
         (d) => MealLog.fromJson(d as Map<String, dynamic>),
+      );
+
+  @override
+  Future<HistoryPage> getHistory({int days = 14, String? before}) => _run(
+        () => _dio.get('/logs/history', queryParameters: {'days': days, 'before': ?before}),
+        (d) => HistoryPage.fromJson(d as Map<String, dynamic>),
       );
 
   @override

@@ -119,6 +119,9 @@ class FakeApi implements KiraApi {
   MealLog? patchResult;
   Object? patchError;
   final List<String> searches = [];
+  final List<({int days, String? before})> historyCalls = [];
+  HistoryPage Function(int days, String? before)? onHistory;
+  Object? historyError;
   List<FoodSuggestion> foodSuggestions = const [];
   int projectionCalls = 0;
 
@@ -293,6 +296,13 @@ class FakeApi implements KiraApi {
     patchScales.add((scale: scale, group: group));
     if (patchError != null) throw patchError!;
     return patchResult ?? MealLog(id: logId, corrected: true);
+  }
+
+  @override
+  Future<HistoryPage> getHistory({int days = 14, String? before}) async {
+    historyCalls.add((days: days, before: before));
+    if (historyError != null) throw historyError!;
+    return (onHistory ?? (d, b) => HistoryPage(days: const [], nextBefore: b ?? '2026-10-01'))(days, before);
   }
 
   @override

@@ -13,6 +13,7 @@ import '../features/doctor/doctor_summary_screen.dart';
 import '../features/family/family_screen.dart';
 import '../features/goals/goals_screen.dart';
 import '../features/health/health_screen.dart';
+import '../features/history/history_screen.dart';
 import '../features/trends/trends_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/profile/profile_screen.dart';
@@ -64,6 +65,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           StatefulShellBranch(routes: [GoRoute(path: '/chat', builder: (_, _) => const ChatScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/projection', builder: (_, _) => const ProjectionScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/history', builder: (_, _) => const HistoryScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/check', builder: (_, _) => const CheckScreen())]),
         ],
       ),

@@ -7,6 +7,7 @@ import '../../core/api_client.dart';
 import '../../core/outbox.dart';
 import '../../core/providers.dart';
 import '../../shared/models.dart';
+import '../history/history_controller.dart';
 import '../projection/projection_providers.dart';
 import '../reminders/reminders_controller.dart';
 import 'frequent_foods.dart';
@@ -140,6 +141,7 @@ class ChatController extends Notifier<ChatState> {
     if (reply.logIds.isNotEmpty) {
       ref
         ..invalidate(projectionProvider) // catatan baru mengubah proyeksi
+        ..invalidate(historyProvider)
         ..invalidate(frequentFoodsProvider);
       unawaited(ref.read(remindersProvider.notifier).reschedule()); // sudah mencatat: pengingat hari ini tak perlu
     }
@@ -154,7 +156,9 @@ class ChatController extends Notifier<ChatState> {
     state = state.copyWith(items: [
       for (final i in state.items) identical(i, card) ? ChatItem.extraction(card.data!, card.logIds, meal: updated) : i,
     ]);
-    ref.invalidate(projectionProvider); // gizi berubah, proyeksi ikut berubah
+    ref
+      ..invalidate(projectionProvider) // gizi berubah, proyeksi ikut berubah
+      ..invalidate(historyProvider);
   }
 
   /// Ubah gram satu item (makanan tunggal atau komponen hidangan); item lain tetap.

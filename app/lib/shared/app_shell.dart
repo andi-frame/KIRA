@@ -10,7 +10,7 @@ import '../features/health/health_sync.dart';
 import '../features/privacy/consent_gate.dart';
 import '../features/reminders/reminders_controller.dart';
 
-/// Kerangka dengan bilah navigasi bawah (3 tujuan, Material 3). Profil dibuka dari bilah atas.
+/// Kerangka dengan bilah navigasi bawah (4 tujuan, Material 3). Profil dibuka dari bilah atas.
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, required this.shell});
   final StatefulNavigationShell shell;
@@ -88,6 +88,11 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
             icon: Icon(Icons.show_chart),
             selectedIcon: Icon(Icons.auto_graph),
             label: '10 Tahun',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.restaurant_menu_outlined),
+            selectedIcon: Icon(Icons.restaurant_menu),
+            label: 'Riwayat',
           ),
           NavigationDestination(
             icon: Icon(Icons.fact_check_outlined),
