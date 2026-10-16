@@ -117,3 +117,38 @@ async def test_minuman_yang_juga_masuk_items_tidak_dihitung_dua_kali(session_mak
     async with session_maker() as s:
         drinks = (await s.execute(select(Log).where(Log.user_id == uid, Log.kind == "drink"))).scalars().all()
     assert len(drinks) == 1
+
+
+async def test_pemecahan_dari_model_tidak_ditimpa_hidangan_yang_hanya_mirip(session_maker, make_user):
+    """Regresi: "nasi ayam katsu scrambled egg" dicatat sebagai nasi ayam goreng + sambal bawang + lalapan, padahal pengguna tidak
+    menyebutnya, karena "nasi ayam" adalah alias hidangan lain. Pemecahan dari model harus dipakai."""
+    uid = await make_user()
+    item = {"name": "nasi ayam katsu scrambled egg", "components": [
+        {"name": "nasi putih", "food_id": "nasi_putih", "portion_g_guess": 150},
+        {"name": "ayam katsu", "food_id": "ayam_goreng_tepung", "portion_g_guess": 100},
+        {"name": "scrambled egg", "food_id": "telur_dadar", "portion_g_guess": 60},
+    ]}
+    install([ai("Tercatat.")], {**BASE, "items": [item]})
+    await run(uid, session_maker, input_text="aku makan nasi, ayam katsu, dan scrambled egg")
+    log, items = await saved(session_maker, uid)
+    assert {i.name for i in items} == {"nasi putih", "ayam katsu", "scrambled egg"}
+    assert {i.food_id for i in items} == {"nasi_putih", "ayam_goreng_tepung", "telur_dadar"}
+    assert not {"sambal_bawang", "lalapan", "ayam_goreng"} & {i.food_id for i in items}
+    assert log.extracted["resolved"][0].get("from_model") is True and log.extracted["resolved"][0].get("dish_id") is None
+
+
+async def test_nama_persis_hidangan_tetap_menang_atas_komponen_model(session_maker, make_user):
+    uid = await make_user()
+    item = {"name": "ayam geprek", "components": [{"name": "ayam", "food_id": "ayam_goreng", "portion_g_guess": 100}]}
+    install([ai("Tercatat.")], {**BASE, "items": [item]})
+    await run(uid, session_maker, input_text="makan ayam geprek")
+    log, items = await saved(session_maker, uid)
+    assert len(items) == 4 and log.extracted["resolved"][0]["dish_id"] == "ayam_geprek"
+
+
+async def test_tanpa_pemecahan_model_dan_kata_makanan_lain_abstain_bukan_menebak(session_maker, make_user):
+    uid = await make_user()
+    install([ai("Tercatat.")], {**BASE, "items": [{"name": "nasi ayam katsu scrambled egg"}]})
+    await run(uid, session_maker, input_text="makan nasi ayam katsu scrambled egg")
+    log, items = await saved(session_maker, uid)
+    assert [i.name for i in items] == ["nasi ayam katsu scrambled egg"] and items[0].kcal is None  # belum terhitung, tidak karangan

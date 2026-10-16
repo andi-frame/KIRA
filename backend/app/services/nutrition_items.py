@@ -10,7 +10,7 @@ id yang tidak ada di katalog dibuang (model tidak boleh mengarang id).
 """
 from dataclasses import dataclass, field
 
-from app.core_calc.dishes import DishRecord, expand_dish, match_dish
+from app.core_calc.dishes import DishRecord, expand_dish, match_dish, match_dish_exact
 from app.core_calc.foodindex import FoodIndex, IndexEntry, best_match, build_index
 from app.core_calc.nutrition import FoodRecord, match_food, nutrition_for
 from app.repos.logs import ItemData
@@ -47,10 +47,11 @@ class FoodCatalog:
         needle = name.strip().lower()
         return next((f for f in self.foods if needle in [f.name.lower(), *(a.lower() for a in f.aliases)]), None)
 
-    def find_dish(self, name: str, dish_id: str | None = None) -> DishRecord | None:
+    def find_dish(self, name: str, dish_id: str | None = None, *, exact_only: bool = False) -> DishRecord | None:
+        """`exact_only`: model sudah memecah makanan ini menjadi komponen, jadi hanya nama persis yang boleh menimpanya."""
         if dish_id and dish_id in self.dishes_by_id:
             return self.dishes_by_id[dish_id]
-        return match_dish(name, list(self.dishes))
+        return match_dish_exact(name, list(self.dishes)) if exact_only else match_dish(name, list(self.dishes))
 
 
 def item_data(name: str, food: FoodRecord | None, grams: float | None, multiplier: float = 1.0,
@@ -78,7 +79,7 @@ def _unknown(name: str) -> str:
 
 
 def resolve_food_item(item: FoodItem, catalog: FoodCatalog) -> Resolution:
-    dish = catalog.find_dish(item.name, item.dish_id)
+    dish = catalog.find_dish(item.name, item.dish_id, exact_only=bool(item.components))
     if dish is not None:
         parts = expand_dish(dish, catalog.by_id, portion_g=item.portion_g_guess)
         items = [item_data(p.label, p.food, p.grams, group_name=dish.name) for p in parts]

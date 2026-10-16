@@ -11,6 +11,13 @@ from app.core_calc.nutrition import FoodRecord
 DISH_MIN_SCORE = 0.85
 DISH_MARGIN = 0.1
 
+# Kata pelengkap yang tidak mengubah isi hidangan ("ayam geprek level 5", "nasi dengan ayam goreng dan sayur"). Kata makanan
+# lain di kueri ("katsu", "scrambled egg") berarti ini BUKAN hidangan itu, dan mencocokkannya menukar makanan pengguna.
+FILLER_WORDS = frozenset({
+    "dengan", "dan", "sama", "pakai", "plus", "dg", "yg", "yang", "level", "porsi", "extra", "pedas", "banyak", "sedikit",
+    "besar", "kecil", "jumbo", "biasa", "satu", "dua", "tiga", "sebungkus", "sepiring", "semangkuk",
+})
+
 
 @dataclass(frozen=True)
 class DishComponent:
@@ -41,6 +48,18 @@ def _labels(dish: DishRecord) -> list[str]:
     return [normalize(dish.name), *(normalize(a) for a in dish.aliases)]
 
 
+def match_dish_exact(query: str, dishes: list[DishRecord]) -> DishRecord | None:
+    """Hanya nama atau alias persis. Dipakai bila model sudah memecah makanan menjadi komponennya sendiri: pemecahan itu
+    tidak boleh ditimpa hidangan yang hanya mirip sebagian ("nasi ayam katsu scrambled egg" bukan "nasi ayam goreng")."""
+    needle = normalize(query)
+    return next((d for d in dishes if needle and needle in _labels(d)), None)
+
+
+def _extra_words(label: str, words: set[str]) -> set[str]:
+    """Kata di kueri yang bukan bagian label, bukan angka, dan bukan kata pelengkap."""
+    return {w for w in words - set(label.split()) if not w.isdigit() and w not in FILLER_WORDS}
+
+
 def match_dish(query: str, dishes: list[DishRecord]) -> DishRecord | None:
     """Cocokkan nama bebas ke hidangan. Urutan: nama/alias persis; label hidangan utuh terkandung di kueri
     ("ayam geprek level 5" -> ayam geprek, label terpanjang menang); lalu n-gram dengan ambang tinggi. Ragu -> None.
@@ -55,11 +74,15 @@ def match_dish(query: str, dishes: list[DishRecord]) -> DishRecord | None:
         if needle in _labels(dish):
             return dish
     words = set(needle.split())
-    contained = [(len(label.split()), dish) for dish in dishes for label in _labels(dish) if set(label.split()) <= words]
+    # Label terkandung hanya bila sisa kata di kueri sekadar pelengkap; kata makanan lain berarti hidangan lain.
+    contained = [(len(label.split()), dish) for dish in dishes for label in _labels(dish)
+                 if set(label.split()) <= words and not _extra_words(label, words)]
     if contained:
         longest = max(n for n, _ in contained)
         tied = {d.id: d for n, d in contained if n == longest}
         return next(iter(tied.values())) if len(tied) == 1 else None
+    if any(set(label.split()) <= words for dish in dishes for label in _labels(dish)):
+        return None  # ada kata makanan lain di luar label hidangan: jangan dipaksa menjadi hidangan itu
     if any(words < set(label.split()) for dish in dishes for label in _labels(dish)):
         return None  # kueri lebih pendek dari label hidangan ("rendang" vs "nasi rendang"): milik makanan tunggal
     index = build_index([IndexEntry(d.id, label, "dish") for d in dishes for label in _labels(d)])
