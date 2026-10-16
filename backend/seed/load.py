@@ -11,7 +11,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from app.config import settings
-from app.models import Faskes, Food
+from app.models import Dish, Faskes, Food
 
 SEED_DIR = Path(__file__).resolve().parent
 
@@ -60,15 +60,43 @@ def _food_rows() -> list[dict]:
     return rows
 
 
+def _component_rows() -> list[dict]:
+    """Bahan/komponen sederhana (timun, sambal, ayam goreng tepung, ...) dari components.json, dibuat oleh
+    seed/fetch_components.py. Nilainya sudah final per 100 g; asal tiap angka ada di source_note."""
+    data = json.loads((SEED_DIR / "components.json").read_text(encoding="utf-8"))
+    rows = []
+    for fid, name, aliases, sugar, sodium, fat, kcal, carb, portion, source, note in data["rows"]:
+        rows.append({
+            "id": fid, "name": name, "aliases": [a.lower() for a in aliases],
+            "per100g": {"sugar_g": sugar, "sodium_mg": sodium, "fat_g": fat, "kcal": kcal, "carb_g": carb},
+            "default_portion_g": portion, "tkpi_code": source.split(":", 1)[1] if source.startswith("TKPI:") else None,
+            "source_note": note,
+        })
+    return rows
+
+
+def _dish_rows() -> list[dict]:
+    data = json.loads((SEED_DIR / "dishes.json").read_text(encoding="utf-8"))
+    return [{**d, "aliases": [a.lower() for a in d["aliases"]]} for d in data["dishes"]]
+
+
 async def load_seed(engine: AsyncEngine) -> None:
     faskes_rows = json.loads((SEED_DIR / "faskes.json").read_text(encoding="utf-8"))["rows"]
     async with engine.begin() as conn:
-        stmt = insert(Food).values(_food_rows())
+        stmt = insert(Food).values(_food_rows() + _component_rows())
         await conn.execute(
             stmt.on_conflict_do_update(
                 index_elements=["id"],
                 set_={c: getattr(stmt.excluded, c) for c in ("name", "aliases", "per100g", "default_portion_g",
                                                               "tkpi_code", "source_note")},
+            )
+        )
+        stmt = insert(Dish).values(_dish_rows())
+        await conn.execute(
+            stmt.on_conflict_do_update(
+                index_elements=["id"],
+                set_={c: getattr(stmt.excluded, c) for c in ("name", "aliases", "serving_g", "meal_kinds",
+                                                              "components", "source_note")},
             )
         )
         existing = (await conn.execute(text("select count(*) from faskes"))).scalar_one()

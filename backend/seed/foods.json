@@ -51,7 +51,7 @@
     ["tumis_kangkung", "Tumis kangkung", ["kangkung"], 1, 350, 5, 70, 5, 100],
     ["capcay", "Capcay", ["cap cay"], 2, 400, 5, 90, 8, 150],
     ["gado_gado", "Gado-gado", ["gado gado"], 6, 400, 9, 160, 15, 250],
-    ["pecel", "Pecel", ["nasi pecel"], 6, 350, 8, 150, 14, 200],
+    ["pecel", "Pecel", ["sayur pecel"], 6, 350, 8, 150, 14, 200],
     ["lalapan", "Lalapan", ["lalap"], 1.5, 10, 0.2, 20, 4, 50],
     ["urap", "Urap", ["urap sayur"], 2, 200, 6, 90, 8, 100],
     ["sayur_lodeh", "Sayur lodeh", ["lodeh"], 2, 300, 7, 90, 8, 150],
