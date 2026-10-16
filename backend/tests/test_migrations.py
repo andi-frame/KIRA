@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -13,7 +14,7 @@ from seed.load import load_seed
 BACKEND = Path(__file__).resolve().parent.parent
 EXPECTED_TABLES = {
     "users", "health_profiles", "foods", "logs", "log_items", "clinical_results", "diagnoses",
-    "risk_snapshots", "weekly_summaries", "messages", "check_recommendations", "faskes",
+    "risk_snapshots", "weekly_summaries", "messages", "check_recommendations", "faskes", "dishes",
 }
 
 
@@ -78,6 +79,12 @@ async def test_seed_uses_tkpi_values_where_a_tkpi_entry_exists(engine):
 
 
 async def test_sugar_is_always_flagged_as_estimate_because_tkpi_has_no_sugar(engine):
+    from seed.load import _component_rows
+
+    components = {r["id"] for r in _component_rows()}
     async with engine.connect() as conn:
-        notes = (await conn.execute(text("select source_note from foods"))).scalars().all()
-    assert notes and all("gula: estimasi" in n for n in notes)
+        rows = (await conn.execute(text("select id, source_note from foods"))).all()
+    assert rows and all("gula: estimasi" in note for fid, note in rows if fid not in components)
+    # komponen: gula dari USDA (bersumber) atau ditandai estimasi, tidak pernah tanpa asal
+    sugar_origin = re.compile(r"(USDA FoodData Central[^;]*|Estimasi KIRA): [^;]*gula")
+    assert all(sugar_origin.search(note) for fid, note in rows if fid in components)

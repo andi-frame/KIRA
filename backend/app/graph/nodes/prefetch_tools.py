@@ -25,6 +25,9 @@ PREFETCH_ID_PREFIX = "prefetch_"  # id panggilan tool yang disiapkan di sini, bu
 MAX_FOODS = 4  # batas pencarian gizi per pesan; sisanya tetap bisa dicari agent bila diperlukan
 _BY_NAME = {t.name: t for t in TOOLS}
 # Pertanyaan tentang risiko/proyeksi: hitung_risiko pasti dipanggil agent (prompt mewajibkannya sebelum menyebut risiko).
+# Pertanyaan rencana: model wajib memakai tool rencana (prompt melarang mengarang rencana sendiri).
+_PLAN_WORDS = re.compile(r"\b(?:rencana|jadwal|makan apa|olahraga apa|tidur jam berapa|menu)\b", re.IGNORECASE)
+_WEEK_WORDS = re.compile(r"\b(?:minggu ini|seminggu|besok|minggu depan)\b", re.IGNORECASE)
 _RISK_WORDS = re.compile(r"\b(?:risiko|resiko|kemungkinan|peluang|proyeksi)\w*|\b10 tahun\b", re.IGNORECASE)
 
 
@@ -60,6 +63,8 @@ def plan_calls(
 
     if text and _RISK_WORDS.search(text) and not any(name == "hitung_risiko" for name, _ in calls):
         calls.append(("hitung_risiko", {}))
+    if text and _PLAN_WORDS.search(text):
+        calls.append(("rencana_minggu" if _WEEK_WORDS.search(text) else "rencana_hari_ini", {}))
     return calls
 
 

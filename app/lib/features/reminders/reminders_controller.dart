@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api_client.dart';
 import '../../core/providers.dart';
 import 'notification_service.dart';
 import 'reminder_plan.dart';
@@ -66,12 +67,33 @@ class RemindersController extends Notifier<ReminderSettings> {
         followUpDue = (await api.getCheck())?.followUp ?? false;
       } catch (_) {}
     }
+    PlanReminderInput? plan;
+    if (state.plan) {
+      try {
+        plan = await _planInput(api);
+      } catch (_) {} // tanpa sinyal: pengingat rencana menunggu jadwal ulang berikutnya
+    }
     await service.apply(planReminders(
       now: now ?? DateTime.now(),
       settings: state,
       loggedToday: loggedToday,
       checkFollowUpDue: followUpDue,
+      plan: plan,
     ));
+  }
+
+  Future<PlanReminderInput> _planInput(KiraApi api) async {
+    final prefs = await api.getPlanPreferences();
+    final today = await api.getPlanToday();
+    return PlanReminderInput(
+      mealTimes: prefs.mealTimes,
+      exerciseTime: prefs.exerciseTime,
+      exerciseDays: (today.exercise?.blocked ?? false) ? const [] : prefs.exerciseDays,
+      exerciseLabel: today.exercise?.activity ?? prefs.exerciseKinds.first,
+      bedtime: today.sleep.bedtime,
+      loggedSlotsToday: {for (final m in today.meals) if (m.done) m.slot},
+      viaWhatsapp: prefs.whatsapp ? {for (final e in prefs.reminders.entries) if (e.value) e.key} : const {},
+    );
   }
 }
 

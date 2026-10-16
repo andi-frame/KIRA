@@ -1,3 +1,9 @@
+import 'meal_models.dart';
+
+export 'dashboard_models.dart';
+export 'meal_models.dart';
+export 'plan_models.dart';
+
 double? _d(Object? v) => v is num ? v.toDouble() : null;
 List<double> _dl(Object? v) => (v as List? ?? const []).map((e) => (e as num).toDouble()).toList();
 
@@ -152,6 +158,7 @@ class ChatReply {
     this.logIds = const [],
     this.toolCalls = const [],
     this.transcript,
+    this.meals = const [],
   });
 
   final String reply;
@@ -161,6 +168,9 @@ class ChatReply {
   final List<ToolCall> toolCalls;
   final String? transcript;
 
+  /// Catatan makan dari pesan ini beserta item dan gizinya (kartu "Yang kucatat").
+  final List<MealLog> meals;
+
   factory ChatReply.fromJson(Map<String, dynamic> j) => ChatReply(
         reply: j['reply'] as String,
         extraction: j['extraction'] == null ? null : ExtractionData.fromJson(j['extraction'] as Map<String, dynamic>),
@@ -168,6 +178,7 @@ class ChatReply {
         logIds: (j['log_ids'] as List? ?? const []).cast<String>(),
         toolCalls: (j['tool_calls'] as List? ?? const []).map((e) => ToolCall.fromJson(e as Map<String, dynamic>)).toList(),
         transcript: j['transcript'] as String?,
+        meals: (j['meals'] as List? ?? const []).map((e) => MealLog.fromJson(e as Map<String, dynamic>)).toList(),
       );
 }
 

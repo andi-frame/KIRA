@@ -1,0 +1,756 @@
+{
+ "_note": "Komponen sederhana untuk memecah hidangan. Nilai per 100 g. Dibuat oleh seed/fetch_components.py dari TKPI Kemenkes 2017 (panganku.org) dan USDA FoodData Central SR Legacy (domain publik); sumber tiap angka ada di source_note. Porsi khas selalu estimasi KIRA.",
+ "_columns": [
+  "id",
+  "name",
+  "aliases",
+  "sugar_g",
+  "sodium_mg",
+  "fat_g",
+  "kcal",
+  "carb_g",
+  "default_portion_g",
+  "source",
+  "source_note"
+ ],
+ "rows": [
+  [
+   "nasi_merah",
+   "Nasi merah",
+   [
+    "nasi beras merah"
+   ],
+   0.24,
+   5.0,
+   0.4,
+   149.0,
+   32.5,
+   150,
+   "TKPI:AP005",
+   "USDA FoodData Central SR Legacy (169704, Rice, brown, long-grain, cooked (Includes foods for USDA's Food Distribution Program)): gula; TKPI Kemenkes 2017 (AP005, Nasi beras merah): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "mi_basah",
+   "Mi basah",
+   [
+    "mie basah",
+    "mi kuning",
+    "mie kuning"
+   ],
+   0.4,
+   63.0,
+   3.3,
+   88.0,
+   14.0,
+   150,
+   "TKPI:AP021",
+   "USDA FoodData Central SR Legacy (168919, Noodles, egg, cooked, enriched, with added salt): gula; TKPI Kemenkes 2017 (AP021, Mi basah): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "bihun_rebus",
+   "Bihun rebus",
+   [
+    "bihun"
+   ],
+   0.03,
+   19.0,
+   0.2,
+   108.0,
+   24.01,
+   100,
+   "USDA:168914",
+   "USDA FoodData Central SR Legacy (168914, Rice noodles, cooked): gula, natrium, lemak, energi, karbohidrat; porsi: estimasi (padanan USDA: rice noodles, cooked)"
+  ],
+  [
+   "kentang_rebus",
+   "Kentang rebus",
+   [
+    "kentang"
+   ],
+   0.89,
+   5.0,
+   0.1,
+   86.0,
+   20.01,
+   100,
+   "USDA:170440",
+   "USDA FoodData Central SR Legacy (170440, Potatoes, boiled, cooked without skin, flesh, without salt): gula, natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "ayam_goreng_tepung",
+   "Ayam goreng tepung",
+   [
+    "ayam krispi",
+    "ayam crispy",
+    "ayam tepung",
+    "fried chicken"
+   ],
+   0.5,
+   269.0,
+   15.75,
+   268.0,
+   8.28,
+   100,
+   "USDA:172374",
+   "Estimasi KIRA: gula; USDA FoodData Central SR Legacy (172374, Chicken, broilers or fryers, drumstick, meat and skin, cooked, fried, batter): natrium, lemak, energi, karbohidrat; porsi: estimasi (padanan USDA: drumstick, meat and skin, fried, batter; USDA tidak memuat gula, gula estimasi)"
+  ],
+  [
+   "ayam_rebus",
+   "Ayam rebus/suwir",
+   [
+    "ayam suwir",
+    "suwiran ayam",
+    "ayam rebus"
+   ],
+   0.0,
+   70.0,
+   6.71,
+   177.0,
+   0.0,
+   50,
+   "USDA:171451",
+   "USDA FoodData Central SR Legacy (171451, Chicken, broilers or fryers, meat only, cooked, stewed): gula, natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "lele_goreng",
+   "Lele goreng",
+   [
+    "lele"
+   ],
+   0.5,
+   280.0,
+   13.33,
+   229.0,
+   8.04,
+   100,
+   "USDA:174187",
+   "Estimasi KIRA: gula; USDA FoodData Central SR Legacy (174187, Fish, catfish, channel, cooked, breaded and fried): natrium, lemak, energi, karbohidrat; porsi: estimasi (padanan USDA: channel catfish, breaded and fried; gula estimasi)"
+  ],
+  [
+   "nila_goreng",
+   "Nila/mujair goreng",
+   [
+    "nila goreng",
+    "mujair goreng",
+    "ikan nila"
+   ],
+   0.0,
+   54.0,
+   23.9,
+   416.0,
+   0.0,
+   100,
+   "TKPI:GP020",
+   "USDA FoodData Central SR Legacy (175177, Fish, tilapia, cooked, dry heat): gula; TKPI Kemenkes 2017 (GP020, Ikan mujahir goreng): natrium, lemak, energi, karbohidrat; porsi: estimasi (TKPI: ikan mujahir goreng; gula dari tilapia USDA)"
+  ],
+  [
+   "tahu_putih",
+   "Tahu putih",
+   [
+    "tahu mentah",
+    "tahu kukus"
+   ],
+   0.62,
+   2.0,
+   4.7,
+   80.0,
+   0.8,
+   50,
+   "TKPI:CP061",
+   "USDA FoodData Central SR Legacy (172476, Tofu, raw, regular, prepared with calcium sulfate): gula; TKPI Kemenkes 2017 (CP061, Tahu, mentah): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "tempe_mentah",
+   "Tempe mentah",
+   [
+    "tempe kedelai"
+   ],
+   0.5,
+   9.0,
+   8.8,
+   201.0,
+   13.5,
+   50,
+   "TKPI:CP077",
+   "Estimasi KIRA: gula; TKPI Kemenkes 2017 (CP077, Tempe kedelai murni, mentah): natrium, lemak, energi, karbohidrat; porsi: estimasi (USDA tempeh tidak memuat gula; gula estimasi)"
+  ],
+  [
+   "telur_ayam",
+   "Telur ayam",
+   [
+    "telur"
+   ],
+   0.37,
+   142.0,
+   10.8,
+   154.0,
+   0.7,
+   55,
+   "TKPI:HR002",
+   "USDA FoodData Central SR Legacy (171287, Egg, whole, raw, fresh): gula; TKPI Kemenkes 2017 (HR002, Telur ayam ras, segar (Domestic chicken, egg, fresh)): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "daging_sapi_masak",
+   "Daging sapi masak",
+   [
+    "daging sapi",
+    "daging"
+   ],
+   0.0,
+   48.0,
+   18.42,
+   289.0,
+   0.0,
+   50,
+   "USDA:169488",
+   "USDA FoodData Central SR Legacy (169488, Beef, brisket, flat half, separable lean and fat, trimmed to 1/8\" fat, all grades, cooked, braised): gula, natrium, lemak, energi, karbohidrat; porsi: estimasi (padanan USDA: brisket, braised (tanpa bumbu))"
+  ],
+  [
+   "udang_rebus",
+   "Udang",
+   [
+    "udang"
+   ],
+   0.0,
+   947.0,
+   1.7,
+   119.0,
+   1.52,
+   50,
+   "USDA:171971",
+   "USDA FoodData Central SR Legacy (171971, Crustaceans, shrimp, mixed species, cooked, moist heat (may contain additives to retain moisture)): gula, natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "timun",
+   "Timun",
+   [
+    "ketimun",
+    "mentimun"
+   ],
+   1.67,
+   2.0,
+   0.2,
+   8.0,
+   1.4,
+   30,
+   "TKPI:DR109",
+   "USDA FoodData Central SR Legacy (168409, Cucumber, with peel, raw): gula; TKPI Kemenkes 2017 (DR109, Ketimun, segar (Cucumber, fresh)): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "tomat",
+   "Tomat",
+   [],
+   2.63,
+   10.0,
+   0.5,
+   24.0,
+   4.7,
+   30,
+   "TKPI:DR161",
+   "USDA FoodData Central SR Legacy (170457, Tomatoes, red, ripe, raw, year round average): gula; TKPI Kemenkes 2017 (DR161, Tomat merah, segar (Tomato, red, fresh)): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "kol",
+   "Kol",
+   [
+    "kubis"
+   ],
+   3.2,
+   50.0,
+   1.1,
+   51.0,
+   8.0,
+   30,
+   "TKPI:DR044",
+   "USDA FoodData Central SR Legacy (169975, Cabbage, raw): gula; TKPI Kemenkes 2017 (DR044, Daun kubis, segar (Cabbage, fresh)): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "selada",
+   "Selada",
+   [],
+   0.78,
+   19.0,
+   0.2,
+   18.0,
+   2.9,
+   15,
+   "TKPI:DR145",
+   "USDA FoodData Central SR Legacy (169249, Lettuce, green leaf, raw): gula; TKPI Kemenkes 2017 (DR145, Selada, segar (Lettuce)): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "kemangi",
+   "Kemangi",
+   [],
+   0.3,
+   4.0,
+   0.64,
+   23.0,
+   2.65,
+   5,
+   "USDA:172232",
+   "USDA FoodData Central SR Legacy (172232, Basil, fresh): gula, natrium, lemak, energi, karbohidrat; porsi: estimasi (padanan USDA: basil, fresh)"
+  ],
+  [
+   "tauge",
+   "Tauge",
+   [
+    "toge",
+    "kecambah"
+   ],
+   4.13,
+   2.0,
+   0.5,
+   37.0,
+   3.8,
+   30,
+   "TKPI:DR002",
+   "USDA FoodData Central SR Legacy (169957, Mung beans, mature seeds, sprouted, raw): gula; TKPI Kemenkes 2017 (DR002, Ale,toge, segar): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "daun_singkong_rebus",
+   "Daun singkong rebus",
+   [
+    "daun singkong"
+   ],
+   5.48,
+   13.0,
+   0.6,
+   31.0,
+   4.8,
+   50,
+   "TKPI:DP008",
+   "USDA FoodData Central SR Legacy (169304, Sweet potato leaves, cooked, steamed, without salt): gula; TKPI Kemenkes 2017 (DP008, Daun singkong, rebus): natrium, lemak, energi, karbohidrat; porsi: estimasi (gula dari daun ubi jalar kukus USDA (tidak ada daun singkong di SR Legacy))"
+  ],
+  [
+   "kangkung_rebus",
+   "Kangkung rebus",
+   [
+    "kangkung kukus"
+   ],
+   0.43,
+   31.0,
+   0.6,
+   22.0,
+   3.1,
+   50,
+   "TKPI:DP014",
+   "USDA FoodData Central SR Legacy (168463, Spinach, cooked, boiled, drained, without salt): gula; TKPI Kemenkes 2017 (DP014, Kangkung, rebus): natrium, lemak, energi, karbohidrat; porsi: estimasi (gula dari bayam rebus USDA (tidak ada kangkung rebus di SR Legacy))"
+  ],
+  [
+   "bayam_rebus",
+   "Bayam rebus",
+   [
+    "bayam"
+   ],
+   0.43,
+   16.0,
+   0.6,
+   23.0,
+   3.7,
+   50,
+   "TKPI:DP002",
+   "USDA FoodData Central SR Legacy (168463, Spinach, cooked, boiled, drained, without salt): gula; TKPI Kemenkes 2017 (DP002, Bayam ,rebus): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "wortel_rebus",
+   "Wortel rebus",
+   [
+    "wortel"
+   ],
+   3.45,
+   41.0,
+   0.5,
+   28.0,
+   6.3,
+   30,
+   "TKPI:DP020",
+   "USDA FoodData Central SR Legacy (170394, Carrots, cooked, boiled, drained, without salt): gula; TKPI Kemenkes 2017 (DP020, Wortel, rebus): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "kacang_panjang_rebus",
+   "Kacang panjang rebus",
+   [
+    "kacang panjang"
+   ],
+   3.63,
+   24.0,
+   0.4,
+   30.0,
+   5.8,
+   30,
+   "TKPI:DP012",
+   "USDA FoodData Central SR Legacy (169141, Beans, snap, green, cooked, boiled, drained, without salt): gula; TKPI Kemenkes 2017 (DP012, Kacang panjang, rebus): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "buncis_rebus",
+   "Buncis rebus",
+   [
+    "buncis"
+   ],
+   3.63,
+   7.0,
+   0.2,
+   30.0,
+   6.4,
+   30,
+   "TKPI:DP003",
+   "USDA FoodData Central SR Legacy (169141, Beans, snap, green, cooked, boiled, drained, without salt): gula; TKPI Kemenkes 2017 (DP003, Buncis, rebus): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "labu_siam",
+   "Labu siam",
+   [],
+   1.66,
+   3.0,
+   0.1,
+   30.0,
+   6.7,
+   50,
+   "TKPI:DR123",
+   "USDA FoodData Central SR Legacy (170402, Chayote, fruit, raw): gula; TKPI Kemenkes 2017 (DR123, Labu siam, segar (Chayote, fresh)): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "terong",
+   "Terong",
+   [
+    "terung"
+   ],
+   3.53,
+   9.0,
+   0.2,
+   28.0,
+   5.5,
+   50,
+   "TKPI:DR154",
+   "USDA FoodData Central SR Legacy (169228, Eggplant, raw): gula; TKPI Kemenkes 2017 (DR154, Terong, segar (Eggplant, fresh)): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "sawi",
+   "Sawi",
+   [
+    "sawi hijau",
+    "caisim"
+   ],
+   1.32,
+   22.0,
+   0.3,
+   28.0,
+   4.0,
+   50,
+   "TKPI:DR141",
+   "USDA FoodData Central SR Legacy (169256, Mustard greens, raw): gula; TKPI Kemenkes 2017 (DR141, Sawi, segar (Chinese mustard, fresh)): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "sambal_bawang",
+   "Sambal bawang",
+   [
+    "sambal",
+    "sambel",
+    "sambel bawang"
+   ],
+   4,
+   900,
+   10,
+   130,
+   9,
+   20,
+   "ESTIMASI",
+   "Estimasi KIRA: gula, natrium, lemak, energi, karbohidrat; porsi: estimasi (resep rumahan: cabai, bawang, minyak, garam; tidak ada padanan TKPI/USDA)"
+  ],
+  [
+   "sambal_terasi",
+   "Sambal terasi",
+   [
+    "sambel terasi"
+   ],
+   5,
+   1100,
+   6,
+   100,
+   10,
+   20,
+   "ESTIMASI",
+   "Estimasi KIRA: gula, natrium, lemak, energi, karbohidrat; porsi: estimasi (resep rumahan: cabai, tomat, terasi, minyak, garam; tidak ada padanan TKPI/USDA)"
+  ],
+  [
+   "kecap_manis",
+   "Kecap manis",
+   [
+    "kecap"
+   ],
+   55,
+   3000,
+   0.5,
+   280,
+   66,
+   10,
+   "ESTIMASI",
+   "Estimasi KIRA: gula, natrium, lemak, energi, karbohidrat; porsi: estimasi (kecap manis tidak ada di TKPI (NP005 adalah kecap biasa, karbohidrat 9 g) maupun USDA; semua nilai estimasi)"
+  ],
+  [
+   "saus_tomat",
+   "Saus tomat",
+   [
+    "saos tomat",
+    "saus"
+   ],
+   21.27,
+   890.0,
+   0.4,
+   110.0,
+   24.5,
+   15,
+   "TKPI:NP009",
+   "USDA FoodData Central SR Legacy (168556, Catsup): gula; TKPI Kemenkes 2017 (NP009, Saos tomat (Tomato, sauce)): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "saus_sambal",
+   "Saus sambal botol",
+   [
+    "saos sambal",
+    "saus cabai"
+   ],
+   15.11,
+   2124.0,
+   0.93,
+   93.0,
+   19.16,
+   15,
+   "USDA:171186",
+   "USDA FoodData Central SR Legacy (171186, Sauce, hot chile, sriracha): gula, natrium, lemak, energi, karbohidrat; porsi: estimasi (padanan USDA: sauce, hot chile, sriracha)"
+  ],
+  [
+   "mayones",
+   "Mayones",
+   [
+    "mayonnaise",
+    "mayo"
+   ],
+   0.57,
+   635.0,
+   74.85,
+   680.0,
+   0.57,
+   15,
+   "USDA:171009",
+   "USDA FoodData Central SR Legacy (171009, Salad dressing, mayonnaise, regular): gula, natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "bumbu_kacang",
+   "Bumbu kacang",
+   [
+    "saus kacang",
+    "bumbu pecel",
+    "bumbu gado-gado"
+   ],
+   18.8,
+   319.0,
+   6.34,
+   179.0,
+   28.46,
+   50,
+   "USDA:171575",
+   "USDA FoodData Central SR Legacy (171575, Sauce, peanut, made from coconut, water, sugar, peanuts): gula, natrium, lemak, energi, karbohidrat; porsi: estimasi (padanan USDA: peanut sauce made from coconut, water, sugar, peanuts)"
+  ],
+  [
+   "santan",
+   "Santan",
+   [
+    "kuah santan"
+   ],
+   3.34,
+   9.0,
+   10.0,
+   122.0,
+   7.6,
+   50,
+   "TKPI:KP003",
+   "USDA FoodData Central SR Legacy (170172, Nuts, coconut milk, raw (liquid expressed from grated meat and water)): gula; TKPI Kemenkes 2017 (KP003, Santan (dengan air) (Coconut milk mixed with water)): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "kuah_kaldu",
+   "Kuah kaldu",
+   [
+    "kuah soto",
+    "kuah bakso",
+    "kaldu",
+    "kuah"
+   ],
+   0.43,
+   371.0,
+   0.21,
+   6.0,
+   0.44,
+   250,
+   "USDA:174536",
+   "USDA FoodData Central SR Legacy (174536, Soup, chicken broth, ready-to-serve): gula, natrium, lemak, energi, karbohidrat; porsi: estimasi (padanan USDA: chicken broth, ready-to-serve)"
+  ],
+  [
+   "gula_pasir",
+   "Gula pasir",
+   [
+    "gula"
+   ],
+   99.8,
+   1.0,
+   0.0,
+   394.0,
+   94.0,
+   10,
+   "TKPI:MP007",
+   "USDA FoodData Central SR Legacy (169655, Sugars, granulated): gula; TKPI Kemenkes 2017 (MP007, Gula putih (Sugar cane)): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "gula_aren",
+   "Gula aren",
+   [
+    "gula merah",
+    "gula jawa"
+   ],
+   97.02,
+   15.0,
+   0.0,
+   368.0,
+   92.0,
+   10,
+   "TKPI:MP005",
+   "USDA FoodData Central SR Legacy (168833, Sugars, brown): gula; TKPI Kemenkes 2017 (MP005, Gula aren (Sugar, palm)): natrium, lemak, energi, karbohidrat; porsi: estimasi (gula dari brown sugar USDA)"
+  ],
+  [
+   "minyak_goreng",
+   "Minyak goreng",
+   [
+    "minyak sawit",
+    "minyak"
+   ],
+   0.0,
+   0.0,
+   100.0,
+   884.0,
+   0.0,
+   10,
+   "TKPI:KR012",
+   "USDA FoodData Central SR Legacy (171015, Oil, palm): gula; TKPI Kemenkes 2017 (KR012, Minyak kelapa sawit (Palm oil)): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "margarin",
+   "Margarin",
+   [
+    "mentega"
+   ],
+   0.0,
+   760.0,
+   81.0,
+   720.0,
+   0.4,
+   10,
+   "TKPI:KP001",
+   "USDA FoodData Central SR Legacy (172346, Margarine, regular, 80% fat, composite, stick, with salt): gula; TKPI Kemenkes 2017 (KP001, Margarin (Butter)): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "bawang_goreng",
+   "Bawang goreng",
+   [],
+   20,
+   30,
+   30,
+   480,
+   50,
+   5,
+   "ESTIMASI",
+   "Estimasi KIRA: gula, natrium, lemak, energi, karbohidrat; porsi: estimasi (bawang merah digoreng; tidak ada padanan TKPI/USDA)"
+  ],
+  [
+   "kerupuk_udang",
+   "Kerupuk udang",
+   [
+    "krupuk udang"
+   ],
+   3,
+   449.0,
+   20.5,
+   477.0,
+   68.5,
+   15,
+   "TKPI:BP045",
+   "Estimasi KIRA: gula; TKPI Kemenkes 2017 (BP045, Kerupuk udang goreng): natrium, lemak, energi, karbohidrat; porsi: estimasi (gula estimasi (TKPI tidak memuat gula; kerupuk udang USDA bergaya camilan manis, tidak sepadan))"
+  ],
+  [
+   "emping",
+   "Emping",
+   [
+    "emping melinjo"
+   ],
+   1,
+   300,
+   1.5,
+   345.0,
+   71.5,
+   15,
+   "TKPI:CP024",
+   "Estimasi KIRA: gula, natrium; TKPI Kemenkes 2017 (CP024, Emping (kerupuk melinjo)): lemak, energi, karbohidrat; porsi: estimasi (gula dan natrium estimasi)"
+  ],
+  [
+   "kacang_tanah_goreng",
+   "Kacang tanah goreng",
+   [
+    "kacang goreng",
+    "kacang"
+   ],
+   4.18,
+   320.0,
+   44.4,
+   564.0,
+   25.5,
+   15,
+   "TKPI:CP012",
+   "USDA FoodData Central SR Legacy (174261, Peanuts, all types, oil-roasted, with salt): gula, natrium; TKPI Kemenkes 2017 (CP012, Kacang tanah, goreng): lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "keju",
+   "Keju",
+   [
+    "keju cheddar"
+   ],
+   0.48,
+   1410.0,
+   20.3,
+   326.0,
+   13.1,
+   15,
+   "TKPI:JP003",
+   "USDA FoodData Central SR Legacy (173414, Cheese, cheddar (Includes foods for USDA's Food Distribution Program)): gula; TKPI Kemenkes 2017 (JP003, Keju): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "susu_kental_manis",
+   "Susu kental manis",
+   [
+    "skm"
+   ],
+   54.4,
+   150.0,
+   10.0,
+   343.0,
+   55.0,
+   20,
+   "TKPI:JP007",
+   "USDA FoodData Central SR Legacy (171275, Milk, canned, condensed, sweetened): gula; TKPI Kemenkes 2017 (JP007, Susu kental manis): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ],
+  [
+   "cabai_rawit",
+   "Cabai rawit",
+   [
+    "cabe rawit",
+    "cengek"
+   ],
+   5.3,
+   34.0,
+   2.4,
+   120.0,
+   19.9,
+   5,
+   "TKPI:NR015",
+   "USDA FoodData Central SR Legacy (170106, Peppers, hot chili, red, raw): gula; TKPI Kemenkes 2017 (NR015, Cabai rawit, segar (Chili papper)): natrium, lemak, energi, karbohidrat; porsi: estimasi"
+  ]
+ ]
+}

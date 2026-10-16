@@ -161,3 +161,11 @@ async def test_balasan_kosong_dari_model_dicoba_ulang_sekali(session_maker, make
     chat, _ = install([ai(""), ai("Jalan kakinya sudah kucatat.")], {**SLEEP_ONLY, "sleep": None})
     result = await run(uid, session_maker, input_text="tadi jalan kaki 30 menit")
     assert chat.call_count == 2 and result.reply == "Jalan kakinya sudah kucatat."
+
+
+@pytest.mark.parametrize("text_,tool", [("hari ini aku makan apa ya?", "rencana_hari_ini"),
+                                        ("jadwal olahraga minggu ini gimana", "rencana_minggu"),
+                                        ("rencana makan besok apa", "rencana_minggu"),
+                                        ("malam ini tidur jam berapa?", "rencana_hari_ini")])
+def test_pertanyaan_rencana_menyiapkan_tool_rencana(text_, tool):
+    assert plan_calls({"intent": "question_general", "items": [], "drinks": []}, text=text_) == [(tool, {})]

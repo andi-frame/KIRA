@@ -79,6 +79,15 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               ),
               const Divider(height: 1),
               SwitchListTile(
+                key: const Key('reminder_plan'),
+                title: const Text('Rencana harian'),
+                subtitle: const Text('10 menit sebelum waktu makan, olahraga, dan tidur sesuai Rencana. Isi notifikasi '
+                    'hanya "Waktunya makan siang", tanpa angka kesehatan; yang sudah lewat WhatsApp tidak digandakan.'),
+                value: s.plan,
+                onChanged: (v) => _set(s.copyWith(plan: v)),
+              ),
+              const Divider(height: 1),
+              SwitchListTile(
                 key: const Key('reminder_check'),
                 title: const Text('Tanya "sudah dicek?"'),
                 subtitle: const Text('Sekali, kalau saran cek sudah beberapa hari dan belum kamu jawab'),

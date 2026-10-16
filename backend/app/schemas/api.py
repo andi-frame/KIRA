@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.schemas.extraction import Extraction
 
@@ -24,6 +24,7 @@ class ChatOut(BaseModel):
     log_ids: list[str] = []
     tool_calls: list[dict] = []
     transcript: str | None = None
+    meals: list["LogOut"] = []  # catatan makan dari pesan ini beserta item, gizi, dan kelompok hidangan (kartu koreksi)
 
 
 class WhatIfIn(BaseModel):
@@ -61,10 +62,23 @@ class DiagnosisIn(BaseModel):
 class ItemPatch(BaseModel):
     name: str = Field(min_length=1)
     portion_g: float | None = Field(default=None, gt=0, le=5000)
+    food_id: str | None = None  # komponen yang sudah dikenali: tetap dihitung dari makanan yang sama
+    group: str | None = Field(default=None, max_length=120)  # hidangan induk (komponen tetap terkelompok)
 
 
 class LogPatch(BaseModel):
-    items: list[ItemPatch]
+    """Ganti isi catatan (item yang tidak dikirim = dihapus, mis. "tanpa nasi"), dan/atau skalakan porsi.
+    `scale` tanpa `items` menskalakan item yang ada; `group` membatasinya pada satu hidangan ("setengah porsi geprek")."""
+
+    items: list[ItemPatch] | None = None
+    scale: float | None = Field(default=None, gt=0, le=10)
+    group: str | None = Field(default=None, max_length=120)
+
+    @model_validator(mode="after")
+    def _something_to_do(self) -> "LogPatch":
+        if self.items is None and self.scale is None:
+            raise ValueError("isi items atau scale")
+        return self
 
 
 class LogItemOut(BaseModel):
@@ -75,6 +89,8 @@ class LogItemOut(BaseModel):
     sodium_mg: float | None
     fat_g: float | None
     kcal: float | None
+    food_id: str | None = None
+    group: str | None = None
 
 
 class LogOut(BaseModel):
@@ -90,3 +106,6 @@ class LogOut(BaseModel):
 
 class CheckRespondIn(BaseModel):
     action: Literal["done", "snooze", "dismiss"]
+
+
+ChatOut.model_rebuild()

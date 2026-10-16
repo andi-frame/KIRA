@@ -72,3 +72,21 @@ async def redeem_link_code(session: AsyncSession, code: str, jid: str) -> User |
 async def linked_user_id(session: AsyncSession, jid: str) -> uuid.UUID | None:
     link = await session.get(WaLink, jid)
     return link.user_id if link else None
+
+
+# Perintah pengingat rencana: ditangani sebelum LLM, deterministik.
+STOP_REMINDER_WORDS = {"stop pengingat", "stop", "berhenti pengingat", "matikan pengingat"}
+START_REMINDER_WORDS = {"nyalakan pengingat", "mulai pengingat", "aktifkan pengingat"}
+STOPPED_REPLY = ("Pengingat rencana lewat WhatsApp sudah dimatikan. Kamu tetap bisa ngobrol di sini. "
+                 "Kirim 'nyalakan pengingat' atau atur dari aplikasi (menu Rencana) untuk menyalakannya lagi.")
+STARTED_REPLY = "Pengingat rencana lewat WhatsApp dinyalakan. Kirim 'stop pengingat' kapan saja untuk mematikannya."
+
+
+def reminder_command(text: str | None) -> bool | None:
+    """True = nyalakan, False = matikan, None = bukan perintah pengingat."""
+    t = " ".join((text or "").lower().split()).strip(".! ")
+    if t in STOP_REMINDER_WORDS:
+        return False
+    if t in START_REMINDER_WORDS:
+        return True
+    return None

@@ -158,6 +158,29 @@ Rincian dan batasnya ada di [`docs/privasi-dan-keamanan.md`](docs/privasi-dan-ke
 - **Platform:** batas pesan per pengguna (20/menit, 400/hari), `X-Request-ID` + log per permintaan, `GET /health/ready`, CI GitHub Actions,
   `docker-compose.prod.yml` + Caddy (HTTPS otomatis), skrip cadangan/pemulihan. Lihat [`docs/deploy.md`](docs/deploy.md) (belum pernah dijalankan di server sungguhan).
 
+## Fase 6: hidangan per komponen, Riwayat, Beranda, dan Rencana
+
+Spesifikasi: [`docs/spesifikasi-beranda-perencana.md`](docs/spesifikasi-beranda-perencana.md).
+
+- **Hidangan per komponen:** "ayam geprek" dicatat sebagai ayam goreng tepung + nasi + sambal + timun, masing-masing dengan gizinya.
+  28 hidangan terkurasi (`seed/dishes.json`, gram per komponen = asumsi KIRA) dan 48 bahan bersumber TKPI 2017 / USDA FoodData Central
+  (`seed/components.json`, dibuat `seed/fetch_components.py`). Ekstraksi menerima katalog `id|nama` dan memetakan ke `dish_id`/`food_id`
+  atau memecah hidangan tak dikenal ke `components`; server membuang id karangan, mencocokkan ulang lewat nama dan indeks n-gram
+  karakter (`core_calc/foodindex.py`), dan **tidak menebak** bila ragu. `GET /foods/search` untuk saran; `PATCH /logs/{id}` bisa
+  menskalakan satu hidangan (`scale`, `group`) atau menghapus satu komponen. Tidur yang hanya disebut lamanya ("tidur cuma 5 jam") kini tersimpan.
+- **Riwayat** (tab baru): `GET /logs/history?days=14&before=` per hari WIB: makan dan minum dengan gizi tiap komponen, total harian
+  terhadap batas (ditulis "sisa 12 g" / "melewati batas 8 g"), strip 7 hari, hari kosong "tidak tercatat", muat hari sebelumnya.
+- **Beranda** (menggantikan tab "10 Tahun"; tab: Ngobrol, Beranda, Riwayat, Cek): `GET /dashboard` dalam satu panggilan: langkah
+  berikutnya, kondisi hari ini (gizi, gerak, tidur), rencana hari ini, sinyal kebiasaan bersumber dari `core_calc/habits.py`
+  (tidak menyimpulkan bila < 3 hari tercatat), lalu proyeksi 10 tahun beserta skenario, target, dan rekap yang sudah ada.
+  Dimuat ulang setiap ada catatan baru dan saat aplikasi dibuka kembali.
+- **Rencana:** `core_calc/planner.py` (deterministik) menyusun makan dari katalog sesuai anggaran tiap waktu makan, olahraga bertahap
+  sampai 150 menit/minggu (WHO 2020), dan jam tidur dari jam bangun. Energi dari **AKG 2019 (Permenkes 28/2019), diverifikasi dari
+  lampiran resmi**. `GET/PUT /plan/preferences`, `GET /plan/today` (menyesuaikan yang sudah dimakan), `GET /plan/week`,
+  `POST /plan/today/swap`. Penanda tensi "perhatian" menahan latihan baru. Tool agen baca-saja: `rencana_hari_ini`, `rencana_minggu`, `riwayat_makan`.
+- **Pengingat rencana:** WhatsApp (job tiap 5 menit, per preferensi, jam tenang, satu kali per bagian, maksimal 4 pesan/hari,
+  "stop pengingat") dan notifikasi lokal opsional tanpa angka kesehatan yang tidak menggandakan pengingat WhatsApp.
+
 ## Batasan yang disengaja
 
 - Proyeksi 10 tahun untuk diabetes memakai FINDRISC; hipertensi memakai Framingham 4 tahun dan hanya untuk usia dan kondisi yang memenuhi syarat kelayakannya.

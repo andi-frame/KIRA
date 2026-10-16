@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db import get_session, get_session_factory
 from app.graph.kira_graph import run_kira_graph
+from app.services import plan as plan_service
 from app.models.whatsapp import WaOutbox
 from app.security import current_user_id
 from app.services import pin_reset
@@ -65,6 +66,12 @@ async def inbound(
     user_id = await wa.linked_user_id(session, body.jid)
     if user_id is None:
         return {"reply": wa.NOT_LINKED_REPLY}
+
+    command = wa.reminder_command(body.text) if not body.media else None
+    if command is not None:
+        prefs = await plan_service.get_prefs(session, user_id)
+        await plan_service.save_prefs(session, user_id, {"channels": {**prefs["channels"], "whatsapp": command}})
+        return {"reply": wa.STARTED_REPLY if command else wa.STOPPED_REPLY}
 
     kwargs: dict = {"session_factory": session_factory}
     if body.media and len(body.media) > MAX_MEDIA_BASE64:

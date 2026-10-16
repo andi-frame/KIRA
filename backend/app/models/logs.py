@@ -20,6 +20,19 @@ class Food(Base):
     source_note: Mapped[str | None] = mapped_column(Text)  # asal tiap nilai (TKPI atau estimasi)
 
 
+class Dish(Base):
+    """Resep hidangan terkurasi: komponen berbobot gram dari tabel foods (gram = asumsi KIRA)."""
+
+    __tablename__ = "dishes"
+    id: Mapped[str] = mapped_column(Text, primary_key=True)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    aliases: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, server_default=text("'{}'"))
+    serving_g: Mapped[float] = mapped_column(FLOAT, nullable=False)
+    meal_kinds: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, server_default=text("'{}'"))
+    components: Mapped[list] = mapped_column(JSONB, nullable=False)  # [{food_id, grams, label?}]
+    source_note: Mapped[str | None] = mapped_column(Text)
+
+
 class Log(Base):
     __tablename__ = "logs"
     __table_args__ = (Index("ix_logs_user_occurred", "user_id", text("occurred_at DESC")),)
@@ -48,6 +61,8 @@ class LogItem(Base):
     sodium_mg: Mapped[float | None] = mapped_column(FLOAT)
     fat_g: Mapped[float | None] = mapped_column(FLOAT)
     kcal: Mapped[float | None] = mapped_column(FLOAT)
+    group_name: Mapped[str | None] = mapped_column(Text)  # hidangan induk bila item ini komponen sebuah hidangan
+    role: Mapped[str | None] = mapped_column(Text)  # staple | protein | veg | sauce | drink | other (opsional)
 
 
 class Product(Base):

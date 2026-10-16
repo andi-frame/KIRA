@@ -1,0 +1,951 @@
+{
+ "_note": "Resep hidangan terkurasi: tiap hidangan dipecah menjadi komponen dari foods.json/components.json. Gram per komponen = asumsi KIRA (lihat docs/sumber-angka-klinis.md); gizi tetap dari tabel foods.",
+ "dishes": [
+  {
+   "id": "ayam_geprek",
+   "name": "Ayam geprek",
+   "aliases": [
+    "geprek",
+    "ayam geprek",
+    "nasi ayam geprek"
+   ],
+   "serving_g": 305,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "ayam_goreng_tepung",
+     "grams": 100
+    },
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "sambal_bawang",
+     "grams": 25
+    },
+    {
+     "food_id": "timun",
+     "grams": 30
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "ayam_penyet",
+   "name": "Ayam penyet",
+   "aliases": [
+    "ayam penyet",
+    "penyet ayam",
+    "nasi ayam penyet"
+   ],
+   "serving_g": 335,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "ayam_goreng",
+     "grams": 100
+    },
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "sambal_terasi",
+     "grams": 25
+    },
+    {
+     "food_id": "tempe_goreng",
+     "grams": 30
+    },
+    {
+     "food_id": "lalapan",
+     "grams": 30
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "ayam_bakar_komplit",
+   "name": "Ayam bakar komplit",
+   "aliases": [
+    "nasi ayam bakar",
+    "ayam bakar nasi",
+    "ayam bakar komplit"
+   ],
+   "serving_g": 300,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "ayam_bakar",
+     "grams": 100
+    },
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "sambal_terasi",
+     "grams": 20
+    },
+    {
+     "food_id": "lalapan",
+     "grams": 30
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "pecel_lele",
+   "name": "Pecel lele",
+   "aliases": [
+    "pecel lele",
+    "lele penyet",
+    "nasi lele"
+   ],
+   "serving_g": 318,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "lele_goreng",
+     "grams": 100
+    },
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "sambal_terasi",
+     "grams": 25
+    },
+    {
+     "food_id": "kol",
+     "grams": 20
+    },
+    {
+     "food_id": "timun",
+     "grams": 20
+    },
+    {
+     "food_id": "kemangi",
+     "grams": 3
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "nila_goreng_nasi",
+   "name": "Nila goreng + nasi",
+   "aliases": [
+    "pecel nila",
+    "nasi nila",
+    "nila goreng nasi"
+   ],
+   "serving_g": 300,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "nila_goreng",
+     "grams": 100
+    },
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "sambal_terasi",
+     "grams": 20
+    },
+    {
+     "food_id": "lalapan",
+     "grams": 30
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "ikan_bakar_nasi",
+   "name": "Ikan bakar + nasi",
+   "aliases": [
+    "nasi ikan bakar",
+    "ikan bakar nasi"
+   ],
+   "serving_g": 305,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "ikan_bakar",
+     "grams": 100
+    },
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "sambal_terasi",
+     "grams": 20
+    },
+    {
+     "food_id": "kecap_manis",
+     "grams": 5
+    },
+    {
+     "food_id": "lalapan",
+     "grams": 30
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "nasi_campur",
+   "name": "Nasi campur",
+   "aliases": [
+    "nasi campur",
+    "nascam"
+   ],
+   "serving_g": 320,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "telur_balado",
+     "grams": 50
+    },
+    {
+     "food_id": "tempe_goreng",
+     "grams": 30
+    },
+    {
+     "food_id": "tumis_kangkung",
+     "grams": 50
+    },
+    {
+     "food_id": "perkedel",
+     "grams": 40
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "nasi_padang",
+   "name": "Nasi padang",
+   "aliases": [
+    "nasi padang",
+    "nasi rendang",
+    "nasi padang rendang"
+   ],
+   "serving_g": 370,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "nasi_putih",
+     "grams": 200
+    },
+    {
+     "food_id": "rendang",
+     "grams": 70
+    },
+    {
+     "food_id": "daun_singkong_rebus",
+     "grams": 50
+    },
+    {
+     "food_id": "santan",
+     "grams": 30,
+     "label": "kuah gulai"
+    },
+    {
+     "food_id": "sambal_bawang",
+     "grams": 20,
+     "label": "sambal"
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "nasi_uduk_komplit",
+   "name": "Nasi uduk komplit",
+   "aliases": [
+    "nasi uduk lengkap",
+    "nasi uduk komplit",
+    "nasi uduk ayam"
+   ],
+   "serving_g": 368,
+   "meal_kinds": [
+    "breakfast",
+    "lunch"
+   ],
+   "components": [
+    {
+     "food_id": "nasi_uduk",
+     "grams": 200
+    },
+    {
+     "food_id": "ayam_goreng",
+     "grams": 70
+    },
+    {
+     "food_id": "tempe_goreng",
+     "grams": 30
+    },
+    {
+     "food_id": "bihun_goreng",
+     "grams": 40
+    },
+    {
+     "food_id": "sambal_bawang",
+     "grams": 15
+    },
+    {
+     "food_id": "bawang_goreng",
+     "grams": 3
+    },
+    {
+     "food_id": "kerupuk",
+     "grams": 10
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "nasi_kuning_komplit",
+   "name": "Nasi kuning komplit",
+   "aliases": [
+    "nasi kuning lengkap",
+    "nasi kuning komplit"
+   ],
+   "serving_g": 325,
+   "meal_kinds": [
+    "breakfast",
+    "lunch"
+   ],
+   "components": [
+    {
+     "food_id": "nasi_kuning",
+     "grams": 200
+    },
+    {
+     "food_id": "ayam_goreng",
+     "grams": 50
+    },
+    {
+     "food_id": "telur_dadar",
+     "grams": 30,
+     "label": "telur dadar iris"
+    },
+    {
+     "food_id": "bihun_goreng",
+     "grams": 30
+    },
+    {
+     "food_id": "sambal_bawang",
+     "grams": 10
+    },
+    {
+     "food_id": "kerupuk",
+     "grams": 5
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "nasi_goreng_telur",
+   "name": "Nasi goreng telur",
+   "aliases": [
+    "nasi goreng telur",
+    "nasgor telur",
+    "nasi goreng spesial"
+   ],
+   "serving_g": 345,
+   "meal_kinds": [
+    "breakfast",
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "nasi_goreng",
+     "grams": 250
+    },
+    {
+     "food_id": "telur_ceplok",
+     "grams": 50
+    },
+    {
+     "food_id": "kerupuk_udang",
+     "grams": 10
+    },
+    {
+     "food_id": "timun",
+     "grams": 20
+    },
+    {
+     "food_id": "tomat",
+     "grams": 15
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "nasi_ayam_goreng",
+   "name": "Nasi ayam goreng",
+   "aliases": [
+    "nasi ayam goreng",
+    "ayam goreng nasi",
+    "nasi ayam"
+   ],
+   "serving_g": 285,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "ayam_goreng",
+     "grams": 100
+    },
+    {
+     "food_id": "sambal_bawang",
+     "grams": 15
+    },
+    {
+     "food_id": "lalapan",
+     "grams": 20
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "nasi_telur",
+   "name": "Nasi telur",
+   "aliases": [
+    "nasi telur",
+    "nasi telor",
+    "nasi telur ceplok"
+   ],
+   "serving_g": 205,
+   "meal_kinds": [
+    "breakfast",
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "telur_ceplok",
+     "grams": 50
+    },
+    {
+     "food_id": "kecap_manis",
+     "grams": 5
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "nasi_warteg",
+   "name": "Nasi warteg",
+   "aliases": [
+    "nasi warteg",
+    "warteg",
+    "nasi tempe tahu"
+   ],
+   "serving_g": 330,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "tempe_goreng",
+     "grams": 30
+    },
+    {
+     "food_id": "tahu_goreng",
+     "grams": 40
+    },
+    {
+     "food_id": "sayur_sop",
+     "grams": 100
+    },
+    {
+     "food_id": "sambal_bawang",
+     "grams": 10
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "soto_ayam_nasi",
+   "name": "Soto ayam + nasi",
+   "aliases": [
+    "soto ayam nasi",
+    "soto nasi",
+    "nasi soto",
+    "nasi soto ayam"
+   ],
+   "serving_g": 450,
+   "meal_kinds": [
+    "breakfast",
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "soto_ayam",
+     "grams": 300
+    },
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "nasi_rawon",
+   "name": "Nasi rawon",
+   "aliases": [
+    "nasi rawon",
+    "rawon nasi"
+   ],
+   "serving_g": 475,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "rawon",
+     "grams": 300
+    },
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "tauge",
+     "grams": 20
+    },
+    {
+     "food_id": "kerupuk",
+     "grams": 5
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "nasi_opor",
+   "name": "Nasi opor ayam",
+   "aliases": [
+    "nasi opor",
+    "opor nasi",
+    "nasi opor ayam"
+   ],
+   "serving_g": 315,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "opor_ayam",
+     "grams": 150
+    },
+    {
+     "food_id": "sambal_bawang",
+     "grams": 10
+    },
+    {
+     "food_id": "kerupuk",
+     "grams": 5
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "nasi_gudeg",
+   "name": "Nasi gudeg",
+   "aliases": [
+    "nasi gudeg",
+    "gudeg komplit"
+   ],
+   "serving_g": 390,
+   "meal_kinds": [
+    "breakfast",
+    "lunch"
+   ],
+   "components": [
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "gudeg",
+     "grams": 150
+    },
+    {
+     "food_id": "telur_rebus",
+     "grams": 50
+    },
+    {
+     "food_id": "ayam_rebus",
+     "grams": 40,
+     "label": "ayam opor/suwir"
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "nasi_pecel",
+   "name": "Nasi pecel",
+   "aliases": [
+    "nasi pecel",
+    "pecel nasi"
+   ],
+   "serving_g": 335,
+   "meal_kinds": [
+    "breakfast",
+    "lunch"
+   ],
+   "components": [
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "pecel",
+     "grams": 150
+    },
+    {
+     "food_id": "tempe_goreng",
+     "grams": 30
+    },
+    {
+     "food_id": "kerupuk",
+     "grams": 5
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "gado_gado_lontong",
+   "name": "Gado-gado + lontong",
+   "aliases": [
+    "gado-gado lontong",
+    "gado gado lontong",
+    "gado-gado pakai lontong"
+   ],
+   "serving_g": 350,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "gado_gado",
+     "grams": 250
+    },
+    {
+     "food_id": "lontong",
+     "grams": 100
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "lontong_sayur",
+   "name": "Lontong sayur",
+   "aliases": [
+    "lontong sayur"
+   ],
+   "serving_g": 405,
+   "meal_kinds": [
+    "breakfast"
+   ],
+   "components": [
+    {
+     "food_id": "lontong",
+     "grams": 150
+    },
+    {
+     "food_id": "sayur_lodeh",
+     "grams": 200
+    },
+    {
+     "food_id": "telur_rebus",
+     "grams": 50
+    },
+    {
+     "food_id": "kerupuk",
+     "grams": 5
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "sate_ayam_lontong",
+   "name": "Sate ayam + lontong",
+   "aliases": [
+    "sate ayam lontong",
+    "sate lontong",
+    "sate ayam pakai lontong"
+   ],
+   "serving_g": 290,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "sate_ayam",
+     "grams": 100
+    },
+    {
+     "food_id": "bumbu_kacang",
+     "grams": 40
+    },
+    {
+     "food_id": "lontong",
+     "grams": 150
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "mie_ayam_bakso",
+   "name": "Mie ayam bakso",
+   "aliases": [
+    "mie ayam bakso",
+    "mi ayam bakso"
+   ],
+   "serving_g": 325,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "mie_ayam",
+     "grams": 250
+    },
+    {
+     "food_id": "bakso",
+     "grams": 75
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "bakso_komplit",
+   "name": "Bakso komplit",
+   "aliases": [
+    "bakso komplit",
+    "bakso kuah",
+    "semangkuk bakso",
+    "bakso urat komplit"
+   ],
+   "serving_g": 432,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "bakso",
+     "grams": 100
+    },
+    {
+     "food_id": "kuah_kaldu",
+     "grams": 250
+    },
+    {
+     "food_id": "mi_basah",
+     "grams": 50
+    },
+    {
+     "food_id": "bihun_rebus",
+     "grams": 30
+    },
+    {
+     "food_id": "bawang_goreng",
+     "grams": 2
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "bubur_ayam_komplit",
+   "name": "Bubur ayam komplit",
+   "aliases": [
+    "bubur ayam lengkap",
+    "bubur ayam komplit",
+    "bubur ayam spesial"
+   ],
+   "serving_g": 357,
+   "meal_kinds": [
+    "breakfast"
+   ],
+   "components": [
+    {
+     "food_id": "bubur_ayam",
+     "grams": 300
+    },
+    {
+     "food_id": "ayam_rebus",
+     "grams": 30,
+     "label": "suwiran ayam"
+    },
+    {
+     "food_id": "kecap_manis",
+     "grams": 5
+    },
+    {
+     "food_id": "kerupuk",
+     "grams": 10
+    },
+    {
+     "food_id": "kacang_tanah_goreng",
+     "grams": 10
+    },
+    {
+     "food_id": "bawang_goreng",
+     "grams": 2
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "roti_telur",
+   "name": "Roti telur",
+   "aliases": [
+    "roti telur",
+    "sarapan roti telur",
+    "roti isi telur",
+    "roti bakar telur"
+   ],
+   "serving_g": 115,
+   "meal_kinds": [
+    "breakfast"
+   ],
+   "components": [
+    {
+     "food_id": "roti_tawar",
+     "grams": 60
+    },
+    {
+     "food_id": "telur_ceplok",
+     "grams": 50
+    },
+    {
+     "food_id": "margarin",
+     "grams": 5
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "mie_instan_telur",
+   "name": "Mie instan + telur",
+   "aliases": [
+    "indomie telur",
+    "mie goreng telur",
+    "mie instan telur",
+    "indomie pakai telur"
+   ],
+   "serving_g": 230,
+   "meal_kinds": [
+    "breakfast",
+    "lunch",
+    "dinner",
+    "snack"
+   ],
+   "components": [
+    {
+     "food_id": "mie_instan_goreng",
+     "grams": 150
+    },
+    {
+     "food_id": "telur_ceplok",
+     "grams": 50
+    },
+    {
+     "food_id": "sawi",
+     "grams": 30
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  },
+  {
+   "id": "nasi_ayam_krispi",
+   "name": "Nasi ayam krispi",
+   "aliases": [
+    "nasi ayam krispi",
+    "nasi ayam crispy",
+    "paket ayam krispi"
+   ],
+   "serving_g": 265,
+   "meal_kinds": [
+    "lunch",
+    "dinner"
+   ],
+   "components": [
+    {
+     "food_id": "ayam_goreng_tepung",
+     "grams": 100
+    },
+    {
+     "food_id": "nasi_putih",
+     "grams": 150
+    },
+    {
+     "food_id": "saus_sambal",
+     "grams": 15
+    }
+   ],
+   "source_note": "Resep rumahan/warung umum; gram per komponen adalah perkiraan KIRA (asumsi), bukan hasil penimbangan"
+  }
+ ]
+}

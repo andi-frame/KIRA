@@ -112,3 +112,31 @@ GLUCOSE_DIABETES_FASTING = 126
 HBA1C_DIABETES = 6.5
 # ASUMSI KIRA: selisih pengukuran pertama dan terakhir di bawah ini dianggap "stabil" (derau pengukuran harian).
 TREND_NOISE = {"sys": 5.0, "dia": 3.0, "fasting_glucose": 10.0, "random_glucose": 20.0, "hba1c": 0.3, "waist": 2.0}
+
+# Kebutuhan energi per kelompok umur dewasa (kkal/hari). SUMBER (terverifikasi, primer): Permenkes 28/2019 tentang
+# Angka Kecukupan Gizi, Lampiran I Tabel 1 (dibaca dari salinan resmi JDIH BPK, peraturan.bpk.go.id/Details/138621,
+# 2026-10-16). Nilai untuk berat/tinggi rujukan tiap kelompok; faktor aktivitas fisik 1,26 (4-64 th) dan 1,12 (lansia)
+# sudah termasuk (catatan kaki 2). Tambahan hamil/menyusui di luar cakupan KIRA.
+# (umur_min, umur_maks_inklusif, energi): umur di atas kelompok terakhir memakai kelompok terakhir.
+AKG_ENERGY_KCAL = {
+    "male": [(19, 29, 2650), (30, 49, 2550), (50, 64, 2150), (65, 80, 1800), (81, 200, 1600)],
+    "female": [(19, 29, 2250), (30, 49, 2150), (50, 64, 1800), (65, 80, 1550), (81, 200, 1400)],
+}
+# ASUMSI KIRA (bukan terapi gizi medis): bila IMT >= 25 dan tujuan menurunkan berat, kurangi 400 kkal/hari (tengah
+# rentang 300-500 yang lazim), tidak di bawah 1.500 kkal (laki-laki) / 1.200 kkal (perempuan). Arahkan ke ahli gizi.
+ENERGY_DEFICIT_KCAL = 400
+ENERGY_FLOOR_KCAL = {"male": 1500, "female": 1200}
+# ASUMSI KIRA: bawaan bila umur/jenis kelamin belum diisi (AKG perempuan 30-49 tahun, nilai tengah dewasa).
+ENERGY_DEFAULT_KCAL = 2150
+# ASUMSI KIRA: pembagian energi dan batas harian per waktu makan.
+MEAL_SPLIT = {"breakfast": 0.25, "lunch": 0.35, "dinner": 0.30, "snack": 0.10}
+# Tidur: SUMBER (sekunder, konsensus): AASM/SRS (Watson dkk., J Clin Sleep Med 2015;11:591) dewasa 7 jam atau lebih;
+# rentang 7-9 jam. Target 8 jam bila rata-rata terkini < 7: keputusan KIRA.
+SLEEP_TARGET_RANGE = (7.0, 9.0)
+SLEEP_CATCHUP_TARGET = 8.0
+# Aktivitas: SUMBER (primer): WHO 2020 Guidelines on physical activity: dewasa 150-300 menit intensitas sedang per
+# minggu dan penguatan otot >= 2 hari per minggu. ASUMSI KIRA: tanjakan untuk yang jauh di bawah target dimulai dari
+# max(30, 1,2 x rata-rata mingguan 2 minggu terakhir) dan naik paling banyak 20% per minggu sampai 150.
+EXERCISE_WEEKLY_TARGET = 150
+EXERCISE_RAMP_MIN = 30
+EXERCISE_RAMP_FACTOR = 1.2

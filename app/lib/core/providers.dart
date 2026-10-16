@@ -171,3 +171,6 @@ final gateProvider = Provider<Gate>((ref) {
         error: (_, _) => Gate.ready,
       );
 });
+
+/// Jam sekarang; diganti di tes supaya label "Hari ini"/"Kemarin" pasti.
+final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);

@@ -13,11 +13,14 @@ import '../features/doctor/doctor_summary_screen.dart';
 import '../features/family/family_screen.dart';
 import '../features/goals/goals_screen.dart';
 import '../features/health/health_screen.dart';
+import '../features/history/history_screen.dart';
 import '../features/trends/trends_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
+import '../features/plan/plan_preferences_screen.dart';
+import '../features/plan/plan_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/reminders/reminders_screen.dart';
-import '../features/projection/projection_screen.dart';
+import '../features/home/home_screen.dart';
 import '../shared/app_shell.dart';
 import 'providers.dart';
 
@@ -59,11 +62,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/doctor', builder: (_, _) => const DoctorSummaryScreen()),
       GoRoute(path: '/health', builder: (_, _) => const HealthScreen()),
       GoRoute(path: '/trends', builder: (_, _) => const TrendsScreen()),
+      GoRoute(path: '/plan', builder: (_, _) => const PlanScreen()),
+      GoRoute(path: '/plan/preferences', builder: (_, _) => const PlanPreferencesScreen()),
+      GoRoute(path: '/projection', redirect: (_, _) => '/home'), // tab lama "10 Tahun" kini bagian Beranda
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AppShell(shell: shell),
         branches: [
           StatefulShellBranch(routes: [GoRoute(path: '/chat', builder: (_, _) => const ChatScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/projection', builder: (_, _) => const ProjectionScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/home', builder: (_, _) => const HomeScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/history', builder: (_, _) => const HistoryScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/check', builder: (_, _) => const CheckScreen())]),
         ],
       ),
