@@ -11,6 +11,7 @@ from app.repos import foods as foods_repo
 from app.repos import logs as logs_repo
 from app.schemas.api import ItemPatch, LogItemOut, LogOut, LogPatch
 from app.security import current_user_id
+from app.services import history as history_service
 from app.services.nutrition_items import item_data
 from app.timeutil import local_date, utcnow
 
@@ -36,6 +37,17 @@ async def list_logs(
     day = date_ or local_date(utcnow())
     rows = await logs_repo.on_date(session, user_id, day)
     return {"date": day.isoformat(), "logs": [log_out(lg, items) for lg, items in rows]}
+
+
+@router.get("/history")
+async def history(
+    days: int = Query(default=14, ge=1, le=history_service.MAX_DAYS),
+    before: date | None = Query(default=None),
+    user_id: uuid.UUID = Depends(current_user_id),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Riwayat makan per hari (terbaru dulu) dengan gizi tiap item, total harian, dan batas harian sesuai mode."""
+    return await history_service.meal_history(session, user_id, days, before)
 
 
 FREQUENT_MIN_COUNT = 2
