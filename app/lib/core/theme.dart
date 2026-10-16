@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-/// Token desain KIRA. Standar kategori aplikasi kesehatan, dieksekusi penuh:
-/// permukaan putih dingin, satu hijau-teal tua sebagai primer, satu warna hangat
-/// (koral) khusus untuk "perlu perhatian", hijau lembut untuk jalur perbaikan.
-/// Merah hanya untuk darurat. Bentuk: kartu 24, input/chip 16, tombol pil.
+/// Token desain KIRA (docs/superpowers/design/kira-visual-direction.md). Terang: permukaan putih dingin; gelap:
+/// abu-abu gelap ala Discord, bukan hitam pekat. Hijau-teal sebagai primer, kuning/amber hangat khusus untuk
+/// "perlu perhatian" agar tidak menakut-nakuti, hijau untuk jalur perbaikan. Merah hanya untuk darurat.
+/// Bentuk: kartu 18, input 14, chip 10, tombol pil.
 class KiraSpace {
   static const double xs = 4, sm = 8, md = 12, lg = 16, xl = 24, xxl = 32;
 }
 
 class KiraRadius {
-  static const double card = 24, field = 16, chip = 12;
+  static const double card = 18, field = 14, chip = 10;
 }
 
 /// Warna semantik di luar peran Material 3.
@@ -36,24 +36,24 @@ class KiraColors extends ThemeExtension<KiraColors> {
   final Color chartBetter;
 
   static const light = KiraColors(
-    attention: Color(0xFFB8492A),
-    attentionContainer: Color(0xFFFFE3D8),
-    onAttentionContainer: Color(0xFF5A1D0B),
+    attention: Color(0xFF8A6A00),
+    attentionContainer: Color(0xFFFFF4C2),
+    onAttentionContainer: Color(0xFF3C3518),
     improve: Color(0xFF1F7A4A),
     improveContainer: Color(0xFFD9F2E4),
     onImproveContainer: Color(0xFF06331D),
-    chartNow: Color(0xFFD9603B),
+    chartNow: Color(0xFFB07F00),
     chartBetter: Color(0xFF0B6E6A),
   );
 
   static const dark = KiraColors(
-    attention: Color(0xFFFFB59C),
-    attentionContainer: Color(0xFF5A2410),
-    onAttentionContainer: Color(0xFFFFE3D8),
-    improve: Color(0xFF8BD8AB),
+    attention: Color(0xFFFEE75C),
+    attentionContainer: Color(0xFF3C3518),
+    onAttentionContainer: Color(0xFFFFF1A8),
+    improve: Color(0xFF6FD3CB),
     improveContainer: Color(0xFF14432B),
     onImproveContainer: Color(0xFFD9F2E4),
-    chartNow: Color(0xFFFF9B7A),
+    chartNow: Color(0xFFFEE75C),
     chartBetter: Color(0xFF6FD3CB),
   );
 
@@ -117,10 +117,10 @@ const _lightScheme = ColorScheme(
   onSecondary: Color(0xFFFFFFFF),
   secondaryContainer: Color(0xFFDCE8E6),
   onSecondaryContainer: Color(0xFF0D1F1D),
-  tertiary: Color(0xFFB8492A),
+  tertiary: Color(0xFF8A6A00),
   onTertiary: Color(0xFFFFFFFF),
-  tertiaryContainer: Color(0xFFFFE3D8),
-  onTertiaryContainer: Color(0xFF5A1D0B),
+  tertiaryContainer: Color(0xFFFFF4C2),
+  onTertiaryContainer: Color(0xFF3C3518),
   error: Color(0xFFB3261E),
   onError: Color(0xFFFFFFFF),
   errorContainer: Color(0xFFF9DEDC),
@@ -151,31 +151,31 @@ const _darkScheme = ColorScheme(
   onSecondary: Color(0xFF1E3532),
   secondaryContainer: Color(0xFF334B48),
   onSecondaryContainer: Color(0xFFDCE8E6),
-  tertiary: Color(0xFFFFB59C),
-  onTertiary: Color(0xFF5A1D0B),
-  tertiaryContainer: Color(0xFF5A2410),
-  onTertiaryContainer: Color(0xFFFFE3D8),
+  tertiary: Color(0xFFFEE75C),
+  onTertiary: Color(0xFF3C3518),
+  tertiaryContainer: Color(0xFF3C3518),
+  onTertiaryContainer: Color(0xFFFFF1A8),
   error: Color(0xFFF2B8B5),
   onError: Color(0xFF601410),
   errorContainer: Color(0xFF8C1D18),
   onErrorContainer: Color(0xFFF9DEDC),
-  surface: Color(0xFF0E1514),
-  onSurface: Color(0xFFE3EDEB),
-  onSurfaceVariant: Color(0xFFA3B5B2),
-  surfaceContainerLowest: Color(0xFF0A100F),
-  surfaceContainerLow: Color(0xFF151F1E),
-  surfaceContainer: Color(0xFF182322),
-  surfaceContainerHigh: Color(0xFF212D2C),
-  surfaceContainerHighest: Color(0xFF2B3837),
-  outline: Color(0xFF889A97),
-  outlineVariant: Color(0xFF3A4A48),
+  surface: Color(0xFF313338),
+  onSurface: Color(0xFFF2F3F5),
+  onSurfaceVariant: Color(0xFFB5BAC1),
+  surfaceContainerLowest: Color(0xFF2B2D31),
+  surfaceContainerLow: Color(0xFF2B2D31),
+  surfaceContainer: Color(0xFF35373C),
+  surfaceContainerHigh: Color(0xFF383A40),
+  surfaceContainerHighest: Color(0xFF404249),
+  outline: Color(0xFF80848E),
+  outlineVariant: Color(0xFF4E5058),
   shadow: Color(0xFF000000),
-  inverseSurface: Color(0xFFE3EDEB),
-  onInverseSurface: Color(0xFF223130),
+  inverseSurface: Color(0xFFF2F3F5),
+  onInverseSurface: Color(0xFF313338),
   inversePrimary: Color(0xFF0B6E6A),
 );
 
-/// Skala tipe Material 3, satu keluarga (Figtree) dengan kontras bobot.
+/// Skala tipe Material 3, satu keluarga (Figtree). Isi w400, judul w600, angka besar w800.
 TextTheme _textTheme(Color ink, Color muted) {
   TextStyle s(double size, double height, FontWeight w, {double ls = 0, Color? color}) => TextStyle(
         fontFamily: 'Figtree',
@@ -189,18 +189,18 @@ TextTheme _textTheme(Color ink, Color muted) {
     displayLarge: s(57, 64, FontWeight.w800, ls: -1),
     displayMedium: s(45, 52, FontWeight.w800, ls: -0.5),
     displaySmall: s(36, 44, FontWeight.w800),
-    headlineLarge: s(32, 40, FontWeight.w700),
-    headlineMedium: s(28, 36, FontWeight.w700),
-    headlineSmall: s(24, 32, FontWeight.w700),
-    titleLarge: s(22, 28, FontWeight.w700),
-    titleMedium: s(16, 24, FontWeight.w700, ls: 0.1),
-    titleSmall: s(14, 20, FontWeight.w700, ls: 0.1),
-    bodyLarge: s(16, 24, FontWeight.w500, ls: 0.15),
-    bodyMedium: s(14, 20, FontWeight.w500, ls: 0.2),
-    bodySmall: s(12, 16, FontWeight.w500, ls: 0.3, color: muted),
-    labelLarge: s(14, 20, FontWeight.w700, ls: 0.1),
-    labelMedium: s(12, 16, FontWeight.w700, ls: 0.4),
-    labelSmall: s(11, 16, FontWeight.w700, ls: 0.5, color: muted),
+    headlineLarge: s(32, 40, FontWeight.w600),
+    headlineMedium: s(28, 36, FontWeight.w600),
+    headlineSmall: s(24, 32, FontWeight.w600),
+    titleLarge: s(22, 28, FontWeight.w600),
+    titleMedium: s(16, 24, FontWeight.w600, ls: 0.1),
+    titleSmall: s(14, 20, FontWeight.w600, ls: 0.1),
+    bodyLarge: s(16, 24, FontWeight.w400, ls: 0.15),
+    bodyMedium: s(14, 20, FontWeight.w400, ls: 0.2),
+    bodySmall: s(12, 16, FontWeight.w400, ls: 0.3, color: muted),
+    labelLarge: s(14, 20, FontWeight.w600, ls: 0.1),
+    labelMedium: s(12, 16, FontWeight.w600, ls: 0.4),
+    labelSmall: s(11, 16, FontWeight.w600, ls: 0.5, color: muted),
   );
 }
 
@@ -229,7 +229,7 @@ ThemeData _build(ColorScheme scheme, KiraColors kira) {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(KiraRadius.card),
-        side: BorderSide(color: scheme.outlineVariant),
+        side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.25)),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(

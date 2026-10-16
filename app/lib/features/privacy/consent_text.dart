@@ -65,11 +65,15 @@ class ConsentBody extends StatelessWidget {
 Future<void> showConsentSheet(BuildContext context) => showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       showDragHandle: true,
       builder: (ctx) => DraggableScrollableSheet(
         expand: false,
-        initialChildSize: 0.8,
-        maxChildSize: 0.95,
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 1,
+        snap: true,
+        snapSizes: const [0.6],
         builder: (_, controller) => ListView(
           key: const Key('consent_sheet'),
           controller: controller,

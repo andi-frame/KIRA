@@ -25,7 +25,7 @@ Future<void> tickConsent(WidgetTester tester) async {
 }
 
 Future<void> openRegister(WidgetTester tester) async {
-  await tester.tap(find.text('Daftar').first);
+  await tester.tap(find.byKey(const Key('auth_toggle')));
   await tester.pumpAndSettle();
 }
 
