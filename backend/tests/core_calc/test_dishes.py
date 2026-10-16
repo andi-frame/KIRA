@@ -1,6 +1,6 @@
 import pytest
 
-from app.core_calc.dishes import DishComponent, DishRecord, expand_dish, match_dish, scale_for
+from app.core_calc.dishes import DishComponent, DishRecord, expand_dish, match_dish, match_dish_exact, scale_for
 from app.core_calc.nutrition import nutrition_for
 from tests.core_calc.seed_data import seed_dishes, seed_foods
 
@@ -69,3 +69,26 @@ def test_label_resep_dipakai_bila_ada():
 def test_komponen_tanpa_makanan_di_tabel_dilewati():
     dish = DishRecord("x", "X", (), 150, (DishComponent("nasi_putih", 100), DishComponent("tidak_ada", 50)))
     assert [p.food.id for p in expand_dish(dish, seed_foods())] == ["nasi_putih"]
+
+
+@pytest.mark.parametrize("query", [
+    "nasi ayam katsu scrambled egg",  # "nasi ayam" ada di alias nasi ayam goreng, tetapi katsu dan scrambled egg bukan bagian resep itu
+    "nasi ayam katsu", "nasi ayam bakar madu", "nasi ayam goreng keju",
+])
+def test_kata_makanan_lain_di_kueri_tidak_dipaksa_menjadi_hidangan_yang_hanya_mirip(query):
+    assert match_dish(query, dishes()) is None
+
+
+@pytest.mark.parametrize("query,expected", [
+    ("ayam geprek level 5", "ayam_geprek"), ("2 porsi ayam geprek", "ayam_geprek"), ("nasi ayam goreng", "nasi_ayam_goreng"),
+    ("pecel lele level 3", "pecel_lele"), ("ayam penyet pedas banyak", "ayam_penyet"),
+])
+def test_kata_pelengkap_dan_angka_tidak_mengubah_hidangan(query, expected):
+    assert match_dish(query, dishes()).id == expected
+
+
+def test_pencocokan_persis_hanya_nama_atau_alias():
+    assert match_dish_exact("nasi ayam", dishes()).id == "nasi_ayam_goreng"
+    assert match_dish_exact("Ayam Geprek", dishes()).id == "ayam_geprek"
+    assert match_dish_exact("ayam geprek level 5", dishes()) is None
+    assert match_dish_exact("", dishes()) is None
