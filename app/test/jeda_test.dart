@@ -43,6 +43,15 @@ class FakeJedaBridge implements JedaBridge {
   @override
   Future<void> openAppInfo() async => appInfoOpened++;
 
+  int batteryOpened = 0;
+  JedaDiagnostics? diag;
+
+  @override
+  Future<void> openBatterySettings() async => batteryOpened++;
+
+  @override
+  Future<JedaDiagnostics?> diagnostics() async => diag;
+
   @override
   Future<List<JedaApp>> installedApps() async => installed;
 

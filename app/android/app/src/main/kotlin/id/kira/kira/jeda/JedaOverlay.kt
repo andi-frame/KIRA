@@ -240,12 +240,22 @@ class JedaOverlay private constructor(private val context: Context, val target: 
          * Tampilkan [cards] di utas utama. Mengganti kartu yang sedang tampil. [target] adalah aplikasi yang ditahan:
          * begitu pengguna berpindah ke aplikasi lain (mis. menekan Home), kartu ikut hilang.
          */
-        fun show(context: Context, cards: List<Card>, target: String, targetLabel: String?, preview: Boolean) {
+        fun show(
+            context: Context,
+            cards: List<Card>,
+            target: String,
+            targetLabel: String?,
+            preview: Boolean,
+            onResult: ((error: String?) -> Unit)? = null,
+        ) {
             Handler(Looper.getMainLooper()).post {
                 try {
                     JedaOverlay(context.applicationContext, target).show(cards, targetLabel, preview)
-                } catch (_: Exception) {
-                    // izin dicabut di tengah jalan atau jendela ditolak sistem: lebih baik tidak menahan apa pun
+                    onResult?.invoke(null)
+                } catch (e: Exception) {
+                    // izin dicabut di tengah jalan atau jendela ditolak sistem: lebih baik tidak menahan apa pun,
+                    // tetapi alasannya dicatat agar layar status bisa menjelaskannya.
+                    onResult?.invoke(e.javaClass.simpleName + (e.message?.let { ": $it" } ?: ""))
                 }
             }
         }

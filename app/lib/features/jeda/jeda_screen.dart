@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +8,7 @@ import '../../shared/widgets.dart';
 import 'jeda_bridge.dart';
 import 'jeda_controller.dart';
 import 'jeda_models.dart';
+import 'jeda_status.dart';
 
 /// Pengaturan Jeda Sosmed. Mati sampai pengguna menyalakannya, dan tiap izin dijelaskan sebelum diminta.
 class JedaScreen extends ConsumerStatefulWidget {
@@ -167,6 +170,8 @@ class _JedaScreenState extends ConsumerState<JedaScreen> with WidgetsBindingObse
                     ),
                 ]),
               ),
+              const SizedBox(height: KiraSpace.lg),
+              _StatusCard(bridge: bridge, settings: s, ready: state.permissions.ready),
               if (state.running) ...[
                 const SizedBox(height: KiraSpace.lg),
                 Text('Lihat contohnya sekarang', style: context.text.titleSmall),
@@ -238,6 +243,118 @@ class _Permissions extends StatelessWidget {
           _RestrictedHelp(bridge: bridge),
         ],
       ]),
+    );
+  }
+}
+
+/// "Status penjagaan": layanan hidup atau tidak, aplikasi terakhir yang terdeteksi, dan mengapa kartu tampil atau tidak
+/// sekarang. Dimuat ulang tiap 3 detik selama layar terbuka, jadi bisa ditonton sambil berpindah ke Instagram dan kembali.
+class _StatusCard extends StatefulWidget {
+  const _StatusCard({required this.bridge, required this.settings, required this.ready});
+  final JedaBridge bridge;
+  final JedaSettings settings;
+  final bool ready;
+
+  @override
+  State<_StatusCard> createState() => _StatusCardState();
+}
+
+class _StatusCardState extends State<_StatusCard> {
+  JedaDiagnostics? _d;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final d = await widget.bridge.diagnostics();
+    if (mounted) setState(() => _d = d);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final d = _d;
+    if (d == null) return const SizedBox.shrink();
+    final now = DateTime.now();
+    final hint = batteryHint(d);
+    Widget line(IconData icon, Color? color, String key, String text) => Padding(
+          padding: const EdgeInsets.only(top: KiraSpace.sm),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: KiraSpace.sm),
+            Expanded(child: Text(text, key: Key(key), style: context.text.bodyMedium)),
+          ]),
+        );
+    final ok = context.kira.improve;
+    final warn = context.scheme.error;
+    return Card(
+      key: const Key('jeda_status'),
+      child: Padding(
+        padding: const EdgeInsets.all(KiraSpace.lg),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Expanded(child: Text('Status penjagaan', style: context.text.titleSmall)),
+            IconButton(key: const Key('jeda_status_refresh'), tooltip: 'Muat ulang status', icon: const Icon(Icons.refresh), onPressed: _load),
+          ]),
+          line(
+            d.serviceAlive ? Icons.check_circle_outline : Icons.error_outline,
+            d.serviceAlive ? ok : warn,
+            'jeda_status_service',
+            d.serviceAlive
+                ? 'Layanan berjalan (terakhir aktif ${ago(d.lastTickAt, now)}).'
+                : widget.ready
+                    ? 'Layanan TIDAK berjalan (terakhir aktif ${ago(d.lastTickAt, now)}). Biasanya dimatikan penghemat baterai. '
+                        'Tutup lalu buka KIRA untuk menyalakannya lagi, dan cek penghemat baterai di bawah.'
+                    : 'Layanan belum berjalan karena izin belum lengkap.',
+          ),
+          line(
+            Icons.visibility_outlined,
+            null,
+            'jeda_status_front',
+            d.lastFrontLabel == null
+                ? 'Belum ada aplikasi lain yang terdeteksi. Buka aplikasi lain lalu kembali ke sini; bila tetap kosong, izin '
+                    '"Akses penggunaan" belum benar-benar aktif.'
+                : 'Aplikasi terakhir yang terdeteksi: ${d.lastFrontLabel} (${ago(d.lastFrontAt, now)}).',
+          ),
+          if (d.lastGuardedLabel != null)
+            line(
+              Icons.hourglass_bottom,
+              null,
+              'jeda_status_guarded',
+              'Terakhir kamu membuka ${d.lastGuardedLabel} (${ago(d.lastGuardedAt, now)}). ${lastReasonText(d)}',
+            ),
+          line(
+            d.nowCode == 'ready' ? Icons.check_circle_outline : Icons.info_outline,
+            d.nowCode == 'ready' ? ok : null,
+            'jeda_status_now',
+            nowExplanation(d, widget.settings),
+          ),
+          if (d.lastError.isNotEmpty) line(Icons.bug_report_outlined, warn, 'jeda_status_error', 'Galat terakhir: ${d.lastError}'),
+          if (hint != null) ...[
+            line(Icons.battery_alert_outlined, warn, 'jeda_status_battery', hint),
+            Padding(
+              padding: const EdgeInsets.only(top: KiraSpace.sm),
+              child: OutlinedButton.icon(
+                key: const Key('jeda_open_battery'),
+                onPressed: widget.bridge.openBatterySettings,
+                icon: const Icon(Icons.battery_saver_outlined),
+                label: const Text('Atur penghemat baterai'),
+              ),
+            ),
+          ],
+          line(Icons.history, null, 'jeda_status_total', 'Total kartu yang tampil sejak dinyalakan: ${d.shownTotal}.'),
+        ]),
+      ),
     );
   }
 }

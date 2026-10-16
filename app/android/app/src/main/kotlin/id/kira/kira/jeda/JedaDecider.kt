@@ -51,6 +51,25 @@ data class GateState(
     val factIndex: Int = 0,
 )
 
+/**
+ * Mengapa kartu tampil atau tidak pada saat tertentu, untuk layar status di aplikasi. [code]:
+ * ready | off | no_apps | skip_day | grace | no_content | outside_window | cap_reached | already_logged.
+ */
+data class Explanation(val code: String, val kinds: List<String> = emptyList(), val graceUntil: Long = 0)
+
+/** Kegiatan penjagaan yang dicatat layanan untuk layar status (disimpan di ponsel, tidak dikirim ke mana pun). */
+data class Diag(
+    val startedAt: Long = 0,
+    val lastTickAt: Long = 0,
+    val lastFront: String? = null,
+    val lastFrontAt: Long = 0,
+    val lastGuardedAt: Long = 0,
+    val lastGuarded: String? = null,
+    val lastReason: String = "",
+    val lastError: String = "",
+    val shownTotal: Int = 0,
+)
+
 object JedaDecider {
     /** Satu jenis kartu tampil paling banyak sekian kali sehari, supaya tidak menjadi gangguan. */
     const val MAX_PER_KIND = 3
@@ -89,6 +108,40 @@ object JedaDecider {
         if (payload != null) out += planned(now, minute, date, day, settings, payload, state, sameDayAsPayload)
         factCard(settings, state)?.let { out += it }
         return out
+    }
+
+    /** Jenis kartu terjadwal yang jendela waktunya sedang berlangsung (belum menimbang jatah atau isi kartu). */
+    fun activeKinds(minute: Int, settings: Settings): List<String> {
+        val out = mutableListOf<String>()
+        if (minute >= settings.eveningStart) out += "evening"
+        if (minute >= settings.nightStart || minute < NIGHT_END) out += "night"
+        if (inWindow(minute, settings.morningStart, MORNING_LENGTH) && minute < settings.eveningStart) out += "morning"
+        return out
+    }
+
+    /** Alasan keputusan [due] pada saat ini, dalam bentuk kode yang diterjemahkan layar status. Fungsi murni. */
+    fun explain(
+        now: Long,
+        minute: Int,
+        date: String,
+        day: String,
+        settings: Settings,
+        payload: Payload?,
+        state: GateState,
+        sameDayAsPayload: Boolean,
+    ): Explanation {
+        if (!settings.enabled) return Explanation("off")
+        if (settings.apps.isEmpty()) return Explanation("no_apps")
+        if (state.skipDay == day) return Explanation("skip_day")
+        if (settings.useGrace && now < state.graceUntil) return Explanation("grace", graceUntil = state.graceUntil)
+        val cards = due(now, minute, date, day, settings, payload, state, sameDayAsPayload)
+        if (cards.isNotEmpty()) return Explanation("ready", cards.map { it.kind })
+        if (payload == null && !(settings.funFact && settings.facts.isNotEmpty())) return Explanation("no_content")
+        val active = activeKinds(minute, settings)
+        if (active.isEmpty()) return Explanation("outside_window")
+        val counts = if (state.countDay == day) state.counts else emptyMap()
+        val open = active.filter { (counts[it] ?: 0) < MAX_PER_KIND }
+        return if (open.isEmpty()) Explanation("cap_reached", active) else Explanation("already_logged", open)
     }
 
     /** Fun fact berikutnya sebagai kartu tanpa tombol aksi. Tidak dibatasi per hari: pengguna sendiri yang memintanya. */

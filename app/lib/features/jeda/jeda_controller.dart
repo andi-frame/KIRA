@@ -80,10 +80,15 @@ class JedaController extends Notifier<JedaState> {
     var settings = next;
     if (settings.enabled && settings.apps.isEmpty && !state.settings.enabled) {
       // Pertama kali menyala: mulai dari aplikasi sosmed yang terpasang, pengguna boleh mengubahnya.
-      settings = settings.copyWith(apps: [
-        for (final a in state.installed)
-          if (defaultSocialApps.contains(a.package)) a.package,
-      ]);
+      // Fun fact ikut menyala di awal: kartu terjadwal hanya tampil di jam tertentu, sehingga tanpa itu Jeda tampak "tidak
+      // bekerja" di sebagian besar hari. Pengguna bisa mematikannya di layar pengaturan.
+      settings = settings.copyWith(
+        funFact: true,
+        apps: [
+          for (final a in state.installed)
+            if (defaultSocialApps.contains(a.package)) a.package,
+        ],
+      );
     }
     state = state.copyWith(settings: settings);
     await ref.read(prefsStoreProvider).write(_prefsKey, settings.enabled ? settings.toJson() : null);

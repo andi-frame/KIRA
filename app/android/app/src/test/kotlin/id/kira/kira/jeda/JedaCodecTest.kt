@@ -87,4 +87,13 @@ class JedaCodecTest {
         assertEquals(0, JedaCodec.state("""{"fact_index":-3}""").factIndex)
         assertEquals(0, JedaCodec.state("bukan json").factIndex)
     }
+
+    @Test fun `catatan kegiatan tersimpan dan terbaca, rusak jatuh ke kosong`() {
+        val d = Diag(startedAt = 5, lastTickAt = 9, lastFront = "com.instagram.android", lastFrontAt = 8, lastGuarded = "com.instagram.android",
+            lastGuardedAt = 8, lastReason = "outside_window", lastError = "", shownTotal = 3)
+        assertEquals(d, JedaCodec.diag(JedaCodec.diagJson(d)))
+        assertEquals(Diag(), JedaCodec.diag("bukan json"))
+        assertEquals(Diag(), JedaCodec.diag(null))
+        assertNull(JedaCodec.diag(JedaCodec.diagJson(Diag())).lastFront)
+    }
 }

@@ -73,20 +73,25 @@ void main() {
       expect((s.funFact, s.useGrace, s.graceMinutes), (false, true, 60));
     });
 
-    testWidgets('saklar fun fact dikirim ke perangkat bersama fakta dan tombol contohnya muncul', (tester) async {
+    testWidgets('menyalakan Jeda pertama kali ikut menyalakan fun fact; saklarnya bisa dimatikan dan dinyalakan lagi', (tester) async {
       final (_, bridge) = await pump(tester);
       await tester.tap(find.byKey(const Key('jeda_enabled')));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('jeda_preview_fact')), findsNothing);
-
-      await tester.ensureVisible(find.byKey(const Key('jeda_fun_fact')));
-      await tester.tap(find.byKey(const Key('jeda_fun_fact')));
-      await tester.pumpAndSettle();
       expect(bridge.applied.last.settings.funFact, isTrue);
+      expect(bridge.applied.last.settings.toBridgeMap()['facts'], isNotEmpty);
       await tester.ensureVisible(find.byKey(const Key('jeda_preview_fact')));
       await tester.tap(find.byKey(const Key('jeda_preview_fact')));
       await tester.pumpAndSettle();
       expect(bridge.previews, ['fact']);
+
+      await tester.ensureVisible(find.byKey(const Key('jeda_fun_fact')));
+      await tester.tap(find.byKey(const Key('jeda_fun_fact')));
+      await tester.pumpAndSettle();
+      expect(bridge.applied.last.settings.funFact, isFalse);
+      expect(find.byKey(const Key('jeda_preview_fact')), findsNothing);
+      await tester.tap(find.byKey(const Key('jeda_fun_fact')));
+      await tester.pumpAndSettle();
+      expect(bridge.applied.last.settings.funFact, isTrue);
     });
 
     testWidgets('tanpa sinyal: fakta tetap sampai ke perangkat karena ikut di pengaturan, bukan di isi kartu', (tester) async {

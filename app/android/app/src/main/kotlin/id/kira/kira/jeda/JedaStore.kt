@@ -26,6 +26,9 @@ class JedaStore(context: Context) {
 
     fun saveState(s: GateState) = prefs.edit().putString(KEY_STATE, JedaCodec.stateJson(s)).apply()
 
+    fun diag(): Diag = JedaCodec.diag(prefs.getString(KEY_DIAG, null))
+    fun saveDiag(d: Diag) = prefs.edit().putString(KEY_DIAG, JedaCodec.diagJson(d)).apply()
+
     fun clear() = prefs.edit().clear().apply()
 
     /** Rute yang diminta tombol kartu; diambil sekali oleh Flutter. */
@@ -42,6 +45,7 @@ class JedaStore(context: Context) {
         private const val KEY_PAYLOAD = "payload"
         private const val KEY_STATE = "state"
         private const val KEY_ROUTE = "route"
+        private const val KEY_DIAG = "diag"
 
         fun dateKey(cal: Calendar): String =
             "%04d-%02d-%02d".format(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))

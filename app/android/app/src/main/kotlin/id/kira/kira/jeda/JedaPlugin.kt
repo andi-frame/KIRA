@@ -31,6 +31,8 @@ class JedaPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             "openUsageAccess" -> result.success(openSettings(AndroidSettings.ACTION_USAGE_ACCESS_SETTINGS, withPackage = false))
             "openOverlay" -> result.success(openSettings(AndroidSettings.ACTION_MANAGE_OVERLAY_PERMISSION, withPackage = true))
             "openAppInfo" -> result.success(openSettings(AndroidSettings.ACTION_APPLICATION_DETAILS_SETTINGS, withPackage = true))
+            "openBatterySettings" -> result.success(openSettings(AndroidSettings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS, withPackage = false))
+            "diagnostics" -> result.success(diagnostics(store))
             "installedApps" -> result.success(installedApps())
             "apply" -> {
                 store.saveConfig(call.argument<String>("settings") ?: "{}", call.argument<String>("payload"))
@@ -73,6 +75,46 @@ class JedaPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
                 null
             }
         }
+    }
+
+    /** Keadaan penjagaan untuk layar status: layanan hidup atau tidak, aplikasi terakhir terdeteksi, dan mengapa kartu tampil atau tidak sekarang. */
+    private fun diagnostics(store: JedaStore): Map<String, Any?> {
+        val now = System.currentTimeMillis()
+        val d = store.diag()
+        val settings = store.settings()
+        val payload = store.payload()
+        val date = JedaStore.dateKey(now)
+        val why = JedaDecider.explain(
+            now, JedaStore.minuteOfDay(now), date, JedaStore.dayKey(now), settings, payload, store.state(),
+            payload != null && JedaStore.dateKey(payload.generatedAt) == date,
+        )
+        val pm = context.packageManager
+        fun label(pkg: String?): String? = pkg?.let {
+            try {
+                pm.getApplicationLabel(pm.getApplicationInfo(it, 0)).toString()
+            } catch (_: Exception) {
+                it
+            }
+        }
+        return mapOf(
+            "service_alive" to (d.lastTickAt > 0 && now - d.lastTickAt < 15_000),
+            "started_at" to d.startedAt,
+            "last_tick_at" to d.lastTickAt,
+            "last_front" to d.lastFront,
+            "last_front_label" to label(d.lastFront),
+            "last_front_at" to d.lastFrontAt,
+            "last_guarded_label" to label(d.lastGuarded),
+            "last_guarded_at" to d.lastGuardedAt,
+            "last_reason" to d.lastReason,
+            "last_error" to d.lastError,
+            "shown_total" to d.shownTotal,
+            "now_code" to why.code,
+            "now_kinds" to why.kinds,
+            "grace_until" to why.graceUntil,
+            "battery_ignored" to JedaPermissions.ignoringBatteryOptimizations(context),
+            "manufacturer" to android.os.Build.MANUFACTURER,
+            "sdk" to android.os.Build.VERSION.SDK_INT,
+        )
     }
 
     private fun preview(store: JedaStore, kind: String): Boolean {
