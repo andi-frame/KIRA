@@ -180,6 +180,9 @@ Spesifikasi: [`docs/spesifikasi-beranda-perencana.md`](docs/spesifikasi-beranda-
   `POST /plan/today/swap`. Penanda tensi "perhatian" menahan latihan baru. Tool agen baca-saja: `rencana_hari_ini`, `rencana_minggu`, `riwayat_makan`.
 - **Pengingat rencana:** WhatsApp (job tiap 5 menit, per preferensi, jam tenang, satu kali per bagian, maksimal 4 pesan/hari,
   "stop pengingat") dan notifikasi lokal opsional tanpa angka kesehatan yang tidak menggandakan pengingat WhatsApp.
+- **Jeda sosmed (Android, opsional):** sebelum Instagram, X, Facebook, TikTok, dan aplikasi lain yang dicentang pengguna terbuka, KIRA
+  menampilkan satu kartu: rencana pagi (olahraga, makan beserta contoh dan alasannya, tidur), ajakan mencatat malam hari (hanya bila ada
+  yang belum tercatat), pengingat tidur, dan info "sudah sempat cek?". Detail, izin, batasan, dan cara uji di `docs/jeda-sosmed.md`.
 
 ## Batasan yang disengaja
 
