@@ -75,6 +75,7 @@ flutter:
   assets:
     - assets/icon/icon.png
     - assets/mascot/kira-wave.png
+    - assets/mascot/kira-check.png
 
   fonts:
     - family: Figtree
