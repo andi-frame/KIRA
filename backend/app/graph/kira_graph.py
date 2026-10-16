@@ -180,7 +180,8 @@ async def _persist(session_factory, user_id: str, channel: str, user_text: str, 
     async with session_factory() as session:
         await messages_repo.save(session, uid, "user", user_text, channel, commit=False)
         await messages_repo.save(session, uid, "assistant", result.reply, channel,
-                                 tool_calls=result.tool_calls or None, commit=False)
+                                 tool_calls=result.tool_calls or None, commit=False,
+                                 meta={"log_ids": result.log_ids, "red_flag": result.red_flag})
         await session.commit()
 
 

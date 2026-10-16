@@ -30,6 +30,11 @@ def build_scheduler(session_factory) -> AsyncIOScheduler:
         id="weekly_summaries",
     )
     scheduler.add_job(
+        _wrap(session_factory, jobs.purge_old_chats),
+        CronTrigger(hour=0, minute=5, timezone=TIMEZONE),
+        id="purge_old_chats",
+    )
+    scheduler.add_job(
         _wrap(session_factory, jobs.evaluate_checks_for_all),
         CronTrigger(hour=2, minute=0, timezone=TIMEZONE),
         id="nightly_checks",

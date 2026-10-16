@@ -196,3 +196,10 @@ async def enqueue_family_nudges(session: AsyncSession) -> int:
         queued += 1
     await session.commit()
     return queued
+
+
+async def purge_old_chats(session: AsyncSession) -> int:
+    """Tengah malam WIB: obrolan hari-hari sebelumnya dibersihkan (satu riwayat obrolan per hari)."""
+    from app.repos import messages as messages_repo
+
+    return await messages_repo.purge_before_today(session)
