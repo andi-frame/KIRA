@@ -11,6 +11,7 @@ menghitung" tetap tampil karena pasangan pesan itu masuk ke riwayat, dan agent t
 import asyncio
 import json
 import logging
+import re
 
 from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
@@ -20,11 +21,16 @@ from app.tools import TOOLS
 
 log = logging.getLogger("kira.graph")
 
+PREFETCH_ID_PREFIX = "prefetch_"  # id panggilan tool yang disiapkan di sini, bukan diminta model
 MAX_FOODS = 4  # batas pencarian gizi per pesan; sisanya tetap bisa dicari agent bila diperlukan
 _BY_NAME = {t.name: t for t in TOOLS}
+# Pertanyaan tentang risiko/proyeksi: hitung_risiko pasti dipanggil agent (prompt mewajibkannya sebelum menyebut risiko).
+_RISK_WORDS = re.compile(r"\b(?:risiko|resiko|kemungkinan|peluang|proyeksi)\w*|\b10 tahun\b", re.IGNORECASE)
 
 
-def plan_calls(extraction: dict | None, notes: list[str] | None = None) -> list[tuple[str, dict]]:
+def plan_calls(
+    extraction: dict | None, notes: list[str] | None = None, text: str | None = None
+) -> list[tuple[str, dict]]:
     """Daftar (nama_tool, argumen) yang pasti berguna untuk pesan ini. Fungsi murni, mudah dites."""
     if not extraction:
         return []
@@ -51,6 +57,9 @@ def plan_calls(extraction: dict | None, notes: list[str] | None = None) -> list[
 
     elif intent == "result_input" and extraction.get("clinical_result"):
         calls.append(("hitung_risiko", {}))
+
+    if text and _RISK_WORDS.search(text) and not any(name == "hitung_risiko" for name, _ in calls):
+        calls.append(("hitung_risiko", {}))
     return calls
 
 
@@ -59,7 +68,7 @@ async def _run(name: str, args: dict, config: RunnableConfig):
 
 
 async def prefetch_tools(state: KiraState, config: RunnableConfig) -> dict:
-    calls = plan_calls(state.get("extraction"), state.get("notes"))
+    calls = plan_calls(state.get("extraction"), state.get("notes"), state.get("input_text"))
     if not calls:
         return {}
     results = await asyncio.gather(*[_run(n, a, config) for n, a in calls], return_exceptions=True)
@@ -68,7 +77,7 @@ async def prefetch_tools(state: KiraState, config: RunnableConfig) -> dict:
         if isinstance(result, Exception):  # satu tool gagal tidak boleh menjatuhkan jawaban; agent bisa mencoba sendiri
             log.warning("prefetch %s gagal: %s", name, result)
             continue
-        call_id = f"prefetch_{i}"
+        call_id = f"{PREFETCH_ID_PREFIX}{i}"
         tool_calls.append({"name": name, "args": args, "id": call_id, "type": "tool_call"})
         tool_messages.append(
             ToolMessage(content=json.dumps(result, ensure_ascii=False, default=str), tool_call_id=call_id, name=name)

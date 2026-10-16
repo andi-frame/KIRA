@@ -83,3 +83,20 @@ async def test_pesan_tanpa_catatan_tidak_menjalankan_tool_awal(session_maker, ma
     result = await run(uid, session_maker, input_text="halo")
     assert chat.call_count == 1 and result.tool_calls == []
     assert all(type(m).__name__ != "ToolMessage" for m in chat.seen[0])
+
+
+@pytest.mark.parametrize("text_", ["kalau aku kurangi gorengan, risikoku berubah gimana?", "Resikoku 10 tahun lagi gimana",
+                                   "kemungkinan aku kena diabetes berapa?"])
+def test_pertanyaan_risiko_menyiapkan_hitung_risiko(text_):
+    extraction = {"intent": "question_general", "items": [], "drinks": []}
+    assert plan_calls(extraction, text=text_) == [("hitung_risiko", {})]
+
+
+def test_hitung_risiko_tidak_disiapkan_dua_kali():
+    extraction = {"items": [], "drinks": [], "intent": "result_input", "clinical_result": {"kind": "hba1c", "value": {"percent": 5.9}}}
+    assert plan_calls(extraction, text="HbA1c 5,9, risikoku gimana?") == [("hitung_risiko", {})]
+
+
+def test_pertanyaan_biasa_tanpa_kata_risiko_tidak_menyiapkan_hitung_risiko():
+    assert plan_calls({"intent": "question_general", "items": [], "drinks": []}, text="halo KIRA, apa kabar?") == []
+
