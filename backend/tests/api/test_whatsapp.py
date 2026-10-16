@@ -132,3 +132,28 @@ async def test_no_reminder_when_the_user_already_checked_in_today(client, auth_h
         await logs_repo.add_log(s, uid, kind="sleep", source="text", occurred_at=datetime.now(timezone.utc),
                                 extracted={"hours": 6}, raw_text="x", items=[])
         assert await enqueue_reminders(s) == 0
+
+
+async def test_stop_pengingat_mematikan_kanal_tanpa_llm_dan_bisa_dinyalakan_lagi(client, auth_headers):
+    await link(client, auth_headers)
+    await client.put("/plan/preferences", json={"channels": {"whatsapp": True}}, headers=auth_headers)
+    chat = FakeChatModel(responses=[ai("tidak dipakai")])
+    extract = FakeExtractModel(QUESTION)
+    llm.set_models_for_tests(chat, extract)
+
+    reply = await say(client, "Stop pengingat")
+    assert "dimatikan" in reply and chat.call_count == 0 and extract.calls == []
+    prefs = (await client.get("/plan/preferences", headers=auth_headers)).json()
+    assert prefs["channels"]["whatsapp"] is False
+
+    assert "dinyalakan" in await say(client, "nyalakan pengingat")
+    assert (await client.get("/plan/preferences", headers=auth_headers)).json()["channels"]["whatsapp"] is True
+
+
+async def test_pertanyaan_rencana_lewat_whatsapp_memakai_tool_rencana(client, auth_headers):
+    await link(client, auth_headers)
+    chat = FakeChatModel(responses=[ai("Usulan hari ini sudah kusiapkan.")])
+    llm.set_models_for_tests(chat, FakeExtractModel(QUESTION))
+    await say(client, "rencana makan hari ini apa?")
+    tools = [m for m in chat.seen[0] if type(m).__name__ == "ToolMessage"]
+    assert [t.name for t in tools] == ["rencana_hari_ini"]  # disiapkan sebelum model, bukan dikarang
