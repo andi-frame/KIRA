@@ -14,6 +14,8 @@
   <p>
     <a href="https://github.com/andi-frame/KIRA/releases/latest/download/kira.apk"><strong>Download APK</strong></a>
     &nbsp;·&nbsp;
+    <a href="https://youtu.be/kZrauw0OmNg">Demo video</a>
+    &nbsp;·&nbsp;
     <a href="https://github.com/andi-frame/KIRA/releases/latest">Release notes</a>
   </p>
 </div>
@@ -146,9 +148,9 @@ safety_check → extract → save_logs → build_context → agent ⇄ tools →
 <div align="center">
   <table>
     <tr>
-      <td align="center"><img src="docs/screenshots/05-chat-checkin.png" alt="Chat check-in" width="200"/><br><b>Chat check-in</b></td>
       <td align="center"><img src="docs/screenshots/07-beranda.png" alt="Home" width="200"/><br><b>Home</b></td>
       <td align="center"><img src="docs/screenshots/07c-beranda-proyeksi.png" alt="10-year projection" width="200"/><br><b>10-year projection</b></td>
+      <td align="center"><img src="docs/screenshots/15-trends.png" alt="Trends" width="200"/><br><b>Trends and markers</b></td>
     </tr>
     <tr>
       <td align="center"><img src="docs/screenshots/08-check-followup.png" alt="Time to get checked" width="200"/><br><b>Time to get checked</b></td>
