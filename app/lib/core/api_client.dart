@@ -13,7 +13,8 @@ import '../shared/models.dart';
 /// Balasan KIRA melewati model bahasa (bisa beberapa kali memanggil tool): beri waktu lebih lama dari panggilan biasa.
 const Duration kChatTimeout = Duration(seconds: 150);
 
-const String kApiUrl = String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8000');
+/// Server yang sudah di-deploy. Untuk backend lokal: `--dart-define=API_URL=http://localhost:8000` (emulator Android: `http://10.0.2.2:8000`).
+const String kApiUrl = String.fromEnvironment('API_URL', defaultValue: 'https://kira-be.byhan.id');
 
 /// Error ramah pengguna dari API atau jaringan.
 class ApiException implements Exception {
