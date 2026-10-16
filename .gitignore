@@ -12,3 +12,6 @@ graphify-out/
 .playwright-mcp/
 .env.production
 backups/
+
+# Bahan kerja video demo (render, rekaman, aset); video final ada di docs/submission/
+docs/submission/video/
