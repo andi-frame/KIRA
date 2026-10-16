@@ -78,7 +78,7 @@ async def build_dashboard(session: AsyncSession, user_id: uuid.UUID, now: dateti
     goals = (await goals_service.list_goals(session, user_id))["goals"]
     plan = await plan_service.plan_today(session, user_id, now)
     plan_card = {
-        "meals": [{k: m.get(k) for k in ("slot", "label", "time", "title", "done", "over_budget")}
+        "meals": [{k: m.get(k) for k in ("slot", "label", "time", "title", "done", "over_budget", "eaten")}
                   | {"kcal": (m.get("totals") or {}).get("kcal")} for m in plan["meals"]],
         "exercise": plan["exercise"] and {k: plan["exercise"].get(k) for k in
                                           ("minutes", "activity", "time", "done", "done_minutes", "blocked", "strength")},

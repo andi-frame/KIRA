@@ -124,9 +124,22 @@ async def plan_today(session: AsyncSession, user_id: uuid.UUID, now: datetime | 
     todays = [(lg, items) for lg, items in rows if local_date(lg.occurred_at) == today]
     eaten = [i for lg, items in todays if lg.kind in ("meal", "drink") for i in items]
     consumed = {k: sum(float(getattr(i, k) or 0) for i in eaten) for k in ("kcal", "sugar_g", "sodium_mg", "fat_g")}
-    done = {meal_slot(lg) for lg, _ in todays if lg.kind == "meal"}
-    plan = day_plan(today, ctx, prefs, catalog, recent=recent_ids_before(today, ctx, prefs, catalog, offsets),
-                    offsets=offsets.get(today.isoformat()), consumed=consumed if eaten else None, done_slots=done)
+    meals_today = [(lg, items) for lg, items in todays if lg.kind == "meal"]
+    done = {meal_slot(lg) for lg, _ in meals_today}
+    # Yang sudah dimakan hari ini tidak diusulkan lagi untuk waktu makan berikutnya.
+    eaten_ids = {r.get("dish_id") or r.get("food_id") for lg, _ in meals_today
+                 for r in (lg.extracted or {}).get("resolved", []) if r.get("dish_id") or r.get("food_id")}
+    recent = recent_ids_before(today, ctx, prefs, catalog, offsets) + [eaten_ids]
+    plan = day_plan(today, ctx, prefs, catalog, recent=recent, offsets=offsets.get(today.isoformat()),
+                    consumed=consumed if eaten else None, done_slots=done)
+    # Bagian yang sudah dimakan menampilkan apa yang dicatat, bukan usulannya.
+    eaten_by_slot: dict[str, list[str]] = defaultdict(list)
+    for lg, items in meals_today:
+        for name in history.meal_view(lg, items)["title"].split(", "):
+            if name and name not in eaten_by_slot[meal_slot(lg)]:
+                eaten_by_slot[meal_slot(lg)].append(name)
+    for m in plan["meals"]:
+        m["eaten"] = ", ".join(eaten_by_slot[m["slot"]]) if m["done"] else None
     active_today = sum(float(lg.extracted.get("minutes", 0) or 0) for lg, _ in todays if lg.kind == "activity")
     if plan["exercise"]:
         plan["exercise"]["done_minutes"] = round(active_today, 1)

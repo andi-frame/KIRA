@@ -49,7 +49,7 @@ void main() {
         exercise: base.exercise, disclaimer: base.disclaimer,
         adapted: 'Disesuaikan dengan yang sudah kamu makan hari ini: sisa gula 10 g.',
         meals: [
-          const PlanMeal(slot: 'breakfast', label: 'sarapan', title: 'Roti telur', done: true),
+          const PlanMeal(slot: 'breakfast', label: 'sarapan', title: 'Roti telur', done: true, eaten: 'Bubur ayam komplit'),
           ...base.meals.skip(1),
         ],
       );
@@ -57,6 +57,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('plan_adapted')), findsOneWidget);
     expect(find.text('sudah tercatat'), findsOneWidget);
+    expect(find.text('Bubur ayam komplit'), findsOneWidget); // yang dimakan, bukan usulannya
+    expect(find.text('Usulan tadi: Roti telur'), findsOneWidget);
     expect(find.byKey(const Key('swap_breakfast')), findsNothing);
   });
 

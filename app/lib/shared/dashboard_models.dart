@@ -95,7 +95,7 @@ class PlanCard {
           (
             label: (m as Map<String, dynamic>)['label'] as String,
             time: m['time'] as String?,
-            title: m['title'] as String?,
+            title: ((m['done'] as bool?) ?? false) && m['eaten'] != null ? m['eaten'] as String : m['title'] as String?,
             done: (m['done'] as bool?) ?? false,
           ),
       ],

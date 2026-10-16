@@ -153,6 +153,16 @@ class _MealSlotCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = meal.totals;
     final heading = '${meal.label[0].toUpperCase()}${meal.label.substring(1)}${meal.time != null ? ' · ${meal.time!.replaceAll(':', '.')}' : ''}';
+    if (meal.done && meal.eaten != null) {
+      return _SlotCard(
+        key: Key('plan_meal_${meal.slot}'),
+        icon: Icons.restaurant_outlined,
+        heading: heading,
+        title: meal.eaten!,
+        done: true,
+        subtitle: meal.title == null ? null : 'Usulan tadi: ${meal.title}',
+      );
+    }
     return _SlotCard(
       key: Key('plan_meal_${meal.slot}'),
       icon: Icons.restaurant_outlined,

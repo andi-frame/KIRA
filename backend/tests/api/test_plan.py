@@ -108,3 +108,13 @@ async def test_waktu_makan_dari_ekstraksi_menang_atas_jam_catatan(client, auth_h
     await client.post("/chat/message", json={"text": "tadi siang ayam geprek"}, headers=auth_headers)
     done = {m["slot"] for m in (await get(client, auth_headers, "/plan/today"))["meals"] if m["done"]}
     assert done == {"lunch"}
+
+
+async def test_yang_sudah_dimakan_ditampilkan_dan_tidak_diusulkan_lagi(client, auth_headers):
+    install_models(extract={**LUNCH, "items": [{"name": "ayam geprek", "dish_id": "ayam_geprek", "meal_time": "lunch"}]})
+    await client.post("/chat/message", json={"text": "tadi siang ayam geprek"}, headers=auth_headers)
+    plan = await get(client, auth_headers, "/plan/today")
+    lunch = next(m for m in plan["meals"] if m["slot"] == "lunch")
+    assert lunch["done"] and lunch["eaten"] == "Ayam geprek"
+    assert all(m["id"] != "ayam_geprek" for m in plan["meals"] if not m["done"])
+    assert all(m["eaten"] is None for m in plan["meals"] if not m["done"])

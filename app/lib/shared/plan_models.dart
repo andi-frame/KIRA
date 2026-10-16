@@ -23,6 +23,7 @@ class PlanMeal {
     this.title,
     this.why,
     this.done = false,
+    this.eaten,
     this.overBudget = false,
     this.components = const [],
     this.totals = const NutrientTotals(),
@@ -34,6 +35,9 @@ class PlanMeal {
   final String? title;
   final String? why;
   final bool done;
+
+  /// Apa yang benar-benar dicatat untuk waktu makan ini (hanya bila done).
+  final String? eaten;
   final bool overBudget;
   final List<PlanComponent> components;
   final NutrientTotals totals;
@@ -45,6 +49,7 @@ class PlanMeal {
         title: j['title'] as String?,
         why: j['why'] as String?,
         done: (j['done'] as bool?) ?? false,
+        eaten: j['eaten'] as String?,
         overBudget: (j['over_budget'] as bool?) ?? false,
         components:
             (j['components'] as List? ?? const []).map((e) => PlanComponent.fromJson(e as Map<String, dynamic>)).toList(),
