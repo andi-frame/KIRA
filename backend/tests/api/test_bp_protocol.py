@@ -101,14 +101,16 @@ async def test_waktu_ukur_di_masa_depan_atau_sebelum_putaran_ditolak(client, aut
     assert old.status_code == 422 and "sebelum putaran" in old.json()["detail"]
 
 
-async def test_maksimal_empat_bacaan_per_sesi_per_hari(client, auth_headers):
+async def test_maksimal_empat_bacaan_per_sesi_per_hari(client, auth_headers, engine):
+    # Semua bacaan pada hari yang sama (kemarin 07.00-07.09 WIB), apa pun jam tes dijalankan: sebelumnya tes memakai
+    # "sekarang" dan gagal sesaat setelah tengah malam karena bacaan ke-5 jatuh ke tanggal kemarin.
     await start(client, auth_headers)
-    when = datetime.now(WIB)
+    await backdate(engine, 2)
     for i in range(4):
-        assert (await reading(client, auth_headers, 120, 80, "morning", (when - timedelta(minutes=i)).isoformat())).status_code == 200
-    over = await reading(client, auth_headers, 120, 80, "morning", (when - timedelta(minutes=9)).isoformat())
+        assert (await reading(client, auth_headers, 120, 80, "morning", at(1, 7, i))).status_code == 200
+    over = await reading(client, auth_headers, 120, 80, "morning", at(1, 7, 9))
     assert over.status_code == 422 and "Cukup 2" in over.json()["detail"]
-    assert (await reading(client, auth_headers, 120, 80, "evening", when.isoformat())).status_code == 200  # sesi lain bebas
+    assert (await reading(client, auth_headers, 120, 80, "evening", at(1, 20))).status_code == 200  # sesi lain bebas
 
 
 async def test_catat_tanpa_putaran_aktif_ditolak(client, auth_headers):
