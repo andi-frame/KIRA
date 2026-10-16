@@ -5,6 +5,8 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
 from app.schemas.extraction import Extraction
+from app.config import settings
+from app.services.hedge import hedged
 from app.services.llm import get_extract_model
 
 
@@ -47,7 +49,8 @@ def _mime(image: bytes) -> str:
 
 async def _run(messages: list) -> Extraction:
     try:
-        raw = await get_extract_model().with_structured_output(Extraction).ainvoke(messages)
+        runnable = get_extract_model().with_structured_output(Extraction)
+        raw = await hedged(lambda: runnable.ainvoke(messages), after=settings.llm_hedge_after_seconds)
         return raw if isinstance(raw, Extraction) else Extraction.model_validate(raw)
     except ValidationError as exc:
         raise ExtractionError("keluaran model melanggar skema") from exc

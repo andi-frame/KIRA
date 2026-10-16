@@ -86,8 +86,9 @@ async def test_tool_call_is_recorded_and_result_returned(session_maker, make_use
         {**RAKA, "items": [], "drinks": [], "sleep": None, "intent": "question_portion"},
     )
     result = await run(uid, session_maker, input_text="mau makan rendang malam ini, boleh berapa?")
-    assert [c["name"] for c in result.tool_calls] == ["cari_gizi"]
-    assert result.tool_calls[0]["result"]["found"] is True
+    # Tanpa nama makanan di ekstraksi tidak ada tool awal; yang diminta agent tetap dijalankan dan dicatat.
+    assert [c["name"] for c in result.tool_calls][-1] == "cari_gizi"
+    assert result.tool_calls[-1]["result"]["found"] is True
 
 
 async def test_unknown_food_flows_through_without_invented_numbers(session_maker, make_user):
@@ -98,7 +99,8 @@ async def test_unknown_food_flows_through_without_invented_numbers(session_maker
         {**RAKA, "items": [], "drinks": [], "sleep": None, "intent": "question_portion"},
     )
     result = await run(uid, session_maker, input_text="boleh makan xyzxyz?")
-    assert result.tool_calls[0]["result"] == {"found": False}
+    # pertanyaan porsi menyiapkan sisa target lebih dulu; pencarian makanan tak dikenal dari agent tetap tanpa angka karangan
+    assert result.tool_calls[-1]["name"] == "cari_gizi" and result.tool_calls[-1]["result"] == {"found": False}
     assert not any(ch.isdigit() for ch in result.reply)
 
 
@@ -151,7 +153,8 @@ async def test_demo_cache_short_circuits_models(session_maker, make_user, tmp_pa
 @pytest.mark.parametrize(
     "text_",
     ["Minum metformin 500 mg dua kali sehari ya", "Kamu menderita diabetes", "Hentikan obat tensimu",
-     "Dosis insulin yang pas untukmu 10 unit", "Kamu aman, makan saja sepuasnya", "Masih di batas amanmu hari ini"],
+     "Dosis insulin yang pas untukmu 10 unit", "Kamu aman, makan saja sepuasnya", "Masih di batas amanmu hari ini",
+     "Mungkin kamu perlu suntik insulin", "Coba mulai pakai insulin ya", "Insulin basal biasanya malam hari"],
 )
 def test_guardrail_rejects_medication_diagnosis_and_safe_claims(text_):
     ok, safe = check_reply(text_)
@@ -162,7 +165,11 @@ def test_guardrail_rejects_medication_diagnosis_and_safe_claims(text_):
     "text_",
     ["Natrium dari rendang itu sekitar 420 mg, masih sesuai targetmu hari ini.",
      "Coba ganti es teh manis jadi tawar minggu ini.",
-     "Kalau ada obat dari dokter, ikuti arahannya ya."],
+     "Kalau ada obat dari dokter, ikuti arahannya ya.",
+     # terukur pada model sungguhan: istilah fisiologi ini dulu ditolak sebagai nama obat
+     "Mengurangi gorengan membantu memperbaiki kepekaan insulin dan menjaga berat badan.",
+     "Tidur kurang bisa memicu resistensi insulin, jadi coba tidur lebih awal ya.",
+     "Kamu perlu menjaga kepekaan insulin dengan rutin bergerak."],
 )
 def test_guardrail_allows_normal_lifestyle_replies(text_):
     assert check_reply(text_) == (True, text_)

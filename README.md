@@ -81,6 +81,7 @@ Bangun ulang dengan `python -m seed.build_demo_cache` bila skrip demo berubah.
 | `JWT_SECRET` | Kunci token login (gunakan string acak ≥ 32 karakter) |
 | `ANTHROPIC_API_KEY`, `LLM_MODEL_CHAT`, `LLM_MODEL_EXTRACT` | Model chat/vision dan ekstraksi (Anthropic bila `LLM_BASE_URL` kosong) |
 | `LLM_BASE_URL`, `LLM_API_KEY` (atau `9ROUTER_API_KEY`) | Penyedia kompatibel OpenAI menggantikan Anthropic, mis. `https://9router.byhan.id/v1` |
+| `LLM_HEDGE_AFTER_SECONDS` | Panggilan model yang belum selesai setelah sekian detik (bawaan 18) didampingi satu salinan, hasil yang lebih dulu dipakai; `0` mematikan |
 | `STT_BASE_URL`, `STT_API_KEY`, `STT_MODEL` | Speech-to-text |
 | `DEMO_CACHE` | `true` untuk mode demo |
 | `CORS_ORIGINS` | Origin yang boleh memanggil API dari browser (pisahkan dengan koma) |

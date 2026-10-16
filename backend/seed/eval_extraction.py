@@ -5,6 +5,7 @@ Menilai: apakah makanan, minuman, jam tidur, dan intent yang diharapkan terambil
     uv run python -m seed.eval_extraction
 """
 import asyncio
+import time
 from dataclasses import dataclass, field
 
 from app.schemas.extraction import Extraction
@@ -81,17 +82,25 @@ def summarize(scores: list[Score | None]) -> dict:
 
 
 async def main() -> None:
+    from app.config import settings
+
     scores: list[Score | None] = []
+    latencies: list[float] = []
     for case in CASES:
+        started = time.perf_counter()
         try:
             score = score_case(case, await extract_from_text(case.text))
         except ExtractionError:
             score = None
+        latencies.append(time.perf_counter() - started)
         scores.append(score)
         status = "GAGAL" if score is None else f"{score.hits}/{score.total}" + (f" kurang: {', '.join(score.missed)}" if score.missed else "")
-        print(f"- {case.text[:60]:<60} {status}")
+        print(f"- {case.text[:60]:<60} {latencies[-1]:5.1f}s {status}")
     summary = summarize(scores)
-    print(f"\nKasus: {summary['cases']} | ekstraksi gagal: {summary['failed']} | butir terambil: {summary['hit_rate']:.0%}")
+    ordered = sorted(latencies)
+    print(f"\nModel: {settings.llm_model_extract}")
+    print(f"Kasus: {summary['cases']} | ekstraksi gagal: {summary['failed']} | butir terambil: {summary['hit_rate']:.0%}")
+    print(f"Latensi: rata-rata {sum(latencies) / len(latencies):.1f}s | median {ordered[len(ordered) // 2]:.1f}s | terlama {ordered[-1]:.1f}s")
 
 
 if __name__ == "__main__":

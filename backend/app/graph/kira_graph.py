@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.errors import GraphRecursionError
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -15,12 +15,14 @@ from app.db import SessionLocal
 from app.graph.nodes.build_context import build_context
 from app.graph.nodes.extract import extract
 from app.graph.nodes.guards import emergency_reply, fallback_reply, safety_check
-from app.graph.nodes.output_guardrail import after_guardrail, output_guardrail
+from app.graph.nodes.output_guardrail import after_guardrail, output_guardrail, text_of
+from app.graph.nodes.prefetch_tools import PREFETCH_ID_PREFIX, prefetch_tools
 from app.graph.nodes.save_logs import save_logs
 from app.graph.prompts import FALLBACK_REPLY, LOGGED_BUT_NO_ANSWER_REPLY
 from app.graph.state import KiraState
 from app.repos import messages as messages_repo
 from app.schemas.extraction import Extraction
+from app.services.hedge import hedged
 from app.services.llm import get_chat_model
 from app.tools import TOOLS
 
@@ -28,15 +30,70 @@ log = logging.getLogger("kira.graph")
 
 DEMO_CACHE_PATH = Path(__file__).resolve().parents[2] / "seed" / "demo_cache.json"
 RECURSION_LIMIT = 24  # tiap putaran agent+tool memakai 2 langkah; model yang memanggil tool satu per satu butuh ruang
+# Putaran tool yang diminta model sendiri (di luar prefetch) per pesan. Tiap putaran = satu panggilan model penuh
+# (terukur ~10 dtk pada model penalaran); tanpa batas, pertanyaan what-if pernah memakai 5 putaran (59 dtk).
+MAX_TOOL_ROUNDS = 2
+EMPTY_REPLY_RETRIES = 1
 
 
 def cache_key(text: str) -> str:
     return hashlib.sha256(" ".join(text.lower().split()).encode()).hexdigest()[:16]
 
 
+def _model_tool_rounds(messages: list) -> int:
+    """Berapa kali model meminta tool pada pesan ini. Riwayat hanya berisi teks, jadi semua tool_calls milik pesan ini."""
+    return sum(
+        1 for m in messages
+        if isinstance(m, AIMessage) and m.tool_calls
+        and not all(str(tc.get("id", "")).startswith(PREFETCH_ID_PREFIX) for tc in m.tool_calls)
+    )
+
+
+def _nothing_to_calculate(extraction: dict | None) -> bool:
+    """Pesan yang hanya mencatat tanpa makanan, minuman, label, atau hasil cek (mis. tidur, aktivitas) tidak butuh angka
+    apa pun: cukup konfirmasi, tanpa tool. Aturan di prompt saja tidak cukup (terukur: model tetap mencari gizi makanan
+    dari riwayat chat). Tidak bergantung pada field sleep: "tidur cuma 5 jam" tanpa jam tidur/bangun terekstrak kosong."""
+    if not extraction or extraction.get("intent") != "log":
+        return False
+    return not any(extraction.get(k) for k in ("items", "drinks", "label", "clinical_result"))
+
+
+def _without_tool_turns(messages: list) -> list:
+    """Untuk panggilan model TANPA tool: pasangan tool_calls + ToolMessage diubah menjadi teks biasa, karena
+    sebagian penyedia (Anthropic) menolak riwayat berisi tool_use bila permintaan tidak mendefinisikan tools."""
+    out: list = []
+    results: list[str] = []
+    for m in messages:
+        if isinstance(m, ToolMessage):
+            results.append(f"{m.name}: {m.content}")
+            continue
+        if results:
+            out.append(HumanMessage("[Hasil perhitungan dari kode KIRA]\n" + "\n".join(results)))
+            results = []
+        if isinstance(m, AIMessage) and m.tool_calls:
+            if text_of(m.content).strip():
+                out.append(AIMessage(text_of(m.content)))
+            continue
+        out.append(m)
+    if results:
+        out.append(HumanMessage("[Hasil perhitungan dari kode KIRA]\n" + "\n".join(results)))
+    return out
+
+
 async def agent(state: KiraState) -> dict:
-    model = get_chat_model().bind_tools(TOOLS)
-    return {"messages": [await model.ainvoke(state["messages"])]}
+    messages = state["messages"]
+    if _nothing_to_calculate(state.get("extraction")) or _model_tool_rounds(messages) >= MAX_TOOL_ROUNDS:
+        model, messages = get_chat_model(), _without_tool_turns(messages)
+    else:
+        model = get_chat_model().bind_tools(TOOLS)
+    for _ in range(1 + EMPTY_REPLY_RETRIES):
+        reply = await hedged(lambda: model.ainvoke(messages), after=settings.llm_hedge_after_seconds)
+        if reply.tool_calls or text_of(reply.content).strip():
+            break
+        # Model penalaran sesekali selesai tanpa teks (terukur pada Gemini lewat gerbang); tanpa ini pengguna
+        # mendapat kalimat "kesulitan memproses" padahal catatannya sudah tersimpan.
+        log.warning("agent returned an empty reply, retrying")
+    return {"messages": [reply]}
 
 
 def _after_safety(state: KiraState) -> str:
@@ -57,6 +114,7 @@ def build_graph():
     g.add_node("extract", extract)
     g.add_node("save_logs", save_logs)
     g.add_node("build_context", build_context)
+    g.add_node("prefetch_tools", prefetch_tools)
     g.add_node("agent", agent)
     g.add_node("tools", ToolNode(TOOLS))
     g.add_node("output_guardrail", output_guardrail)
@@ -67,7 +125,8 @@ def build_graph():
     g.add_edge("emergency_reply", END)
     g.add_edge("fallback_reply", END)
     g.add_edge("save_logs", "build_context")
-    g.add_edge("build_context", "agent")
+    g.add_edge("build_context", "prefetch_tools")
+    g.add_edge("prefetch_tools", "agent")
     g.add_conditional_edges("agent", tools_condition, {"tools": "tools", END: "output_guardrail"})
     g.add_edge("tools", "agent")
     g.add_conditional_edges("output_guardrail", after_guardrail, {"agent": "agent", "__end__": END})
