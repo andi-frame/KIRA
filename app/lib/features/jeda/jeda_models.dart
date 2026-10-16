@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'jeda_facts.dart';
+
 /// Jeda Sosmed: sebelum membuka aplikasi media sosial yang dipilih, KIRA menampilkan satu kartu singkat
 /// (rencana pagi, catat hari ini, atau waktunya tidur). Semua mati sampai pengguna menyalakannya sendiri.
 
@@ -41,6 +43,8 @@ class JedaSettings {
     this.nightStart = 21 * 60 + 30,
     this.graceMinutes = 30,
     this.showOther = true,
+    this.funFact = false,
+    this.useGrace = true,
   });
 
   final bool enabled;
@@ -57,6 +61,12 @@ class JedaSettings {
   /// Kartu "sudah sempat cek?" (saran cek ke dokter), bila ada yang tertunda.
   final bool showOther;
 
+  /// Tiap kali aplikasi pilihan dibuka (di luar jeda bebas), tampilkan satu fun fact kesehatan bersumber.
+  final bool funFact;
+
+  /// Setelah kartu ditutup, aplikasi apa pun bebas dibuka selama [graceMinutes]. Mati = kartu muncul lagi tiap kali dibuka.
+  final bool useGrace;
+
   static const graceChoices = [15, 30, 60];
 
   JedaSettings copyWith({
@@ -67,6 +77,8 @@ class JedaSettings {
     int? nightStart,
     int? graceMinutes,
     bool? showOther,
+    bool? funFact,
+    bool? useGrace,
   }) =>
       JedaSettings(
         enabled: enabled ?? this.enabled,
@@ -76,6 +88,8 @@ class JedaSettings {
         nightStart: nightStart ?? this.nightStart,
         graceMinutes: graceMinutes ?? this.graceMinutes,
         showOther: showOther ?? this.showOther,
+        funFact: funFact ?? this.funFact,
+        useGrace: useGrace ?? this.useGrace,
       );
 
   Map<String, dynamic> toMap() => {
@@ -86,6 +100,15 @@ class JedaSettings {
         'night_start': nightStart,
         'grace_minutes': graceMinutes,
         'show_other': showOther,
+        'fun_fact': funFact,
+        'use_grace': useGrace,
+      };
+
+  /// Yang dikirim ke Android: pengaturan + daftar fun fact (konstanta aplikasi, tidak disimpan di preferensi lokal).
+  /// Fakta ikut di pengaturan, bukan di isi kartu, supaya tetap ada walau rencana tidak bisa dimuat (tanpa sinyal).
+  Map<String, dynamic> toBridgeMap() => {
+        ...toMap(),
+        if (funFact) 'facts': [for (final f in jedaFacts) f.toMap()],
       };
 
   String toJson() => jsonEncode(toMap());
@@ -102,6 +125,8 @@ class JedaSettings {
         nightStart: _clamp(j['night_start'], 21 * 60 + 30, 0, 1439),
         graceMinutes: _clamp(j['grace_minutes'], 30, 5, 240),
         showOther: j['show_other'] as bool? ?? true,
+        funFact: j['fun_fact'] as bool? ?? false,
+        useGrace: j['use_grace'] as bool? ?? true,
       );
     } catch (_) {
       return const JedaSettings();
@@ -127,7 +152,7 @@ class JedaCard {
     this.footnote = '',
   });
 
-  /// morning | evening | night | other
+  /// morning | evening | night | other | fact
   final String kind;
   final String title;
   final List<JedaSection> sections;

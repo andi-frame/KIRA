@@ -65,6 +65,7 @@ Projection sampleProjection({
   double p10Low = 0.04,
   double p10High = 0.33,
   HypertensionRisk hypertension = const HypertensionRisk(status: 'needs_bp'),
+  ProjectionBasis basis = const ProjectionBasis(),
 }) =>
     Projection(
       scoreLow: low,
@@ -79,6 +80,7 @@ Projection sampleProjection({
       mode: 'prevention',
       mostImpactful: mostImpactful,
       hypertension: hypertension,
+      basis: basis,
     );
 
 WhatIfResult sampleWhatIf({int afterLow = 9, int afterHigh = 16}) => WhatIfResult(

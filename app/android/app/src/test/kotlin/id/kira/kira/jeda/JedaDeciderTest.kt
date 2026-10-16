@@ -1,6 +1,8 @@
 package id.kira.kira.jeda
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -112,5 +114,74 @@ class JedaDeciderTest {
     @Test fun `info lain lebih tua dari tiga hari tidak ditampilkan`() {
         val stale = t0 + JedaDecider.OTHER_FRESH_MS + 1
         assertTrue(due(h(14), now = stale).isEmpty())
+    }
+
+    // ----- fun fact dan masa bebas -----
+
+    private val facts = listOf(
+        Fact("a", "Tidur", "Tidur 7 jam atau lebih.", "AASM 2015"),
+        Fact("b", "Makan", "Buah dan sayur 400 gram.", "WHO 2026"),
+        Fact("c", "Bergerak", "150 menit per minggu.", "WHO 2024"),
+    )
+    private val withFacts = settings.copy(funFact = true, facts = facts)
+
+    @Test fun `fun fact mati secara bawaan dan tanpa daftar fakta tidak ada kartu fakta`() {
+        assertTrue(due(h(14), s = settings.copy(showOther = false)).none { it.kind == "fact" })
+        assertNull(JedaDecider.factCard(settings.copy(funFact = true), GateState()))
+        assertNull(JedaDecider.factCard(withFacts.copy(funFact = false), GateState()))
+    }
+
+    @Test fun `fun fact tampil walau tidak ada kartu terjadwal dan membawa sumbernya tanpa tombol aksi`() {
+        val shown = due(h(14), s = withFacts.copy(showOther = false))
+        assertEquals(listOf("fact"), shown.map { it.kind })
+        val fact = shown.single()
+        assertEquals("Tahukah kamu?", fact.title)
+        assertEquals("Tidur", fact.sections.single().heading)
+        assertEquals("Sumber: AASM 2015", fact.footnote)
+        assertEquals("", fact.actionLabel) // kartu fakta tidak punya tombol; hanya Lanjut atau lewati
+    }
+
+    @Test fun `fun fact ditaruh setelah kartu terjadwal`() {
+        val kinds = due(h(22), s = withFacts).map { it.kind }
+        assertEquals("fact", kinds.last())
+        assertTrue(kinds.contains("night"))
+    }
+
+    @Test fun `fun fact tetap tampil tanpa isi kartu dari Flutter (tanpa sinyal)`() {
+        assertEquals(listOf("fact"), due(h(14), s = withFacts, p = null).map { it.kind })
+    }
+
+    @Test fun `fakta berputar berurutan dan kembali ke awal, tidak dibatasi tiga kali sehari`() {
+        var state = GateState()
+        val seen = mutableListOf<String>()
+        repeat(7) {
+            val shown = due(h(14), s = withFacts.copy(showOther = false), state = state)
+            assertEquals(1, shown.size)
+            seen += shown.single().sections.single().body
+            state = JedaDecider.afterShown(state, "2026-10-17", shown)
+        }
+        assertEquals(
+            listOf("Tidur 7 jam atau lebih.", "Buah dan sayur 400 gram.", "150 menit per minggu.", "Tidur 7 jam atau lebih."),
+            seen.take(4),
+        )
+        assertEquals(7, state.counts["fact"])
+        assertEquals(7, state.factIndex)
+    }
+
+    @Test fun `indeks fakta di luar rentang atau negatif tetap memilih fakta yang sah`() {
+        assertEquals("Tidur 7 jam atau lebih.", JedaDecider.factCard(withFacts, GateState(factIndex = 300))!!.sections.single().body)
+        assertEquals("150 menit per minggu.", JedaDecider.factCard(withFacts, GateState(factIndex = -1))!!.sections.single().body)
+        assertNotNull(JedaDecider.factCard(withFacts, GateState(factIndex = -5)))
+    }
+
+    @Test fun `lewati sampai besok juga melewati fun fact`() {
+        assertTrue(due(h(14), s = withFacts, state = GateState(skipDay = "2026-10-17")).isEmpty())
+    }
+
+    @Test fun `masa bebas menahan kartu dan fakta, kecuali pengguna mematikannya`() {
+        val freeUntil = GateState(graceUntil = t0 + 10 * 60_000L)
+        assertTrue(due(h(22), s = withFacts, state = freeUntil).isEmpty())
+        assertTrue(due(h(22), s = withFacts.copy(useGrace = false), state = freeUntil).isNotEmpty())
+        assertTrue(due(h(22), now = t0 + 11 * 60_000L, s = withFacts, state = freeUntil).isNotEmpty())
     }
 }

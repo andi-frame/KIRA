@@ -122,24 +122,63 @@ class _JedaScreenState extends ConsumerState<JedaScreen> with WidgetsBindingObse
                   onChanged: (v) => _c.update(s.copyWith(showOther: v)),
                 ),
               ),
-              const SizedBox(height: KiraSpace.lg),
-              Text('Setelah kartu ditutup, bebas buka sosmed selama', style: context.text.titleSmall),
               const SizedBox(height: KiraSpace.sm),
-              Wrap(spacing: KiraSpace.sm, children: [
-                for (final m in JedaSettings.graceChoices)
-                  ChoiceChip(
-                    key: Key('jeda_grace_$m'),
-                    label: Text('$m menit'),
-                    selected: s.graceMinutes == m,
-                    onSelected: (_) => _c.update(s.copyWith(graceMinutes: m)),
+              Card(
+                child: SwitchListTile(
+                  key: const Key('jeda_fun_fact'),
+                  secondary: const Icon(Icons.lightbulb_outline),
+                  title: const Text('Fun fact kesehatan'),
+                  subtitle: const Text(
+                    'Tiap kali sosmed dibuka, tampil satu fakta singkat berserta sumbernya (WHO, Kemenkes, jurnal), '
+                    'supaya kamu memilih dengan sadar: lanjut atau tidak.',
                   ),
-              ]),
+                  value: s.funFact,
+                  onChanged: (v) => _c.update(s.copyWith(funFact: v)),
+                ),
+              ),
+              const SizedBox(height: KiraSpace.sm),
+              Card(
+                child: Column(children: [
+                  SwitchListTile(
+                    key: const Key('jeda_use_grace'),
+                    secondary: const Icon(Icons.timer_outlined),
+                    title: const Text('Setelah kartu ditutup, bebas buka sosmed selama'),
+                    subtitle: Text(s.useGrace
+                        ? 'Setelah kamu menekan Lanjut, semua aplikasi pilihan bebas dibuka selama ${s.graceMinutes} menit.'
+                        : 'Mati: kartu muncul lagi setiap kali sosmed dibuka.'),
+                    value: s.useGrace,
+                    onChanged: (v) => _c.update(s.copyWith(useGrace: v)),
+                  ),
+                  if (s.useGrace)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(KiraSpace.lg, 0, KiraSpace.lg, KiraSpace.md),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Wrap(spacing: KiraSpace.sm, children: [
+                          for (final m in JedaSettings.graceChoices)
+                            ChoiceChip(
+                              key: Key('jeda_grace_$m'),
+                              label: Text('$m menit'),
+                              selected: s.graceMinutes == m,
+                              onSelected: (_) => _c.update(s.copyWith(graceMinutes: m)),
+                            ),
+                        ]),
+                      ),
+                    ),
+                ]),
+              ),
               if (state.running) ...[
                 const SizedBox(height: KiraSpace.lg),
                 Text('Lihat contohnya sekarang', style: context.text.titleSmall),
                 const SizedBox(height: KiraSpace.sm),
                 Wrap(spacing: KiraSpace.sm, runSpacing: KiraSpace.sm, children: [
-                  for (final (kind, label) in const [('morning', 'Pagi'), ('evening', 'Catat'), ('night', 'Tidur'), ('other', 'Cek')])
+                  for (final (kind, label) in [
+                    ('morning', 'Pagi'),
+                    ('evening', 'Catat'),
+                    ('night', 'Tidur'),
+                    ('other', 'Cek'),
+                    if (s.funFact) ('fact', 'Fun fact'),
+                  ])
                     OutlinedButton(
                       key: Key('jeda_preview_$kind'),
                       onPressed: () => _c.preview(kind),
@@ -194,7 +233,55 @@ class _Permissions extends StatelessWidget {
           granted: p.overlay,
           onGrant: bridge.openOverlay,
         ),
+        if (!p.ready) ...[
+          const Divider(height: 1),
+          _RestrictedHelp(bridge: bridge),
+        ],
       ]),
+    );
+  }
+}
+
+/// Android 13 ke atas mengunci izin sensitif untuk aplikasi yang dipasang manual (bukan dari toko aplikasi), dan Android 15
+/// memperluasnya ke akses penggunaan serta tampil di atas aplikasi lain. Kuncinya dibuka pengguna sendiri lewat Info aplikasi.
+class _RestrictedHelp extends StatelessWidget {
+  const _RestrictedHelp({required this.bridge});
+  final JedaBridge bridge;
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        key: const Key('jeda_restricted_help'),
+        leading: const Icon(Icons.lock_open_outlined),
+        title: const Text('Izin abu-abu atau "Dikontrol oleh setelan terbatas"?'),
+        childrenPadding: const EdgeInsets.fromLTRB(KiraSpace.lg, 0, KiraSpace.lg, KiraSpace.lg),
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Aplikasi yang dipasang dari berkas APK (bukan dari toko aplikasi) dikunci Android untuk izin sensitif. Kamu bisa '
+            'membukanya sendiri, hanya sekali:',
+            style: context.text.bodyMedium,
+          ),
+          const SizedBox(height: KiraSpace.sm),
+          Text('1. Tekan "Buka Info aplikasi" di bawah.\n'
+              '2. Ketuk titik tiga (⋮) di pojok kanan atas, lalu pilih "Izinkan setelan terbatas" dan konfirmasi dengan PIN '
+              'atau sidik jarimu.\n'
+              '3. Kembali ke sini dan tekan Izinkan lagi.\n\n'
+              'Kalau menu ⋮ belum ada, tekan Izinkan di atas sekali dulu sampai muncul pesan terkunci, tutup pesannya, lalu '
+              'buka Info aplikasi lagi.',
+              key: const Key('jeda_restricted_steps'),
+              style: context.text.bodyMedium),
+          const SizedBox(height: KiraSpace.md),
+          OutlinedButton.icon(
+            key: const Key('jeda_open_app_info'),
+            onPressed: bridge.openAppInfo,
+            icon: const Icon(Icons.settings_applications_outlined),
+            label: const Text('Buka Info aplikasi'),
+          ),
+        ],
+      ),
     );
   }
 }

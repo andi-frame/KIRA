@@ -15,6 +15,40 @@ Future<void> pumpProjection(WidgetTester tester, FakeApi api) async {
 }
 
 void main() {
+  testWidgets('"Dasar angka ini" menyebut dari mana tiap faktor: catatan, profil, atau belum diketahui', (tester) async {
+    final api = FakeApi()
+      ..projection = sampleProjection(
+        basis: const ProjectionBasis(
+          loggedDays: 5,
+          activity: FactorBasis(source: 'log', answer: false, detail: {'avg_minutes_per_day': 18.5, 'target_minutes': 30}),
+          vegFruit: FactorBasis(source: 'profile', answer: true),
+          unknown: ['lingkar perut', 'riwayat keluarga'],
+        ),
+      );
+    await pumpProjection(tester, api);
+    expect(find.byKey(const Key('projection_basis')), findsOneWidget);
+    expect(find.textContaining('mengubah, atau menghapus catatan'), findsOneWidget); // dihitung ulang setiap kali ada perubahan
+    expect(find.textContaining('5 hari ada catatan'), findsOneWidget);
+    expect(tester.widget<Text>(find.byKey(const Key('basis_activity'))).data, contains('18,5 menit per hari dari catatanmu'));
+    expect(tester.widget<Text>(find.byKey(const Key('basis_veg'))).data, contains('dari jawabanmu saat mendaftar'));
+    expect(tester.widget<Text>(find.byKey(const Key('basis_unknown'))).data, contains('lingkar perut, riwayat keluarga'));
+    expect(find.textContaining('Gula, garam, dan tidur tidak mengubahnya'), findsOneWidget);
+  });
+
+  testWidgets('kebiasaan dari catatan sayur dan buah menyebut jumlah harinya', (tester) async {
+    final api = FakeApi()
+      ..projection = sampleProjection(
+        basis: const ProjectionBasis(
+          loggedDays: 4,
+          activity: FactorBasis(source: 'unknown'),
+          vegFruit: FactorBasis(source: 'log', answer: true, detail: {'days_with': 3, 'days_logged': 4}),
+        ),
+      );
+    await pumpProjection(tester, api);
+    expect(tester.widget<Text>(find.byKey(const Key('basis_activity'))).data, contains('belum diketahui'));
+    expect(tester.widget<Text>(find.byKey(const Key('basis_veg'))).data, contains('3 dari 4 hari makan tercatat'));
+  });
+
   testWidgets('menampilkan rentang kategori, persentase perkiraan, dan grafik dua kurva', (tester) async {
     await pumpProjection(tester, FakeApi());
 

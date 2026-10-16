@@ -13,6 +13,9 @@ data class Card(
     val footnote: String = "",
 )
 
+/** Satu fun fact kesehatan dengan sumbernya. Daftarnya dikirim dari Flutter bersama pengaturan. */
+data class Fact(val id: String, val category: String, val text: String, val source: String)
+
 data class Settings(
     val enabled: Boolean = false,
     val apps: Set<String> = emptySet(),
@@ -21,6 +24,11 @@ data class Settings(
     val nightStart: Int = 21 * 60 + 30,
     val graceMinutes: Int = 30,
     val showOther: Boolean = true,
+    /** Tiap aplikasi pilihan dibuka (di luar jeda bebas), tampilkan satu fun fact. */
+    val funFact: Boolean = false,
+    /** Mati = tidak ada masa bebas setelah kartu ditutup: kartu muncul lagi tiap kali. */
+    val useGrace: Boolean = true,
+    val facts: List<Fact> = emptyList(),
 )
 
 data class Payload(
@@ -39,6 +47,8 @@ data class GateState(
     val skipDay: String? = null,
     val countDay: String? = null,
     val counts: Map<String, Int> = emptyMap(),
+    /** Fakta berikutnya yang akan tampil; berputar agar tidak berulang selama masih ada yang belum dilihat. */
+    val factIndex: Int = 0,
 )
 
 object JedaDecider {
@@ -72,8 +82,39 @@ object JedaDecider {
         state: GateState,
         sameDayAsPayload: Boolean,
     ): List<Card> {
-        if (!settings.enabled || payload == null || settings.apps.isEmpty()) return emptyList()
-        if (state.skipDay == day || now < state.graceUntil) return emptyList()
+        if (!settings.enabled || settings.apps.isEmpty()) return emptyList()
+        // Masa bebas hanya berlaku bila pengguna memilihnya; mematikannya membuat sisa masa bebas lama tidak dipakai lagi.
+        if (state.skipDay == day || (settings.useGrace && now < state.graceUntil)) return emptyList()
+        val out = mutableListOf<Card>()
+        if (payload != null) out += planned(now, minute, date, day, settings, payload, state, sameDayAsPayload)
+        factCard(settings, state)?.let { out += it }
+        return out
+    }
+
+    /** Fun fact berikutnya sebagai kartu tanpa tombol aksi. Tidak dibatasi per hari: pengguna sendiri yang memintanya. */
+    fun factCard(settings: Settings, state: GateState): Card? {
+        if (!settings.funFact || settings.facts.isEmpty()) return null
+        val fact = settings.facts[Math.floorMod(state.factIndex, settings.facts.size)]
+        return Card(
+            kind = "fact",
+            title = "Tahukah kamu?",
+            sections = listOf(Section(fact.category, fact.text)),
+            actionLabel = "",
+            route = "",
+            footnote = "Sumber: ${fact.source}",
+        )
+    }
+
+    private fun planned(
+        now: Long,
+        minute: Int,
+        date: String,
+        day: String,
+        settings: Settings,
+        payload: Payload,
+        state: GateState,
+        sameDayAsPayload: Boolean,
+    ): List<Card> {
         val counts = if (state.countDay == day) state.counts else emptyMap()
         fun left(kind: String, max: Int) = (counts[kind] ?: 0) < max
 
@@ -100,6 +141,7 @@ object JedaDecider {
         val base = if (state.countDay == day) state.counts else emptyMap()
         val next = base.toMutableMap()
         for (c in shown) next[c.kind] = (next[c.kind] ?: 0) + 1
-        return state.copy(countDay = day, counts = next)
+        val factShown = shown.any { it.kind == "fact" }
+        return state.copy(countDay = day, counts = next, factIndex = if (factShown) state.factIndex + 1 else state.factIndex)
     }
 }
