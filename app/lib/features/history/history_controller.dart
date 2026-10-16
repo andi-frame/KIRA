@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
+import '../../core/refresh.dart';
+import '../../shared/meal_models.dart';
 import '../../shared/models.dart';
-import '../home/home_screen.dart';
+import '../jeda/jeda_controller.dart';
 
 const historyPageDays = 14;
 const _maxReloadDays = 60; // batas server per permintaan
@@ -49,10 +51,14 @@ class HistoryController extends AsyncNotifier<HistoryState> {
     state = AsyncData(HistoryState(days: page.days, nextBefore: page.nextBefore));
   }
 
+  /// Setelah koreksi: Riwayat dimuat ulang (halaman yang sudah dibuka dipertahankan) dan semua tampilan turunannya
+  /// (proyeksi, Beranda, Tren, rencana, target) ikut dimuat ulang, jadi tidak ada yang tertahan pada angka lama.
   Future<void> _patch(Future<void> Function() call) async {
     await call();
-    ref.invalidate(dashboardProvider); // koreksi gizi mengubah kondisi hari ini di Beranda
+    refreshHealthData(ref.invalidate, includeHistory: false);
     await reload();
+    // Kartu Jeda sosmed ("catat hari ini dulu?") bergantung pada apa yang sudah tercatat.
+    await ref.read(jedaProvider.notifier).refresh();
   }
 
   Future<void> correctItem(HistoryEntry entry, LoggedItem item, double grams) => _patch(() => ref
@@ -60,8 +66,20 @@ class HistoryController extends AsyncNotifier<HistoryState> {
       .patchLog(entry.logId,
           items: [for (final i in entry.items) i.id == item.id ? i.toPatch(portionG: grams) : i.toPatch()]));
 
-  Future<void> halveGroup(HistoryEntry entry, String group) =>
-      _patch(() => ref.read(apiProvider).patchLog(entry.logId, scale: 0.5, group: group));
+  /// Saklar "setengah porsi": true = jadikan setengah, false = kembali ke porsi biasa.
+  Future<void> halveGroup(HistoryEntry entry, String group, {required bool half}) =>
+      _patch(() => ref.read(apiProvider).patchLog(entry.logId, half: half, group: group));
+
+  Future<void> setMealSlot(HistoryEntry entry, String slot) =>
+      _patch(() => ref.read(apiProvider).patchLog(entry.logId, mealSlot: slot));
+
+  Future<void> deleteEntry(String logId) => _patch(() => ref.read(apiProvider).deleteLog(logId));
+
+  Future<void> editActivity(HistoryActivity a, {required int minutes, required String kind}) =>
+      _patch(() => ref.read(apiProvider).patchLog(a.logId, minutes: minutes, activityKind: kind));
+
+  Future<void> editSleep(HistorySleep s, {String? bedTime, String? wakeTime, double? hours}) => _patch(() =>
+      ref.read(apiProvider).patchLog(s.logId, bedTime: bedTime, wakeTime: wakeTime, hours: hours));
 
   Future<void> removeItem(HistoryEntry entry, LoggedItem item) => _patch(() => ref
       .read(apiProvider)

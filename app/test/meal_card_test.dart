@@ -61,8 +61,97 @@ void main() {
     await tester.tap(find.byKey(const Key('halve_group_0')));
     await tester.pumpAndSettle();
 
-    expect(api.patchScales.single, (scale: 0.5, group: 'Ayam geprek'));
+    // Saklar: dikirim sebagai half=true (bukan scale), supaya server yang memegang keadaannya.
+    expect(api.patchScales.single, (scale: null, group: 'Ayam geprek'));
+    expect(api.patchFields.single.fields, {'half': true, 'group': 'Ayam geprek'});
     expect(find.textContaining('50 g · 134 kkal'), findsOneWidget); // kartu memakai hasil server
+  });
+
+  testWidgets('setengah porsi adalah saklar: ketukan kedua mengembalikan ke porsi biasa, bukan menurun lagi', (tester) async {
+    final api = await _send(tester, _geprek);
+    MealLog halved(bool on) => MealLog(
+          id: 'log1',
+          corrected: true,
+          halvedGroups: on ? const ['Ayam geprek'] : const [],
+          items: [
+            for (final i in _geprek)
+              LoggedItem(id: i.id, name: i.name, portionG: on ? i.portionG! / 2 : i.portionG, kcal: on ? i.kcal! / 2 : i.kcal,
+                  foodId: i.foodId, group: i.group),
+          ],
+        );
+    expect(find.text('Setengah porsi'), findsOneWidget);
+    expect(find.text('Porsi biasa'), findsNothing);
+
+    api.patchResult = halved(true);
+    await tester.tap(find.byKey(const Key('halve_group_0')));
+    await tester.pumpAndSettle();
+    expect(find.text('Porsi biasa'), findsOneWidget);
+    expect(find.text('Setengah porsi'), findsNothing);
+    expect(find.textContaining('Sekarang setengah porsi'), findsOneWidget);
+
+    api.patchResult = halved(false);
+    await tester.tap(find.byKey(const Key('halve_group_0')));
+    await tester.pumpAndSettle();
+    expect(api.patchFields.map((p) => p.fields['half']), [true, false]); // naik-turun, bukan setengah dua kali
+    expect(find.text('Setengah porsi'), findsOneWidget);
+    expect(find.textContaining('150 g'), findsOneWidget);
+  });
+
+  testWidgets('waktu makan yang hanya ditebak ditanyakan dengan pilihan satu ketukan', (tester) async {
+    final api = FakeApi()
+      ..onMessage = (t) async => ChatReply(
+            reply: 'Sudah kucatat. Ini makan siang atau selingan?',
+            extraction: _extraction,
+            logIds: const ['log1'],
+            meals: [MealLog(id: 'log1', items: _geprek, mealSlot: 'snack', slotConfirmed: false)],
+          );
+    await tester.pumpWidget(testApp(const ChatScreen(), api: api));
+    await tester.pumpAndSettle();
+    await typeAndSend(tester, 'aku sudah makan nasi dengan ayam katsu');
+
+    expect(find.byKey(const Key('slot_question')), findsOneWidget);
+    expect(find.textContaining('menebak selingan'), findsOneWidget);
+    api.patchResult = MealLog(id: 'log1', items: _geprek, mealSlot: 'lunch', slotConfirmed: true, corrected: true);
+    await tester.tap(find.byKey(const Key('slot_lunch')));
+    await tester.pumpAndSettle();
+
+    expect(api.patchFields.single.fields, {'meal_slot': 'lunch'});
+    expect(find.byKey(const Key('slot_question')), findsNothing);
+    expect(tester.widget<Text>(find.byKey(const Key('slot_label'))).data, 'Makan siang');
+  });
+
+  testWidgets('waktu makan yang sudah pasti tidak ditanyakan tetapi bisa diubah', (tester) async {
+    final api = FakeApi()
+      ..onMessage = (t) async => ChatReply(
+            reply: 'Sudah kucatat.',
+            extraction: _extraction,
+            logIds: const ['log1'],
+            meals: [MealLog(id: 'log1', items: _geprek, mealSlot: 'lunch')],
+          );
+    await tester.pumpWidget(testApp(const ChatScreen(), api: api));
+    await tester.pumpAndSettle();
+    await typeAndSend(tester, 'makan siang ayam geprek');
+    expect(find.byKey(const Key('slot_question')), findsNothing);
+    expect(tester.widget<Text>(find.byKey(const Key('slot_label'))).data, 'Makan siang');
+
+    api.patchResult = MealLog(id: 'log1', items: _geprek, mealSlot: 'dinner', corrected: true);
+    await tester.tap(find.byKey(const Key('slot_menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Makan malam').last);
+    await tester.pumpAndSettle();
+    expect(api.patchFields.single.fields, {'meal_slot': 'dinner'});
+  });
+
+  testWidgets('hapus catatan dari kartu meminta konfirmasi lalu melepas kartunya', (tester) async {
+    final api = await _send(tester, _geprek);
+    await tester.ensureVisible(find.byKey(const Key('delete_log')));
+    await tester.tap(find.byKey(const Key('delete_log')));
+    await tester.pumpAndSettle();
+    expect(api.deletedLogs, isEmpty); // belum: menunggu konfirmasi
+    await tester.tap(find.byKey(const Key('delete_log_confirm')));
+    await tester.pumpAndSettle();
+    expect(api.deletedLogs, ['log1']);
+    expect(find.byKey(const Key('extraction_card')), findsNothing);
   });
 
   testWidgets('ubah gram satu komponen mengirim semua item dengan food_id dan kelompoknya', (tester) async {

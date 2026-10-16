@@ -350,11 +350,34 @@ class CheckRecommendation {
 }
 
 class Faskes {
-  const Faskes({required this.name, required this.kind, required this.distanceKm, this.address, this.lat, this.lng});
+  const Faskes({
+    required this.name,
+    required this.kind,
+    required this.distanceKm,
+    this.address,
+    this.lat,
+    this.lng,
+    this.source = 'seed',
+    this.phone,
+    this.openingHours,
+    this.directionsUrl,
+    this.mapsUrl,
+  });
   final String name, kind;
   final double distanceKm;
   final String? address;
   final double? lat, lng;
+
+  /// google | osm | seed (data contoh). Menentukan keterangan sumber di bawah daftar.
+  final String source;
+  final String? phone, openingHours;
+
+  /// Tautan Google Maps: rute ke tempat itu, dan tempatnya.
+  final String? directionsUrl, mapsUrl;
+
+  /// Rute di Google Maps; dibuat dari koordinat bila server tidak mengirim tautan.
+  String? get routeUrl => directionsUrl ??
+      (lat == null || lng == null ? null : 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving');
 
   factory Faskes.fromJson(Map<String, dynamic> j) => Faskes(
         name: j['name'] as String,
@@ -363,6 +386,11 @@ class Faskes {
         address: j['address'] as String?,
         lat: (j['lat'] as num?)?.toDouble(),
         lng: (j['lng'] as num?)?.toDouble(),
+        source: (j['source'] as String?) ?? 'seed',
+        phone: j['phone'] as String?,
+        openingHours: j['opening_hours'] as String?,
+        directionsUrl: j['directions_url'] as String?,
+        mapsUrl: j['maps_url'] as String?,
       );
 }
 

@@ -9,6 +9,7 @@ import '../shared/family_models.dart';
 import '../shared/goal_models.dart';
 import '../shared/insight_models.dart';
 import '../shared/models.dart';
+import '../shared/record_models.dart';
 
 /// Balasan KIRA melewati model bahasa (bisa beberapa kali memanggil tool): beri waktu lebih lama dari panggilan biasa.
 const Duration kChatTimeout = Duration(seconds: 150);
@@ -50,8 +51,29 @@ abstract class KiraApi {
   Future<ChatReply> sendMessage(String text, {String? idempotencyKey});
   Future<ChatReply> sendVoice(Uint8List audio, String filename);
   Future<ChatReply> sendPhoto(String kind, Uint8List image, String filename);
-  /// Koreksi catatan: ganti item (yang tidak dikirim = dihapus) dan/atau skalakan porsi (seluruh catatan atau satu hidangan).
-  Future<MealLog> patchLog(String logId, {List<Map<String, dynamic>>? items, double? scale, String? group});
+  /// Ubah satu catatan. Makan: ganti item (yang tidak dikirim = dihapus), skalakan porsi, `half` (saklar setengah porsi
+  /// per hidangan: true = jadikan setengah, false = kembalikan), atau `mealSlot`. Olahraga/tidur: menit, jenis, jam.
+  Future<MealLog> patchLog(
+    String logId, {
+    List<Map<String, dynamic>>? items,
+    double? scale,
+    String? group,
+    bool? half,
+    String? mealSlot,
+    int? minutes,
+    String? activityKind,
+    double? hours,
+    String? bedTime,
+    String? wakeTime,
+    double? count,
+  });
+  Future<void> deleteLog(String logId);
+  Future<List<ChatHistoryMessage>> getChatHistory();
+  Future<void> clearChatHistory();
+  Future<List<MedicalRecord>> listRecords({String? kind});
+  Future<MedicalRecord> createRecord(Map<String, dynamic> fields);
+  Future<MedicalRecord> updateRecord(String id, Map<String, dynamic> fields);
+  Future<void> deleteRecord(String id);
   Future<List<FoodSuggestion>> searchFoods(String query);
   Future<HistoryPage> getHistory({int days = 14, String? before});
   Future<DashboardData> getDashboard();
@@ -78,7 +100,7 @@ abstract class KiraApi {
   Future<void> deleteScenario(String id);
   Future<BpProtocolView> getBpProtocol();
   Future<BpProtocolView> startBpProtocol();
-  Future<BpProtocolView> addBpReading(int sys, int dia, String session);
+  Future<BpProtocolView> addBpReading(int sys, int dia, String session, {int? pulse});
   Future<BpProtocolView> finishBpProtocol();
   Future<void> cancelBpProtocol();
   Future<ProductInfo> getProduct(String barcode);
@@ -297,10 +319,69 @@ class DioKiraApi implements KiraApi {
       );
 
   @override
-  Future<MealLog> patchLog(String logId, {List<Map<String, dynamic>>? items, double? scale, String? group}) => _run(
-        () => _dio.patch('/logs/$logId', data: {'items': ?items, 'scale': ?scale, 'group': ?group}),
+  Future<MealLog> patchLog(
+    String logId, {
+    List<Map<String, dynamic>>? items,
+    double? scale,
+    String? group,
+    bool? half,
+    String? mealSlot,
+    int? minutes,
+    String? activityKind,
+    double? hours,
+    String? bedTime,
+    String? wakeTime,
+    double? count,
+  }) =>
+      _run(
+        () => _dio.patch('/logs/$logId', data: {
+          'items': ?items,
+          'scale': ?scale,
+          'group': ?group,
+          'half': ?half,
+          'meal_slot': ?mealSlot,
+          'minutes': ?minutes,
+          'activity_kind': ?activityKind,
+          'hours': ?hours,
+          'bed_time': ?bedTime,
+          'wake_time': ?wakeTime,
+          'count': ?count,
+        }),
         (d) => MealLog.fromJson(d as Map<String, dynamic>),
       );
+
+  @override
+  Future<void> deleteLog(String logId) => _run(() => _dio.delete('/logs/$logId'), (_) {});
+
+  @override
+  Future<List<ChatHistoryMessage>> getChatHistory() => _run(
+        () => _dio.get('/chat/history'),
+        (d) => ((d as Map<String, dynamic>)['messages'] as List)
+            .map((e) => ChatHistoryMessage.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  @override
+  Future<void> clearChatHistory() => _run(() => _dio.delete('/chat/history'), (_) {});
+
+  @override
+  Future<List<MedicalRecord>> listRecords({String? kind}) => _run(
+        () => _dio.get('/records', queryParameters: {'kind': ?kind}),
+        (d) => ((d as Map<String, dynamic>)['records'] as List)
+            .map((e) => MedicalRecord.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  @override
+  Future<MedicalRecord> createRecord(Map<String, dynamic> fields) =>
+      _run(() => _dio.post('/records', data: fields), (d) => MedicalRecord.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<MedicalRecord> updateRecord(String id, Map<String, dynamic> fields) =>
+      _run(() => _dio.patch('/records/$id', data: fields), (d) => MedicalRecord.fromJson(d as Map<String, dynamic>));
+
+  @override
+  Future<void> deleteRecord(String id) => _run(() => _dio.delete('/records/$id'), (_) {});
 
   @override
   Future<DayPlan> getPlanToday() =>
@@ -425,8 +506,8 @@ class DioKiraApi implements KiraApi {
       _run(() => _dio.post('/bp-protocol'), (d) => BpProtocolView.fromJson(d as Map<String, dynamic>));
 
   @override
-  Future<BpProtocolView> addBpReading(int sys, int dia, String session) => _run(
-        () => _dio.post('/bp-protocol/readings', data: {'sys': sys, 'dia': dia, 'session': session}),
+  Future<BpProtocolView> addBpReading(int sys, int dia, String session, {int? pulse}) => _run(
+        () => _dio.post('/bp-protocol/readings', data: {'sys': sys, 'dia': dia, 'session': session, 'pulse': ?pulse}),
         (d) => BpProtocolView.fromJson(d as Map<String, dynamic>),
       );
 

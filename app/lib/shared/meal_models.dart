@@ -90,6 +90,10 @@ class MealGroup {
   bool get hasUncounted => items.any((i) => !i.counted);
 }
 
+/// Waktu makan dan labelnya. Urutan = urutan di sepanjang hari.
+const mealSlots = ['breakfast', 'lunch', 'snack', 'dinner'];
+const mealSlotLabels = {'breakfast': 'Sarapan', 'lunch': 'Makan siang', 'snack': 'Selingan', 'dinner': 'Makan malam'};
+
 class MealLog {
   const MealLog({
     required this.id,
@@ -98,6 +102,9 @@ class MealLog {
     this.occurredAt,
     this.corrected = false,
     this.items = const [],
+    this.mealSlot,
+    this.slotConfirmed = true,
+    this.halvedGroups = const [],
   });
 
   final String id;
@@ -106,6 +113,18 @@ class MealLog {
   final DateTime? occurredAt;
   final bool corrected;
   final List<LoggedItem> items;
+
+  /// breakfast | lunch | snack | dinner untuk catatan makan; null pada minuman dan catatan lama.
+  final String? mealSlot;
+
+  /// false: waktu makan hanya ditebak dari jam, jadi pengguna diminta memastikan.
+  final bool slotConfirmed;
+
+  /// Hidangan yang sedang "setengah porsi": tombolnya berubah menjadi "Porsi biasa" (saklar, bukan pengurang berulang).
+  final List<String> halvedGroups;
+
+  bool isHalved(String group) => halvedGroups.contains(group);
+  bool get needsSlotConfirmation => kind == 'meal' && !slotConfirmed;
 
   NutrientTotals get totals => NutrientTotals.of(items);
 
@@ -135,6 +154,9 @@ class MealLog {
         occurredAt: j['occurred_at'] == null ? null : DateTime.parse(j['occurred_at'] as String),
         corrected: (j['corrected'] as bool?) ?? false,
         items: (j['items'] as List? ?? const []).map((e) => LoggedItem.fromJson(e as Map<String, dynamic>)).toList(),
+        mealSlot: j['meal_slot'] as String?,
+        slotConfirmed: (j['slot_confirmed'] as bool?) ?? true,
+        halvedGroups: (j['halved_groups'] as List? ?? const []).cast<String>(),
       );
 }
 
@@ -180,6 +202,9 @@ class HistoryEntry {
     this.totals = const NutrientTotals(),
     this.uncounted = 0,
     this.corrected = false,
+    this.mealSlot,
+    this.slotConfirmed = true,
+    this.halvedGroups = const [],
   });
 
   final String logId;
@@ -191,8 +216,21 @@ class HistoryEntry {
   final NutrientTotals totals;
   final int uncounted;
   final bool corrected;
+  final String? mealSlot;
+  final bool slotConfirmed;
+  final List<String> halvedGroups;
 
-  MealLog get asMeal => MealLog(id: logId, kind: kind, source: source, occurredAt: time, corrected: corrected, items: items);
+  MealLog get asMeal => MealLog(
+        id: logId,
+        kind: kind,
+        source: source,
+        occurredAt: time,
+        corrected: corrected,
+        items: items,
+        mealSlot: mealSlot,
+        slotConfirmed: slotConfirmed,
+        halvedGroups: halvedGroups,
+      );
 
   factory HistoryEntry.fromJson(Map<String, dynamic> j) => HistoryEntry(
         logId: j['log_id'] as String,
@@ -204,6 +242,47 @@ class HistoryEntry {
         totals: NutrientTotals.fromJson(j['totals'] as Map<String, dynamic>),
         uncounted: (j['uncounted'] as int?) ?? 0,
         corrected: (j['corrected'] as bool?) ?? false,
+        mealSlot: j['meal_slot'] as String?,
+        slotConfirmed: (j['slot_confirmed'] as bool?) ?? true,
+        halvedGroups: (j['halved_groups'] as List? ?? const []).cast<String>(),
+      );
+}
+
+/// Satu catatan olahraga/aktivitas di Riwayat (bisa diubah atau dihapus).
+class HistoryActivity {
+  const HistoryActivity({required this.logId, required this.kind, required this.minutes, required this.time, this.source = 'text'});
+  final String logId;
+  final String kind;
+  final double minutes;
+  final DateTime time;
+  final String source;
+
+  factory HistoryActivity.fromJson(Map<String, dynamic> j) => HistoryActivity(
+        logId: j['log_id'] as String,
+        kind: (j['kind'] as String?) ?? 'aktivitas',
+        minutes: (_d(j['minutes']) ?? 0),
+        time: DateTime.parse(j['time'] as String),
+        source: (j['source'] as String?) ?? 'text',
+      );
+}
+
+/// Satu catatan tidur di Riwayat (bisa diubah atau dihapus).
+class HistorySleep {
+  const HistorySleep({required this.logId, required this.time, this.hours, this.bedTime, this.wakeTime, this.source = 'text'});
+  final String logId;
+  final DateTime time;
+  final double? hours;
+  final String? bedTime;
+  final String? wakeTime;
+  final String source;
+
+  factory HistorySleep.fromJson(Map<String, dynamic> j) => HistorySleep(
+        logId: j['log_id'] as String,
+        time: DateTime.parse(j['time'] as String),
+        hours: _d(j['hours']),
+        bedTime: j['bed_time'] as String?,
+        wakeTime: j['wake_time'] as String?,
+        source: (j['source'] as String?) ?? 'text',
       );
 }
 
@@ -217,6 +296,8 @@ class HistoryDay {
     this.drinks = const [],
     this.activityMinutes,
     this.sleepHours,
+    this.activities = const [],
+    this.sleeps = const [],
   });
 
   final DateTime date;
@@ -227,6 +308,8 @@ class HistoryDay {
   final List<HistoryEntry> drinks;
   final double? activityMinutes;
   final double? sleepHours;
+  final List<HistoryActivity> activities;
+  final List<HistorySleep> sleeps;
 
   /// Makan dan minum hari ini, urut waktu.
   List<HistoryEntry> get entries => [...meals, ...drinks]..sort((a, b) => a.time.compareTo(b.time));
@@ -240,6 +323,9 @@ class HistoryDay {
         drinks: (j['drinks'] as List? ?? const []).map((e) => HistoryEntry.fromJson(e as Map<String, dynamic>)).toList(),
         activityMinutes: _d(j['activity_minutes']),
         sleepHours: _d(j['sleep_hours']),
+        activities:
+            (j['activities'] as List? ?? const []).map((e) => HistoryActivity.fromJson(e as Map<String, dynamic>)).toList(),
+        sleeps: (j['sleeps'] as List? ?? const []).map((e) => HistorySleep.fromJson(e as Map<String, dynamic>)).toList(),
       );
 }
 

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/outbox.dart';
 import '../core/providers.dart';
+import '../features/chat/chat_controller.dart';
 import '../features/health/health_sync.dart';
 import '../features/home/home_screen.dart';
 import '../features/jeda/jeda_bridge.dart';
@@ -38,6 +39,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.invalidate(dashboardProvider); // kondisi hari ini bisa berubah selama aplikasi tertutup
+      unawaited(ref.read(chatProvider.notifier).syncDay()); // hari berganti: obrolan hari baru mulai bersih
       unawaited(_flushOutbox());
       unawaited(ref.read(remindersProvider.notifier).reschedule());
       unawaited(_afterResumeFromJeda());
